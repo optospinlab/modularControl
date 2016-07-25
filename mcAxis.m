@@ -1,5 +1,5 @@
 classdef mcAxis < handle
-% Class for instruments with linear motion. This includes:
+% Abstract class for instruments with linear motion. This includes:
 %   - NIDAQ
 %       + Piezos
 %       + Galvos
@@ -15,10 +15,13 @@ classdef mcAxis < handle
 %   a = mcAxis()                                % Open with default configuration.
 %   a = mcAxis(config)                          % Open with configuration given by config.
 %   a = mcAxis('config_file.mat')               % Open with config file in 'MATLAB_PATH\configs\axisconfigs\'
+%   a = mcAxis(config, emulate)                 % Same as above, except with the option (tf) to start axis in emulation mode.
+%   a = mcAxis('config_file.mat', emulate)     
 %
 %   config = mcAxis.[INSERT_TYPE]Config         % Returns the default config struture for that type
 %   
-%   str =   a.name()                            % Returns nameShort().
+%   str =   a.name()                            % Returns the default name. This is currently nameShort().
+%   str =   a.nameUnits()                       % Returns info about this axis in 'name (units)' form.
 %   str =   a.nameShort()                       % Returns short info about this axis in a readable form.
 %   str =   a.nameVerb()                        % Returns verbose info about this axis in a readable form.
 %
@@ -197,6 +200,10 @@ classdef mcAxis < handle
             if ~strcmpi(a.config.name, 'Time')      % This prevents infinite recursion...
                 a = mcInstrumentHandler.register(a);
                 a.inEmulation = ismac;
+            else
+                if 
+                    
+                end
             end
             
             a.inEmulation

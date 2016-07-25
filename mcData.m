@@ -35,8 +35,10 @@ classdef mcData < handle
 %            - data.inputNamesUnits        char cell array
 %
 %            - data.scansInternalUnits     cell array        % Contains the info in data.scans, except in internal units.
-
-
+%
+%            - data.posStart               numeric array     % Contains the positions of all of the axes before the scan begins. This allows for returning to the same place.
+%
+%            - data.README                 string            % Instructions about how to use the data.
     end
     
     methods (Static)
@@ -50,6 +52,14 @@ classdef mcData < handle
             data.axes =     {mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ)};                 % Fill the...   ...axes...
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,5)};                     %               ...scans...
             data.inputs =   {mcInput(configCounter)};                                                           %               ...inputs.
+        end
+        function str = README()
+            str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
+                   'struct.data is a cell array with a cell for each input. Inside each cell is the result of '...
+                   'the measurement of that input for each point of the ND grid formed by the scans of the axes. '...
+                   'If the measurement is singular (i.e. just a number like a voltage measurement), then the '...
+                   'contents of the input cell is a numeric array. If the measurement is more complex (e.g. a '...
+                   'vector like a spectra), then the contents of the input cell is a cell array.'];
         end
     end
     
@@ -94,6 +104,8 @@ classdef mcData < handle
         
         function initialize(d)
             if ~isfield(d.data, 'isInitialized')     % If not initialized, then intialize.
+                d.data.README = d.README();
+                
                 %%% HANDLE THE INPUTS %%%
                 d.data.numInputs = length(d.data.inputs);
                 

@@ -1,5 +1,38 @@
 classdef mcInput < handle
-% Class for inputs.
+% Abstract class for instruments with that measure some sort of data. This includes:
+%   - NIDAQ
+%       + Counters
+%       + Analog/Digital in
+%   - Spectrometers
+%   - Cameras
+%
+% IMPORTANT: Not sure whether a better architecture decision would be to
+% have kinds (such as piezos and galvos) extend the mcAxis class in their
+% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
+% switch statements that are currently in the code.
+% UPDATE: Decided to change this eventually, but keep it the same for now.
+%
+% Syntax:
+%   I = mcInput()                               % Open with default configuration.
+%   I = mcInput(config)                         % Open with configuration given by config.
+%   I = mcInput('config_file.mat')              % Open with config file in 'MATLAB_PATH\configs\axisconfigs\'
+%   I = mcInput(config, emulate)                % Same as above, except with the option (tf) to start axis in emulation mode.
+%   I = mcInput('config_file.mat', emulate)     
+%
+%   config = mcInput.[INSERT_TYPE]Config        % Returns the default config struture for that type
+%   
+%   str =   I.name()                            % Returns the default name. This is currently nameShort().
+%   str =   I.nameUnits()                       % Returns info about this input in 'name (units)' form.
+%   str =   I.nameShort()                       % Returns short info about this input in a readable form.
+%   str =   I.nameVerb()                        % Returns verbose info about this input in a readable form.
+%
+%   tf =    I.open()                            % Opens a session of the axis (e.g. for the micrometers, a serial session); returns whether open or not.
+%   tf =    I.close()                           % Closes the session of the axis; returns whether closed or not.
+%
+%   tf =    I.inRange(x)                        % Returns true if x is in the external range of a.
+%
+%   tf =    I.goto(x)                           % If x is in range, makes sure axis is open, moves axis to x, and returns success.
+
     
     properties
         config = [];            % All static variables (e.g. valid range) go in config.
@@ -117,12 +150,7 @@ classdef mcInput < handle
                     end
             end
             
-            global ih
-            if isempty(ih)
-                ih = mcInstrumentHandler();
-            end
-            
-            I = ih.register(I);
+            I = mcInstrumentHandler.register(I);
             
             I.inEmulation = ismac;
         end

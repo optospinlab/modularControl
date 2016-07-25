@@ -10,7 +10,7 @@ classdef mcInstrumentHandler < handle
 %   params = mcInstrumentHandler.Params(newparams)  % Sets the persistant params to newparams; again returns params.
 %
 % (Public)
-%   tf = mcInstrumentHandler.open()                 % If params has not been initiated, then initiate params... ...with default values (will search for [params.hostname].mat).
+%   tf = mcInstrumentHandler.open()                 % If params has not been initiated, then initiate params... ...with default values (will search for [params.hostname].mat). Returns whether mcInstrumentHandler was open before calling this.
 % % (Not currently enabled)
 % % tf = mcInstrumentHandler.open(config)           %                                                           ...with the contents of config (instruments, etc are overwritten).
 % % tf = mcInstrumentHandler.open('config.mat')     %                                                           ...with the contents of config.mat (instruments, etc are overwritten).
@@ -38,26 +38,29 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function tf = open()
-            tf = true;
+            isClosed = isempty(params);
             
             params = mcInstrumentHandler.params();  
             
-            if isempty(params)
+            if isClosed
                 [~, params.hostname] =              system('hostname');
              
 %                 if exists([params.hostname '.mat'])     % If the  program has been opened before.
 %                     
 %                 else
-%                         
+%                 	  
 %                 end
                 
-                params.instruments =                {mcAxis(mcAxis.timeConfig())};
+                params.instruments =                {mcAxis(mcAxis.timeConfig())};  % Initialize with only time (which is special)
                 params.saveDirManual =              '';
                 params.saveDirBackground =          '';
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
+                params.shouldEmulate =              true;                           % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
                 [~, params.hostname] =              system('hostname');
             end
+            
+            tf = ~isClosed;     % Return whether the mcInstrumentHandler was open...
             
             mcInstrumentHandler.params(params);
         end
@@ -82,15 +85,15 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
-            axes_ = {};
-            names = {};
-            states = [];
+            axes_ =     {};     % Initialize empty lists.
+            names =     {};
+            states =    [];
             
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcAxis')
-                    axes_{ii} = instrument{1};
+                if isa(instrument{1}, 'mcAxis')                 % If an instrument is a axis...
+                    axes_{ii} = instrument{1};                  % ...Then append its information.
                     names{ii} = instrument{1}.nameShort();
                     states(ii) = instrument{1}.getX();
                     ii = ii + 1;
@@ -101,13 +104,13 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
-            inputs =    {};
+            inputs =    {};     % Initialize empty lists.
             names =     {};
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcInput')
-                    inputs{ii} = instrument{1};
+                if isa(instrument{1}, 'mcInput')                % If an instrument is a axis...
+                    inputs{ii} = instrument{1};                 % ...Then append its information.
                     names{ii} = instrument{1}.nameShort();
                     ii = ii + 1;
                 end
@@ -131,8 +134,6 @@ classdef mcInstrumentHandler < handle
             obj2 = obj;
             
             params = mcInstrumentHandler.params();
-            
-            
             
             for instrument = params.instruments
                 if (isa(instrument{1}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(instrument{1}, 'mcInput') && isa(obj, 'mcInput'))
