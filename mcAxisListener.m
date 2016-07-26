@@ -10,7 +10,7 @@ function f = mcAxisListener(varin)
     fh = 500;               % Figure height
 
     pp = 5;                 % Panel padding
-    pw = fw - 30;           % Panel width
+    pw = fw - 40;           % Panel width
     ph = 200;               % Panel height
 
     bh = 20;                % Button Height
@@ -20,6 +20,7 @@ function f = mcAxisListener(varin)
             if nargin == 0
                 warning('No axes provided to listen to... Listening to all of them.');
                 [axes_, ~, ~] = mcInstrumentHandler.getAxes();
+                axes_ = axes_(2:end);   % We don't want to listen to time.
     %             error('Axes to listen to must be provided.');
             else
                 axes_ = varin;
@@ -59,12 +60,17 @@ function f = mcAxisListener(varin)
                     'Style', 'text',...
                     'String', [axis_{1}.nameUnits() ': '],...
                     'Position', [pos(3)/4, pos(4) - (ii+.5)*bh, pos(3)/4, bh],...
-                    'HorizontalAlignment', 'right');
+                    'HorizontalAlignment', 'right',...
+                    'tooltipString', axis_{1}.name());
         edit = uicontrol(   'Parent', p,...
                             'Style', 'edit',...
                             'String', num2str(axis_{1}.getX(), '%.02f'),...
-                            'Position', [pos(3)/2, pos(4) - (ii+.5)*bh, pos(3)/4, bh]);
-        edit.UserData = addlistener(axis_{1}, 'x', 'PostSet', @(s,e)(axisChanged_Callback(s, e, edit)));
+                            'Position', [pos(3)/2, pos(4) - (ii+.5)*bh, pos(3)/4, bh],...
+                            'Enable', 'inactive');
+%         mco = ?mcAxis
+%         properties = mco.PropertyList.Name
+        prop = findprop(mcAxis, 'x');
+        edit.UserData = event.proplistener(axis_{1}, prop, 'PostSet', @(s,e)(axisChanged_Callback(s, e, edit)));
         
         ii = ii + 1;
     end
@@ -75,7 +81,10 @@ end
 function axisChanged_Callback(~, event, edit)
 %     src
 %     event
-    edit.String = num2str(event.AffectedObject.getX(), '%.02f');
+%     edit
+    if isvalid(edit)
+        edit.String = num2str(event.AffectedObject.getX(), '%.02f');
+    end
 end
 
 

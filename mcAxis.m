@@ -65,7 +65,7 @@ classdef mcAxis < handle
             config.chn =                'ao0';
             config.type =               'Voltage';
             
-            config.keyStep =            .01;
+            config.keyStep =            .1;
             config.joyStep =            .5;
 
             config.pos =                config.kind.base;
@@ -106,7 +106,7 @@ classdef mcAxis < handle
             config.chn =                'ao0';
             config.type =               'Voltage';
             
-            config.keyStep =            .05;
+            config.keyStep =            .5;
             config.joyStep =            5;
 
             config.pos =                config.kind.base;
@@ -129,7 +129,7 @@ classdef mcAxis < handle
             config.port =               'COM6';                 % Micrometer Port.
             config.addr =               '1';                    % Micrometer Address.
             
-            config.keyStep =            .05;
+            config.keyStep =            .5;
             config.joyStep =            5;
 
             config.intSpeed =           1;                      % 'Internal' units per second.
@@ -196,21 +196,29 @@ classdef mcAxis < handle
 %             end
 %             
 %             a = ih.register(a);
-            
-            if ~strcmpi(a.config.name, 'Time')      % This prevents infinite recursion...
-                a = mcInstrumentHandler.register(a);
-                a.inEmulation = ismac;
-            else
-                if 
-                    
-                end
+
+            params = mcInstrumentHandler.getParams();
+            if ismac || params.shouldEmulate
+                a.inEmulation = true;
             end
-            
-            a.inEmulation
             
             a.x = a.config.kind.base;
             a.xt = a.x;
-            a.goto(a.x);
+%             a.goto(a.x);
+            
+            if ~strcmpi(a.config.name, 'time')      % This prevents infinite recursion...
+                a = mcInstrumentHandler.register(a);
+            else
+                if mcInstrumentHandler.open();
+                    warning('Time is automatically added and does not need to be added again...');
+                
+%                     instruments = mcInstrumentHandler.getInstruments();
+% 
+%                     a = instruments{1};
+                end
+            end
+            
+%             a.inEmulation
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).

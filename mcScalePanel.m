@@ -22,20 +22,20 @@ classdef mcScalePanel
 
             bp = 5;             % Button Padding
             bw = pw/2 - 2*bp;   % Button Width, the width of a button/object
-            bh = 20;            % Button Height, the height of a button/object
+            bh = 16;            % Button Height, the height of a button/object
 
-            psh = 3.5*bh;         % Scale figure height
+            psh = 3.25*bh;         % Scale figure height
 
-            panel.panel = uipanel('Parent', f, 'Position', [pos(0) pos(1) pw psh], 'Title', 'Scaling');
+            panel.panel = uipanel('Parent', f, 'Units', 'pixels', 'Position', [pos(1) pos(2) pw+2 psh+2*bh], 'Title', 'Scale');
             panel.data = data;
             
             panel.gui.minText =    uicontrol('Parent', panel.panel, 'Style', 'text',   'String', 'Min:',   'Units', 'pixels', 'Position', [bp,psh,bw/4,bh], 'HorizontalAlignment', 'right');
             panel.gui.minEdit =    uicontrol('Parent', panel.panel, 'Style', 'edit',   'String', 0,        'Units', 'pixels', 'Position', [2*bp+bw/4,psh,bw/2,bh]); %, 'Enable', 'Inactive');
-            panel.gui.minSlid =    uicontrol('Parent', panel.panel, 'Style', 'slider', 'Value', 0,         'Units', 'pixels', 'Position', [3*bp+3*bw/4,psh,5*bw/4,bh], 'Min', 0, 'Max', str2double(defMin), 'SliderStep', [2/300, 2/30]); % Instert reasoning for 2/3
+            panel.gui.minSlid =    uicontrol('Parent', panel.panel, 'Style', 'slider', 'Value', 0,         'Units', 'pixels', 'Position', [3*bp+3*bw/4,psh,5*bw/4,bh], 'Min', 0, 'Max', 2, 'SliderStep', [2/300, 2/30]); % Instert reasoning for 2/3
 
             panel.gui.maxText =    uicontrol('Parent', panel.panel, 'Style', 'text',   'String', 'Max:',   'Units', 'pixels', 'Position', [bp,psh-bh,bw/4,bh], 'HorizontalAlignment', 'right');
             panel.gui.maxEdit =    uicontrol('Parent', panel.panel, 'Style', 'edit',   'String', 1,        'Units', 'pixels', 'Position', [2*bp+bw/4,psh-bh,bw/2,bh]); %, 'Enable', 'Inactive');
-            panel.gui.maxSlid =    uicontrol('Parent', panel.panel, 'Style', 'slider', 'Value', 1,         'Units', 'pixels', 'Position', [3*bp+3*bw/4,psh-bh,5*bw/4,bh], 'Min', 0, 'Max', str2double(defMax), 'SliderStep', [2/300, 2/30]);
+            panel.gui.maxSlid =    uicontrol('Parent', panel.panel, 'Style', 'slider', 'Value', 1,         'Units', 'pixels', 'Position', [3*bp+3*bw/4,psh-bh,5*bw/4,bh], 'Min', 0, 'Max', 2, 'SliderStep', [2/300, 2/30]);
             % uicontrol('Parent', panel.panel, 'Style', 'slider', 'Units', 'pixels', 'Position', [bp,psh,bw,bh]);
 
             panel.gui.dataMinText = uicontrol('Parent', panel.panel, 'Style', 'text',  'String', 'Data Min:',  'Units', 'pixels', 'Position', [2*bp+bw,psh-2*bh,bw/2,bh], 'HorizontalAlignment', 'right');

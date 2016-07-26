@@ -15,9 +15,9 @@ function index = getIndex(lengths, x, y, layer)
         error('layer should be the same length as lengths.');
     end
     
-    if sum(lengths < layer | layer > 1)
-        error('layer should be bounded by lengths.');
-    end
+%     if sum(lengths < layer | layer > 1)
+%         error('layer should be bounded by lengths.');
+%     end
 
     indexWeight = getIndexWeight(lengths);
     

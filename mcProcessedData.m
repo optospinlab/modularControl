@@ -18,6 +18,8 @@ classdef mcProcessedData < handle
         
         params = [];
         
+        listener = [];
+        
         needsRendering = false;
     end
     
@@ -25,7 +27,7 @@ classdef mcProcessedData < handle
         function params = defaultParams()
             params.plotMode = 0;       % 0=Don't do anything; {1, '1D'}=plot 1D vector (lineplot); {2, '2D'}=plot 2D image (colormap)
             params.inputIndex = 0;
-            params.axisIndex = [0 0 0]; % X Y Z (not all used)
+            params.layerIndex = []; % X Y Z (not all used)
             
 %             error('defaultParams() NotImplemented');
         end
@@ -41,6 +43,8 @@ classdef mcProcessedData < handle
                 pd.params = varin{2};
             end
             
+            prop = findprop(mcData, 'data');
+            pd.listener = event.proplistener(pd.parent, prop, 'PostSet', @pd.parentChanged_Callback);
         end
         
         function m = min(pd)
@@ -51,24 +55,38 @@ classdef mcProcessedData < handle
         end
         
         function parentChanged_Callback(pd, ~, ~)
-            
+            pd.process();
         end
         
         function process(pd)
-            if exists(pd.parent.dataViewer)    % If there is a dataViewer...
-                switch params.plotMode
+%             disp('here');
+%             if exists(pd.parent.dataViewer)    % If there is a dataViewer...
+                switch pd.parent.data.plotMode
                     case {1, '1D'}
                         
                     case {2, '2D'}
                         
+                        nums = 1:pd.parent.data.numAxes;
+                        
+                        axisXindex = nums(pd.parent.data.layer == 1);
+                        axisYindex = nums(pd.parent.data.layer == 2);
+        
+                        d = pd.parent.data.data{pd.parent.data.input};
+                        
+                        if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
+                            pd.data = d( getIndex(pd.parent.data.lengths, axisXindex, axisYindex, pd.parent.data.layer - 2) );
+                        else                                        % Otherwise if d will be cell...
+%                             c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );
+                            error('NotImplemented');
+                        end
                     case {3, '3D'}
                         error('3D NotImplemented');
                     otherwise
                         error('Plotmode not recognized...');
                 end
-            else
-                error('NotImplemented: mcProcessedData must have a data viewer (and not sure if it should be implemented)');
-            end
+%             else
+%                 error('NotImplemented: mcProcessedData must have a data viewer (and not sure if it should be implemented)');
+%             end
         end
     end
     

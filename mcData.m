@@ -4,8 +4,8 @@ classdef mcData < handle
 %
 % Syntax:
 %   d = mcData()
-%   d = mcData(data)                                                % Load old data into this class
-%   d = mcData('data.mat')                                          % Load old data (from a .mat) into this class
+%   d = mcData(params)                                              % Load old data (or just params if uninitialized) into this class
+%   d = mcData('params.mat')                                        % Load old data (from a .mat) into this class
 %   d = mcData(axes_, scans, inputs, integrationTime)               % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
 %   d = mcData(axes_, scans, inputs, integrationTime, inputTypes)   % In addition, inputTypes is a cell array defining whether each corresponding input should only be sampled at the begining and end of each scan or not. e.g. [1 0 1 0 0] means that all inputs except for the first and center will only be sampled at the beginning and end of each scan.
 %
@@ -39,6 +39,13 @@ classdef mcData < handle
 %            - data.posStart               numeric array     % Contains the positions of all of the axes before the scan begins. This allows for returning to the same place.
 %
 %            - data.README                 string            % Instructions about how to use the data.
+%
+%            - data.plotMode               integer
+%            - data.layer                  numeric array
+%
+%            - data.isInitialized          boolean
+%            - data.isFinished             boolean
+
     end
     
     methods (Static)
@@ -50,16 +57,20 @@ classdef mcData < handle
             configCounter = mcInput.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr0';
             
             data.axes =     {mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ)};                 % Fill the...   ...axes...
-            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,5)};                     %               ...scans...
+            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
             data.inputs =   {mcInput(configCounter)};                                                           %               ...inputs.
+            data.integrationTime = .005;
         end
         function str = README()
             str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
                    'struct.data is a cell array with a cell for each input. Inside each cell is the result of '...
                    'the measurement of that input for each point of the ND grid formed by the scans of the axes. '...
                    'If the measurement is singular (i.e. just a number like a voltage measurement), then the '...
-                   'contents of the input cell is a numeric array. If the measurement is more complex (e.g. a '...
-                   'vector like a spectra), then the contents of the input cell is a cell array.'];
+                   'contents of the input cell is a numeric array with dimensions corresponding to the lengths of '...
+                   'struct.scans. If the measurement is more complex (e.g. a vector like a spectra), then the'...
+                   'contents of the input cell is a cell array with dimensions corresponding to the lengths of '...
+                   'struct.scans. There also is the option to have an input only aquire data at the beginning and '...
+                   'end of each 1D scan.'];
         end
     end
     
@@ -150,6 +161,14 @@ classdef mcData < handle
 
                 %%% HANDLE THE AXES %%%
                 d.data.numAxes =   length(d.data.axes);
+                
+                if ~isfield(d.data, 'plotMode')
+                    d.data.plotMode = min(2, d.data.numAxes);
+                    d.data.layer = ones(1, d.data.numAxes)*(1 + d.data.plotMode);
+                    d.data.layer(1:min(d.data.plotMode, d.data.numAxes)) = 1:min(d.data.plotMode, d.data.numAxes);
+                    
+                    d.data.input = 1;
+                end
 
                 d.data.lengths =        zeros(1, d.data.numAxes);   % The length of 
                 d.data.indexWeight =    ones(1,  d.data.numAxes);   % Index weight is best described by an example:
@@ -192,26 +211,41 @@ classdef mcData < handle
                 
                 for ii = 1:d.data.numInputs
                     if d.data.inputDimension(ii) == 0                                               % If the input is singular (if it outputs just a number)
-                        if d.data.isBeginEnd(ii)    
+                        if d.data.isInputBeginEnd(ii)    
                             d.data.begin{ii} = NaN(d.data.lengths(2:end));
                             d.data.end{ii} = NaN(d.data.lengths(2:end));
                         else
                             d.data.data{ii} = NaN(d.data.lengths);                                  % Then the layer is a numeric array of NaN.
                         end
                     else                                                                            % Otherwise, if the input is more complex,
-                        if d.data.isBeginEnd(ii)    
+                        if d.data.isInputBeginEnd(ii)    
                             d.data.begin{ii} = cell(d.data.lengths(2:end));                         % Then the layer is a cell array containing...
                             d.data.begin{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};   % ...numeric arrays of NaN corresponding to the input's dimension.
                             d.data.end{ii} = cell(d.data.lengths(2:end));                           % Then the layer is a cell array containing...
                             d.data.end{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};     % ...numeric arrays of NaN corresponding to the input's dimension.
-                        end
+                        else
                             d.data.data{ii} = cell(d.data.lengths);                                 % Then the layer is a cell array containing...
                             d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
-                        else
-                            
+                        end
                     end
                 end
                 
+                d.data.index =          ones(1, d.data.numAxes);
+                d.data.currentIndex =   2;
+                d.data.index(1) =       d.data.lengths(1);
+                
+                d.data.isInitialized = true;
+            end
+        end
+        
+        function aquire(d)
+            if isfield(d.data, 'isFinished')
+                shouldContinue = ~d.data.isFinished;
+            else
+                shouldContinue = true;
+            end
+            
+            if shouldContinue
                 %%% CREATE THE SESSION, IF NECCESSARY %%%
                 if d.data.canScanFast && ~isfield(d.data, 's')     % If so, then make a NIDAQ session if it has not already been created.
                     d.data.s = daq.createSession('ni');
@@ -229,69 +263,137 @@ classdef mcData < handle
                             d.data.inputs{ii}.addToSession(d.data.s);     % Then add the non-beginend inputs.
                         end
                     end
-                end
-                
-                params.index =          ones(1, params.numAxes);
-                params.currentIndex =   2;
-                params.index(1) =       params.lengths(1);
-                
-                d.data.isInitialized = true;
+                end 
             end
-        end
-        
-        function aquire(d)
-            while true  % Infinite loop problems? Better solution?
-                if d.data.canScanFast
-                    
+            
+            jj = [];
+            
+            while shouldContinue
+%                 if d.data.canScanFast
+%                     
+%                 end
+                
+%                 jj = d.data.indexWeight .* (d.data.index - 1);
+% 
+                if isempty(jj)                
+                    jj = d.data.index(2);
+                else
+                    jj = d.data.lengths(1) + jj;
                 end
                 
-                jj = params.indexWeight .* (params.index - 1);
-
-                if isempty(jj)                
-                    jj = params.index(2);
-                else
-                    jj = params.index(2) + jj;
-                end
-
-                for ii = 1:params.numAxes
-                    if params.isInputSingular(ii)
-                        if params.isInputBeginEnd(ii)
-                            data.begin{ii}(jj:jj+params.lengths(1)) =   data1D.begin{ii};
-                            data.end{ii}(jj:jj+params.lengths(1)) =     data1D.end{ii};
-                        else
-                            data.data{ii}(jj:jj+params.lengths(1)) =    data1D.data{ii};
-                        end
-                    else
-                        if params.isInputBeginEnd(ii)
-                            data.data{ii} =     NaN;
-                            data.begin{ii} =    cell(params.lengths(2:end));
-                            data.end{ii} =      cell(params.lengths(2:end));
-                        else
-                            data.data{ii} =     cell(params.lengths);
-                            data.begin{ii} =    NaN;
-                            data.end{ii} =      NaN;
-                        end
-                    end
-
-                    if params.isInputSingular(ii)
-                        data.data{ii}(jj:jj+params.lengths(1)) = data1D.data{ii};   % Because we don't know our dimension, we must index linearly.
-                    else
-                        data.data{ii}{jj:jj+params.lengths(1)} = data1D.data{ii};
-                    end
-                end
-
-                currentlyMax = params.index == params.lengths;
-                toIncriment = [false currentlyMax(1:end-1)] & ~currentlyMax;
-                currentlyMax(1) = false;
-
-                params.index = params.index + toIncriment;  % Incriment all the indices that were after a maximized index and not maximized.
-                params.index(currentlyMax) = 1;             % Reset all the indices that were maxed (except the first) to one.
-
-                if all(params.index == params.lengths)
+                d.aquire1D(jj);
+                
+                if all(d.data.index == d.data.lengths)
+                    shouldContinue = false;
                     break;
                 end
+
+%                 for ii = 1:params.numInputs
+%                     if params.isInputSingular(ii)
+%                         if params.isInputBeginEnd(ii)
+%                             data.begin{ii}(jj:jj+params.lengths(1)) =   data1D.begin{ii};
+%                             data.end{ii}(jj:jj+params.lengths(1)) =     data1D.end{ii};
+%                         else
+%                             data.data{ii}(jj:jj+params.lengths(1)) =    data1D.data{ii};
+%                         end
+%                     else
+%                         if params.isInputBeginEnd(ii)
+%                             data.data{ii} =     NaN;
+%                             data.begin{ii} =    cell(params.lengths(2:end));
+%                             data.end{ii} =      cell(params.lengths(2:end));
+%                         else
+%                             data.data{ii} =     cell(params.lengths);
+%                             data.begin{ii} =    NaN;
+%                             data.end{ii} =      NaN;
+%                         end
+%                     end
+% 
+%                     if params.isInputSingular(ii)
+%                         data.data{ii}(jj:jj+params.lengths(1)) = data1D.data{ii};   % Because we don't know our dimension, we must index linearly.
+%                     else
+%                         data.data{ii}{jj:jj+params.lengths(1)} = data1D.data{ii};
+%                     end
+%                 end
+
+                currentlyMax =  d.data.index == d.data.lengths;
+                toIncriment =   [false currentlyMax(1:end-1)] & ~currentlyMax;
+                toReset =       [false currentlyMax(1:end-1)] &  currentlyMax;
+
+                d.data.index = d.data.index + toIncriment;  % Incriment all the indices that were after a maximized index and not maximized.
+                d.data.index(toReset) = 1;                  % Reset all the indices that were maxed (except the first) to one.
+
+                nums = 1:d.data.numAxes;
+
+                for ii = nums(toIncriment)
+                    d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
+                end
             end
         end
+        function aquire1D(d, jj)
+            if d.data.numBeginEnd > 0                       % If there are some inputs on 'beginend'-mode...
+                for ii = 1:d.data.numInputs                 % ...then aquire this data...
+                    if d.data.isInputBeginEnd(ii)
+                        d.data.begin{ii} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));   % Should measurment time be saved also?
+%                     else
+%                         d.data.begin{ii} = NaN;             % ...inputs on 'everypoint'-mode are set to NaN.
+                    end
+                end
+            end
+
+            if d.data.canScanFast
+                d.data.s.Rate = 1/max(d.data.integrationTime);   % Whoops; integration time has to be the same for all inputs... Taking the max for now...
+
+                d.data.s.queueOutputData([d.data.scanInternalUnits{1}  d.data.scanInternalUnits{1}(end)]);   % The last point (a repeat of the final params.scan point) is to count for the last pixel.
+
+                [data_, times] = d.data.s.startForeground();                % Should I startBackground() and use a listener?
+
+                kk = 1;
+
+                for ii = 1:d.data.numInputs     % Fill all of the inputs with data...
+                    if ~d.data.isInputBeginEnd(ii)
+%                         d.data.data{ii} = NaN;        % Inputs on 'beginend'-mode are set to NaN.
+%                     else
+                        if d.data.inputs{ii}.normalize  % If this input expects to be divided by the exposure time...
+                            d.data.data{ii}(jj:jj+d.data.lengths(1)) = diff(double(data_(:, kk)))./diff(double(times));   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
+                        else
+                            d.data.data{ii}(jj:jj+d.data.lengths(1)) = double(data_(1:end-1, kk));
+                        end
+
+                        kk = kk + 1;
+                    end
+                end
+            else
+                kk = 0;
+
+                for x = d.data.scans{1}                 % Now take the data.
+                    d.data.axes{1}.goto(x);             % Goto each point...
+                    d.data.axes{1}.wait();              % ...wait for the axis to arrive (for some types)...
+
+                    for ii = 1:d.data.numInputs         % ...for every input...
+                        if ~d.data.isInputBeginEnd(ii)
+                            if d.data.inputDimension(ii) == 0
+                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            else
+                                d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            end
+                        end
+                    end
+
+                    kk = kk + 1;
+                end
+            end
+
+            if d.data.numBeginEnd > 0                       % If there are some inputs on 'beginend'-mode...
+                for ii = 1:d.data.numInputs                 % ...then aquire this data...
+                    if d.data.isInputBeginEnd(ii)
+                        d.data.end{ii} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));     % Should measurment time be saved also?
+                    else
+                        d.data.end{ii} = NaN;               % ...inputs on 'everypoint'-mode are set to NaN.
+                    end
+                end
+            end
+        end
+
         
 %         function tf = isPlottable(d)
 %             tf = isfield(data, 'data');
@@ -439,6 +541,9 @@ function [data, params] = mcNDScan(params)
         end
     end
 end
+
+
+
 
 
 

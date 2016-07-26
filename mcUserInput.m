@@ -128,14 +128,14 @@ classdef mcUserInput < handle
                 obj.gui.inputPanels{ii} = uipanel('Parent', obj.gui.tabInputs, 'Units', 'pixels', 'Position', [pp + (ii-1)*((pw-2*pp)/obj.config.numGroups + pp), tabHeightInput, pw/obj.config.numGroups, bh], 'ButtonDownFcn', {@obj.setUserInputMode, ii});
                 uicontrol('Parent', obj.gui.inputPanels{ii}, 'Style', 'text', 'String', [num2str(ii) ' : ' obj.config.axesGroups{ii}{1}], 'Units', 'normalized', 'Position', [0 0 1 1], 'Enable', 'inactive', 'ButtonDownFcn', {@obj.setUserInputMode, ii});
                 
-                y = pp;
+                y = pp + 2*bh;
                 
-                for jj = (length(obj.config.axesGroups{ii})):-1:2
+                for jj = 2:(length(obj.config.axesGroups{ii}))
 %                     disp(jj)
                     tf = obj.makeAxisControls(obj.config.axesGroups{ii}{jj}, obj.gui.gotoPanels{ii}, y, ii);
                     
                     if tf
-                        y = y + bh;
+                        y = y - bh;
                     end
                 end
                 
@@ -151,8 +151,8 @@ classdef mcUserInput < handle
                 end
                 
 %                 obj.gui.gotoPanels{ii}.Position = [pp, pp, pw, y + bh];
-                tabHeight = tabHeight - y -bh;
-                obj.gui.gotoPanels{ii}.Position = [pp+1, tabHeight - 2*bh, pw, y + bh - pp];
+                tabHeight = tabHeight - y -5*bh;
+                obj.gui.gotoPanels{ii}.Position = [pp+1, tabHeight - 2*bh, pw, y + 5*bh - pp];
 %                 obj.gui.gotoPanels{ii}.Position = [pp, tabHeight - y, y, pw];
                 disp(ii);
             end
@@ -233,29 +233,39 @@ classdef mcUserInput < handle
             end
         end
         function keyPressFunction(obj, src, event)
+%             obj
+            isvalid(obj)
             if isvalid(obj)
                 focus = gco; %(obj.gui.f);
 
                 if isprop(focus, 'Style')
-                    proceed = ~strcmpi(focus.Style, 'edit');    % Don't continue if we are currently changing the value of a edit uicontrol...
+                    proceed = ~strcmpi(focus.Style, 'edit') || ~strcmpi(focus.Enable, 'on');    % Don't continue if we are currently changing the value of a edit uicontrol...
                 else
                     proceed = true;
                 end
 
                 if proceed
+                    multiplier = 1;
+                    if ismember(event.Modifier, 'shift')
+                        multiplier = multiplier*10;
+                    end
+                    if ismember(event.Modifier, 'alt')
+                        multiplier = multiplier/10;
+                    end
+                    
                     switch event.Key
                         case {'rightarrow', 'd'}
-                            obj.userAction(1,1,1);
+                            obj.userAction(1,1,multiplier);
                         case {'leftarrow', 'a'}
-                            obj.userAction(1,-1,1);
+                            obj.userAction(1,-1,multiplier);
                         case {'uparrow', 'w'}
-                            obj.userAction(2,1,1);
+                            obj.userAction(2,1,multiplier);
                         case {'downarrow', 's'}
-                            obj.userAction(2,-1,1);
+                            obj.userAction(2,-1,multiplier);
                         case {'equal', 'e'}
-                            obj.userAction(3,1,1);
+                            obj.userAction(3,1,multiplier);
                         case {'hyphen', 'q'}
-                            obj.userAction(3,-1,1);
+                            obj.userAction(3,-1,multiplier);
                         case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
                             num = str2double(event.Key);
 
@@ -276,13 +286,21 @@ classdef mcUserInput < handle
             end
         end
         
-        function userAction(obj, axis_, direction, isKey)
+        function userAction(obj, axis_, direction, multiplier)
             if obj.mode > 0 && obj.mode <= obj.config.numGroups
                 a = obj.config.axesGroups{obj.mode}{axis_+1};
-                if isKey
-                    val = a.getX() + direction*a.config.keyStep;
+                if strcmpi(a.config.kind.kind, 'nidaqdigital')
+                    if multiplier
+                        val = a.getX() + direction;
+                    else
+                        val = a.getX() + direction;
+                    end
                 else
-                    val = a.getX() + direction*a.config.joyStep;
+                    if multiplier
+                        val = a.getX() + direction*multiplier*a.config.keyStep;
+                    else
+                        val = a.getX() + direction*a.config.joyStep;
+                    end
                 end
                 
                 if val >  max(a.config.kind.extRange)
@@ -316,11 +334,11 @@ classdef mcUserInput < handle
 
         function tf = makeAxisControls(obj, axis_, parent, y, ii)
 %             disp('Making axis');
-            fw = 320;               % Figure width
+            fw = 300;               % Figure width
             fh = 500;               % Figure height
 
             pp = 5;                 % Panel padding
-            pw = fw - 40;           % Panel width
+            pw = fw-40;           % Panel width
             ph = 200;               % Panel height
 
             bh = 20;                % Button Height
@@ -328,7 +346,7 @@ classdef mcUserInput < handle
             text = uicontrol(   'Parent', parent,...
                                 'Style', 'text',...
                                 'String', [axis_.config.name ' (' axis_.config.kind.extUnits '): '],...
-                                'Position', [pp, y, pw/4, bh],...
+                                'Position', [pp, y, pw/3, bh],...
                                 'HorizontalAlignment', 'right',...
                                 'tooltipString', axis_.name());%,...
 %                                 'ButtonDownFcn', {@obj.setUserInputMode, ii});
@@ -340,18 +358,18 @@ classdef mcUserInput < handle
                                 'Style', 'edit',...
                                 'String', axis_.getX(),...
                                 'Value',  axis_.getX(),...
-                                'Position', [pp+pw/4, y, pw/4, bh],...
+                                'Position', [pp+pw/3, y, pw/4, bh],...
                                 'Callback', {@limit_Callback, axis_.config.kind.extRange},...
                                 'tooltipString', axis_.nameRange());
             get = uicontrol(    'Parent', parent,...
                                 'Style', 'push',...
                                 'String', 'Get',...
-                                'Position', [2*pp+pw/2, y, pw/6, bh],...
+                                'Position', [2*pp+pw/3 + pw/4, y, pw/6, bh],...
                                 'Callback', {@setEditWithValue_Callback, @axis_.getX, edit});
             goto = uicontrol(   'Parent', parent,...
                                 'Style', 'push',...
                                 'String', 'Goto',...
-                                'Position', [2*pp+2*pw/3, y, pw/6, bh],...
+                                'Position', [2*pp+3*pw/4, y, pw/6, bh],...
                                 'Callback', {@evalFuncWithEditValue_Callback, @axis_.goto, edit});
 
             tf = 1;

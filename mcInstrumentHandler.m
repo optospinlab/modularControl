@@ -38,11 +38,23 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function tf = open()
-            isClosed = isempty(params);
+            tf = true;
             
-            params = mcInstrumentHandler.params();  
+            params = mcInstrumentHandler.params();
             
-            if isClosed
+            if ~isfield(params, 'open')
+                params.open =                       true;
+                params.instruments =                {};
+                params.shouldEmulate =              true;                   
+                params.saveDirManual =              '';
+                params.saveDirBackground =          '';
+                params.globalWindowKeyPressFcn =    [];
+                params.figures =                    {};  
+                
+                mcInstrumentHandler.params(params);                                 % Fill params with this so that we don't risk infinite recursion when we try to add the time axis.
+                
+                tf = false;                                                         % Return whether the mcInstrumentHandler was open...
+                
                 [~, params.hostname] =              system('hostname');
              
 %                 if exists([params.hostname '.mat'])     % If the  program has been opened before.
@@ -52,15 +64,9 @@ classdef mcInstrumentHandler < handle
 %                 end
                 
                 params.instruments =                {mcAxis(mcAxis.timeConfig())};  % Initialize with only time (which is special)
-                params.saveDirManual =              '';
-                params.saveDirBackground =          '';
-                params.globalWindowKeyPressFcn =    [];
-                params.figures =                    {};
-                params.shouldEmulate =              true;                           % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
-                [~, params.hostname] =              system('hostname');
+                      % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
+%                 [~, params.hostname] =              system('hostname');
             end
-            
-            tf = ~isClosed;     % Return whether the mcInstrumentHandler was open...
             
             mcInstrumentHandler.params(params);
         end
@@ -132,6 +138,7 @@ classdef mcInstrumentHandler < handle
 %             end
             
             obj2 = obj;
+            alreadyAdded = false;
             
             params = mcInstrumentHandler.params();
             
@@ -140,12 +147,18 @@ classdef mcInstrumentHandler < handle
                     if instrument{1} == obj
                         obj2 = instrument{1};
                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
+                        alreadyAdded = true;
                         return;
                     end
                 end
             end
             
-            params.instruments{length(params.instruments) + 1} = obj2;
+            if ~alreadyAdded
+                params.instruments{length(params.instruments) + 1} = obj2;
+                if isa(obj2, 'mcAxis')
+                    obj2.goto(obj2.getX());
+                end
+            end
             
             mcInstrumentHandler.params(params);
         end

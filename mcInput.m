@@ -150,9 +150,12 @@ classdef mcInput < handle
                     end
             end
             
-            I = mcInstrumentHandler.register(I);
+            params = mcInstrumentHandler.getParams();
+            if ismac || params.shouldEmulate
+                I.inEmulation = true;
+            end
             
-            I.inEmulation = ismac;
+            I = mcInstrumentHandler.register(I);
         end
         
         function tf = eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
