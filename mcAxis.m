@@ -146,6 +146,28 @@ classdef mcAxis < handle
             config.kind.extUnits =      's';                    % 'External' units.
             config.kind.base =          0;
             config.kind.resetParam =    '';
+            
+            config.keyStep =            0;
+            config.joyStep =            0;
+        end
+        function config = polarizationConfig()
+            config.name = 'Half Wave Plate';
+
+            config.kind.kind =          'manual';
+            config.kind.name =          'Polarization';
+            config.kind.intRange =      [-180 180];             % Change this?
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'deg';                  % 'Internal' units.
+            config.kind.extUnits =      'deg';                  % 'External' units.
+            config.kind.base =          0;
+            config.kind.resetParam =    '';
+            
+            config.keyStep =            0;
+            config.joyStep =            0;
+            
+            config.message = 'Polarization is not currently automated...';
+            config.verb = 'rotate';
         end
     end
     methods
@@ -234,8 +256,8 @@ classdef mcAxis < handle
                 end
             end
             
-            a.config
-            b.config
+%             a.config
+%             b.config
             
             if strcmpi(a.config.kind.kind, b.config.kind.kind)     % If they are the same kind...
                 switch lower(a.config.kind.kind)                   % ...then check if all of the other variables are the same.
@@ -248,6 +270,10 @@ classdef mcAxis < handle
                              strcmpi(a.config.addr,  b.config.addr);
                     case 'time'
                         tf = true;
+                    case 'wait'
+                        tf = strcmpi(a.config.name,     b.config.name) && ...
+                             strcmpi(a.config.message,  b.config.message) && ...
+                             strcmpi(a.config.verb,     b.config.verb);
                     otherwise
                         warning('Specific equality conditions not written for this sort of axis.')
                         tf = true;
@@ -274,6 +300,8 @@ classdef mcAxis < handle
                     str = [a.config.name ' (' a.config.dev ':' a.config.chn ')'];
                 case 'serial micrometer'
                     str = [a.config.name ' (' a.config.port ':' a.config.addr ')'];
+                case 'manual'
+                    str = [a.config.name ' (' a.config.kind.name ':' a.config.verb ')'];
                 otherwise
                     str = a.config.name;
             end
@@ -290,6 +318,8 @@ classdef mcAxis < handle
                     str = [a.config.name ' (digital input on ' a.config.dev ', channel ' a.config.chn ' with type ' a.config.type ')'];
                 case 'serial micrometer'
                     str = [a.config.name ' (serial micrometer on port ' a.config.port ', address' a.config.addr ')'];
+                case 'manual'
+                    str = [a.config.name ' (' a.config.message ' We must ' a.config.verb 'the ' a.config.kind.name ')'];
                 otherwise
                     str = a.config.name;
             end
@@ -372,6 +402,7 @@ classdef mcAxis < handle
         end
         
         function x = getX(a)        % Returns the value of a.x in external units.
+            a.read();
             x = a.config.kind.int2extConv(a.x);
         end
         
@@ -398,7 +429,8 @@ classdef mcAxis < handle
 
                             a.x = str2double(str(4:end));
                         otherwise
-                            error([a.config.kind.kind ' does not have a read() method.']);
+%                             error([a.config.kind.kind ' does not have a read() method.']);
+                            a.x = a.xt;
                     end
                 else
                     tf = false;
@@ -410,7 +442,7 @@ classdef mcAxis < handle
             tf = true;
             
             if a.inEmulation
-                a.xt = a.config.kind.ext2intConv(x);
+                a.xt = a.config.kind.ext2intConv(x);        % Check range?
                 
                 switch lower(a.config.kind.kind)
                     case 'serial micrometer'
@@ -424,6 +456,9 @@ classdef mcAxis < handle
                         case 'nidaqanalog'
                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange);
                                 a.s.outputSingleScan(x);
+                                
+                                a.xt = a.config.kind.ext2intConv(x);
+                                a.x = a.xt;
                             else
                                 warning([num2str(x) ' ' a.extUnits ' not a valid output for an analog NIDAQ channel.']);
                                 tf = false;
@@ -446,12 +481,25 @@ classdef mcAxis < handle
                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange);
                                 fprintf(a.s, [a.config.chn 'SE' num2str(a.config.kind.ext2intConv(x))]);
                                 fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
+                                
+                                a.xt = a.config.kind.ext2intConv(x);
                             else
-                                warning([num2str(x) ' ' a.extUnits ' not a valid output for 0 -> 25 micrometers.']);
+                                warning([num2str(x) ' ' a.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
                                 tf = false;
                             end
                         case 'time'
                             
+                        case 'manual'
+                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange);
+                                questdlg([a.config.message '\n Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
+                                          ' from ' num2str(x) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
+                                      
+                                a.xt = a.config.kind.ext2intConv(x);
+                                a.x = a.xt;
+                            else
+                                warning([num2str(x) ' ' a.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
+                                tf = false;
+                            end
                         otherwise
                             error('Kind not understood...');
                     end
@@ -461,6 +509,8 @@ classdef mcAxis < handle
             end
         end
         function wait(a)            % Wait for the axis to reach the target value.
+            a.read();               % Removed possibility of delay if the axis is already there but has not been read...
+                
             while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
                 a.read();
                 pause(.1);

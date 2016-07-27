@@ -161,7 +161,7 @@ classdef mcInstrumentHandler < handle
             end
             
             mcInstrumentHandler.params(params);
-        end
+        end 
         
 %         function 
         
