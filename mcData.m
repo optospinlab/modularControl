@@ -45,7 +45,7 @@ classdef mcData < handle
 %            - data.layer                  numeric array
 %
 %            - data.isInitialized          boolean
-%            - data.isFinished             boolean
+%            - data.scanMode               boolean
 
     end
     
@@ -193,13 +193,17 @@ classdef mcData < handle
                     d.data.axisNamesUnits{ii} =    d.data.axes{ii}.nameUnits();
                 end
 
-                if d.data.numAxes > 2
-                    for ii = 2:d.data.numAxes-1
-                        d.data.indexWeight(ii+1:end) = d.data.indexWeight(ii+1:end)*d.data.lengths(ii);
-                    end
-                end
+%                 if d.data.numAxes > 2
+%                     for ii = 2:d.data.numAxes-1
+%                         d.data.indexWeight(ii+1:end) = d.data.indexWeight(ii+1:end)*d.data.lengths(ii);
+%                     end
+%                 end
+% 
+%                 d.data.indexWeight(1) = 0;
 
-                d.data.indexWeight(1) = 0;
+                for ii = 2:d.data.numAxes
+                    d.data.indexWeight(ii:end) = d.data.indexWeight(ii:end)*d.data.lengths(ii-1);
+                end
                 
                 for ii = 1:d.data.numAxes                                 % Fill the empty lists
                     d.data.scansInternalUnits{ii} = arrayfun(d.data.axes{ii}.config.kind.ext2intConv, d.data.scans{ii});
@@ -244,7 +248,7 @@ classdef mcData < handle
             d.data.currentIndex =   2;
             d.data.index(1) =       d.data.lengths(1);
                 
-            d.data.isFinished = false;
+            d.data.scanMode = 0;
         end
         
         function aquire(d)
@@ -255,6 +259,7 @@ classdef mcData < handle
 %             end
 
             d.data.aquiring = true;
+            d.data.scanMode = 1;
             
             if d.data.aquiring % shouldContinue
                 %%% CREATE THE SESSION, IF NECCESSARY %%%
@@ -285,17 +290,11 @@ classdef mcData < handle
                 d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
             end
             
-            while d.data.aquiring % shouldContinue
-                if isempty(jj)                
-                    jj = d.data.index(2);
-                else
-                    jj = d.data.lengths(1) + jj;
-                end
-                
-                d.aquire1D(jj);
+            while d.data.aquiring
+                d.aquire1D(d.data.indexWeight * (d.data.index -1)' - d.data.index(1) + 2);
                 
                 if all(d.data.index == d.data.lengths)
-                    d.data.isFinished = true;
+                    d.data.scanMode = 2;
 %                     shouldContinue = false;
                     break;
                 end
@@ -303,6 +302,13 @@ classdef mcData < handle
                 currentlyMax =  d.data.index == d.data.lengths;
                 toIncriment =   [false currentlyMax(1:end-1)] & ~currentlyMax;
                 toReset =       [false currentlyMax(1:end-1)] &  currentlyMax;
+                
+                if ~d.data.aquiring
+%                     if d.data.scanMode == 1     % If stopping was unexpected...
+%                         d.data.scanMode = 3;
+%                     end
+                    break;
+                end
 
                 d.data.index = d.data.index + toIncriment;  % Incriment all the indices that were after a maximized index and not maximized.
                 d.data.index(toReset) = 1;                  % Reset all the indices that were maxed (except the first) to one.
@@ -361,7 +367,9 @@ classdef mcData < handle
                     for ii = 1:d.data.numInputs         % ...for every input...
                         if ~d.data.isInputBeginEnd(ii)
                             if d.data.inputDimension(ii) == 0
-                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                                d.data.data{ii}(jj+kk) = mod(jj+kk, 64);
+                                pause(d.data.integrationTime(ii));
+%                                 d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             else
                                 d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             end

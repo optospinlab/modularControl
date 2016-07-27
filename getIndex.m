@@ -26,14 +26,17 @@ function index = getIndex(lengths, x, y, layer)
     
     indexSize = lx*ly;
     
-    if x > y
-        repWeight = indexWeight(y)*lx;
-    else
-        repWeight = -indexWeight(y)*ly + indexWeight(x);
-    end
+%     if x > y
+    repWeight = indexWeight(x) - indexWeight(y)*ly;
+%     else
+%         repWeight = -indexWeight(y)*ly + indexWeight(x)
+%     end
     
     nums = 1:length(lengths);
     offset = indexWeight * ((layer - 1).* (nums ~= x & nums ~= y))';
+
+%     reshape(1:indexWeight(y):indexSize*indexWeight(y), ly, lx)
+%     repmat(repWeight*(0:(lx-1)) + offset, ly, 1)
     
     index = reshape(1:indexWeight(y):indexSize*indexWeight(y), ly, lx) + repmat(repWeight*(0:(lx-1)) + offset, ly, 1);
 end

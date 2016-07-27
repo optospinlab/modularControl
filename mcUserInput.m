@@ -140,7 +140,7 @@ classdef mcUserInput < handle
                 end
                 
                 for jj = 2:(length(obj.config.axesGroups{ii}))
-                    cellfun(@(a)(a == obj.config.axesGroups{ii}{jj}), obj.config.axesList)
+%                     cellfun(@(a)(a == obj.config.axesGroups{ii}{jj}), obj.config.axesList)
                     if sum(cellfun(@(a)(a == obj.config.axesGroups{ii}{jj}), obj.config.axesList)) == 0
 %                         obj.config.axesGroups{ii}{jj}
                         obj.config.axesList{length(obj.config.axesList) + 1} = obj.config.axesGroups{ii}{jj};
@@ -154,7 +154,7 @@ classdef mcUserInput < handle
                 tabHeight = tabHeight - y -5*bh;
                 obj.gui.gotoPanels{ii}.Position = [pp+1, tabHeight - 2*bh, pw, y + 5*bh - pp];
 %                 obj.gui.gotoPanels{ii}.Position = [pp, tabHeight - y, y, pw];
-                disp(ii);
+%                 disp(ii);
             end
             
             obj.refreshUserInputMode();
@@ -234,12 +234,12 @@ classdef mcUserInput < handle
         end
         function keyPressFunction(obj, src, event)
 %             obj
-            isvalid(obj)
+%             isvalid(obj)
             if isvalid(obj)
                 focus = gco; %(obj.gui.f);
 
                 if isprop(focus, 'Style')
-                    proceed = ~strcmpi(focus.Style, 'edit') || ~strcmpi(focus.Enable, 'on');    % Don't continue if we are currently changing the value of a edit uicontrol...
+                    proceed = (~strcmpi(focus.Style, 'edit') && ~strcmpi(focus.Style, 'choose')) || ~strcmpi(focus.Enable, 'on');    % Don't continue if we are currently changing the value of a edit uicontrol...
                 else
                     proceed = true;
                 end

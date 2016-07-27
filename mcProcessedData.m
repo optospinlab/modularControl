@@ -6,21 +6,19 @@ classdef mcProcessedData < handle
 % parameters that define the proccessing procedure is defined in 'params'.
 %
 % Syntax:
-%   pd = mcProcessedData(parent)            % Proccess data with default settings
-%   pd = mcProcessedData(parent, params)    % Proccess data with settings defined by 'params'
+%   pd = mcProcessedData(parent)            % Proccess parent data (mcData) with default settings
+%   pd = mcProcessedData(parent, params)    % Proccess parent data (mcData) with settings defined by 'params'
     
-    properties (SetObservable)
-        data = [];
-    end
-
     properties
         parent = [];
+        viewer = [];
         
         params = [];
         
         listener = [];
-        
-        needsRendering = false;
+    end
+    properties (SetObservable)
+        data = NaN;
     end
     
     methods (Static)
@@ -74,6 +72,7 @@ classdef mcProcessedData < handle
                         d = pd.parent.data.data{pd.parent.data.input};
                         
                         if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
+%                             getIndex(pd.parent.data.lengths, axisXindex, axisYindex, pd.parent.data.layer - 2)
                             pd.data = d( getIndex(pd.parent.data.lengths, axisXindex, axisYindex, pd.parent.data.layer - 2) );
                         else                                        % Otherwise if d will be cell...
 %                             c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );
@@ -93,66 +92,5 @@ classdef mcProcessedData < handle
 end
 
 
-function tf = mcViewNDScan(data, params)
-
-    switch lower(plotMode)
-        case {1, '1d'}
-            
-        case {2, '2d'}
-            if params.isRGB
-                
-            else
-                [c, x, y] = getNumeric2DSlice(data, paramsND, input, axisX, axisY, layer, ifInputNotSingularFnc)
-            
-                imagesc(x, y, c, 'alphadata', ~isnan(r));
-            end
-        case {3, '3d'}
-            error('3D plotMode Not Implemented');
-        otherwise
-            error('plotMode not understood');
-    end
-end
-
-function [c, x, y] = getNumeric2DSliceFromOneAxis(data, paramsND, input, axisX, layer, ifInputNotSingularFnc)
-
-end
-
-function [c, x, y] = getNumeric2DSlice(data, paramsND, input, axisX, axisY, layer, ifInputNotSingularFnc)
-    if      ischar(axisX) && ischar(axisY)
-        warning('NotImplemented')
-    elseif  isobject(axisX) && isobject(axisY)
-        warning('NotImplemented')
-    elseif  isnumeric(axisX) && isnumeric(axisY) && sum(size(axisX)) == 2 && sum(size(axisY)) == 2
-        axisXindex = axisX;
-        axisYindex = axisY;
-    end
-    
-%     c =     NaN(paramsND.lengths(axisXindex), paramsND.lengths(axisYindex));
-%     cnorm = NaN(paramsND.lengths(axisXindex), paramsND.lengths(axisYindex));
-    
-    x =     paramsND.ranges(axisXindex);
-    y =     paramsND.ranges(axisYindex);
-
-    if paramsND.isInputBeginEnd(axisXindex)         % If the axis is a beginend input...
-        error('NotImplemented');
-        
-%         b = data.begin{input};
-%         e = data.end{input};
-%         
-%         if paramsND.isInputSingular(axisXindex)     % If b and e will be numeric...
-%             c = 
-%         else                                        % Otherwise if b and e will be cell...
-%             b = cell2mat( cellfun(ifInputNotSingularFnc, b) );
-%         end
-    else                                            % ...Otherwise, if it is an everypoint input...
-        d = data.data{input};
-        
-        if paramsND.isInputSingular(axisXindex)     % If d will be numeric...
-            c = d( getIndex(paramsND.lengths, axisXindex, axisYindex, layer) );
-        else                                        % Otherwise if d will be cell...
-            c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );
-        end
-    end
-end
 
 

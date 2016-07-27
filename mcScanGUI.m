@@ -17,8 +17,8 @@ classdef mcScanGUI < handle
         scanAxes = {};
         scanInputs = {};
         
-        addAxisButton = []
-        addInputButton = []
+        addAxisButton = [];
+        addInputButton = [];
     end
     
     methods

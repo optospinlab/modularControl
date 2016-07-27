@@ -138,7 +138,6 @@ classdef mcInstrumentHandler < handle
 %             end
             
             obj2 = obj;
-            alreadyAdded = false;
             
             params = mcInstrumentHandler.params();
             
@@ -146,18 +145,15 @@ classdef mcInstrumentHandler < handle
                 if (isa(instrument{1}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(instrument{1}, 'mcInput') && isa(obj, 'mcInput'))
                     if instrument{1} == obj
                         obj2 = instrument{1};
-                        warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
-                        alreadyAdded = true;
+%                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
                         return;
                     end
                 end
             end
             
-            if ~alreadyAdded
-                params.instruments{length(params.instruments) + 1} = obj2;
-                if isa(obj2, 'mcAxis')
-                    obj2.goto(obj2.getX());
-                end
+            params.instruments{length(params.instruments) + 1} = obj2;
+            if isa(obj2, 'mcAxis') && ~strcmpi(obj2.config.kind.kind, 'manual')
+                obj2.goto(obj2.getX());
             end
             
             mcInstrumentHandler.params(params);

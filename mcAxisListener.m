@@ -46,7 +46,7 @@ function f = mcAxisListener(varin)
     
     if nargin <= 1
         pos(4) = bh*(l+1);
-        f.Position =    pos;
+        f.Position =    [[100 100] pos(3:4)];
     end
     
     bh = pos(4)/(l+1);

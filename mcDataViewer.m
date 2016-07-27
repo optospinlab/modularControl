@@ -22,6 +22,7 @@ classdef mcDataViewer < handle
         menus = [];
         tabs = [];
         scanButton = [];
+        scale = [];
         
         listeners = [];
         
@@ -41,38 +42,44 @@ classdef mcDataViewer < handle
             switch nargin
                 case 0
                     gui.data = mcData();
+                    gui.data.dataViewer = gui;
                     gui.r = mcProcessedData(gui.data);
                     gui.g = mcProcessedData(gui.data);
                     gui.b = mcProcessedData(gui.data);
                 case 1
-                    gui.data = varin;
+                    gui.data = varin{1};
+                    gui.data.dataViewer = gui;
                     gui.r = mcProcessedData(gui.data);
                     gui.g = mcProcessedData(gui.data);
                     gui.b = mcProcessedData(gui.data);
                 case 2
-                    gui.data = varin;
+                    gui.data = varin{1};
+                    gui.data.dataViewer = gui;
                     gui.r = mcProcessedData(gui.data, varin{2});
                     gui.g = mcProcessedData(gui.data);
                     gui.b = mcProcessedData(gui.data);
                 case 3
-                    gui.data = varin;
+                    gui.data = varin{1};
+                    gui.data.dataViewer = gui;
                     gui.r = mcProcessedData(gui.data, varin{2});
                     gui.g = mcProcessedData(gui.data, varin{3});
                     gui.b = mcProcessedData(gui.data);
                 case 4
-                    gui.data = varin;
+                    gui.data = varin{1};
+                    gui.data.dataViewer = gui;
                     gui.r = mcProcessedData(gui.data, varin{2});
                     gui.g = mcProcessedData(gui.data, varin{3});
                     gui.b = mcProcessedData(gui.data, varin{4});
             end
             
-            if gui.data.data.isFinished
+            if gui.data.data.scanMode == 2 || gui.data.data.scanMode == -1 || true
                 shouldAquire = false;
             end
             
             if true
                 gui.cf = mcInstrumentHandler.createFigure('Data Viewer Manager (Generic)');
                 gui.cf.Position = [100,100,300,500];
+                gui.cf.CloseRequestFcn = @gui.closeRequestFcn;
                 
                 jj = 1;
                 kk = 1;
@@ -158,24 +165,33 @@ classdef mcDataViewer < handle
                 uicontrol('Parent', gui.tabs.gray, 'Style', 'text',         'String', 'Input: ', 'Units', 'pixels', 'Position', [0 tabpos(4)-3*bh tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
                 uicontrol('Parent', gui.tabs.gray, 'Style', 'popupmenu',    'String', inputlist, 'Units', 'pixels', 'Position', [tabpos(3)/3 tabpos(4)-3*bh 2*tabpos(3)/3 - bh bh], 'Value', 1);
                             
-                mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 tabpos(4)-150], gui.data);
+                gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 tabpos(4)-150], gui.r);
+                gui.scale.r =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 tabpos(4)-150], gui.r);
+                gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 500)/2 tabpos(4)-150], gui.g);
+                gui.scale.b =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 750)/2 tabpos(4)-150], gui.b);
                 
                 gui.scanButton = uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, 1, .05], 'Callback', @gui.scanButton_Callback);
                 
                 if shouldAquire     % Expand upon this in the future
-                    gui.scanButton.Value =  1;
+                    gui.data.data.scanMode = 1;                      % Set as scanning
                     gui.scanButton.String = 'Pause';
                 else
-                    gui.scanButton.Value =  0;
-                    gui.scanButton.String = 'Scan';
+                    if gui.data.data.scanMode == 0                   % If new
+                        gui.scanButton.String = 'Scan';
+                    elseif gui.data.data.scanMode == -1              % If paused
+                        gui.scanButton.String = 'Continue'; 
+                    elseif gui.data.data.scanMode == 2               % If finished
+                        gui.scanButton.String = 'Rescan';
+                    end
                 end
             end
             
             gui.df = mcInstrumentHandler.createFigure('Data Viewer (Generic)');
+            gui.df.CloseRequestFcn = @gui.closeRequestFcn;
             menu = uicontextmenu;
 
             gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on'); %, 'Xgrid', 'on', 'Ygrid', 'on'
-            colormap(gui.a,'gray')
+            colormap(gui.a, gray(256));
             
             hold(gui.a, 'on');
             
@@ -184,21 +200,21 @@ classdef mcDataViewer < handle
             z = rand(1, 50);
             c = mod(magic(50),2); %ones(50);
             
-            gui.i = image(x, y, c, 'Parent', gui.a, 'alphadata', c, 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
-            gui.pos.sel = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'CData', [1 0 1], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
-            gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'CData', [1 1 0], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
-            gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'CData', [0 1 1], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
-            gui.pos.prv = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'CData', [0 .5 .5], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
+            gui.i = imagesc(x, y, c, 'Parent', gui.a, 'alphadata', c, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
+            gui.pos.sel = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [1 0 1], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
+            gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [1 1 0], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
+            gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [0 1 1], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
+            gui.pos.prv = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [0 .5 .5], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
             
-            gui.p = plot(x, rand(1, 50), x, rand(1, 50), x, rand(1, 50), 'Parent', gui.a, 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
+            gui.p = plot(x, rand(1, 50), x, rand(1, 50), x, rand(1, 50), 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
             gui.p(1).Color = [1 0 0];
             gui.p(2).Color = [0 1 0];
             gui.p(3).Color = [0 0 1];
             
-            gui.posL.sel = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'Color', [1 0 1], 'PickableParts', 'none', 'Linewidth', 1, 'Visible', 'off');
-            gui.posL.pix = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'Color', [1 1 0], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
-            gui.posL.act = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'Color', [0 1 1], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
-            gui.posL.prv = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'LineStyle', '--', 'Color', [0 .5 .5], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
+            gui.posL.sel = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', [1 0 1], 'PickableParts', 'none', 'Linewidth', 1, 'Visible', 'off');
+            gui.posL.pix = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', [1 1 0], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
+            gui.posL.act = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', [0 1 1], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
+            gui.posL.prv = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'LineStyle', '--', 'Color', [0 .5 .5], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
             
             gui.a.YDir = 'normal';
             
@@ -239,18 +255,39 @@ classdef mcDataViewer < handle
             end
         end
         
+        function closeRequestFcn(gui, ~, ~)
+            % gui.data.save();
+            gui.data.data.aquiring = false;
+            
+            delete(gui.listeners.x);
+            delete(gui.listeners.y);
+            delete(gui.listeners.r);
+            delete(gui.listeners.g);
+            delete(gui.listeners.b);
+            
+            delete(gui.cf);
+            delete(gui.df);
+            
+            delete(gui.data);
+            
+            delete(gui);
+        end
+        
         function scanButton_Callback(gui, ~, ~)
-            switch gui.scanButton.Value
-                case {0, 3}                                 % {Start, Continue}
-                    gui.data.data.aquire();
+            switch gui.data.data.scanMode
+                case {0, -1}                                % If new or paused
                     gui.scanButton.String = 'Pause';
-                case 1                                      % Pause
+                    gui.data.data.scanMode = 1;
+                    gui.data.aquire();
+                case 1                                      % If scanning
                     gui.data.data.aquiring = false;
+                    gui.data.data.scanMode = -1;
                     gui.scanButton.String = 'Continue';
-                case 2                                      % Rescan
-                    gui.data.data.resetData();
-                    gui.data.data.aquire();
+                case 2                                      % If finished
+                    gui.data.resetData();
                     gui.scanButton.String = 'Pause';
+                    gui.data.data.scanMode = 1;
+                    gui.data.aquire();
             end
         end
         
@@ -309,16 +346,14 @@ classdef mcDataViewer < handle
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.axes{gui.data.data.layer == 2}.nameUnits();
             end
+            
+            gui.resetAxisListeners();
         end
         function plotData_Callback(gui,~,~)
 %             disp('here');
             
-            if gui.data.data.isFinished
-                gui.scanButton.Value =  2;
+            if gui.data.data.scanMode == 2
                 gui.scanButton.String = 'Rescan (Will Overwrite Data)';
-            else
-                gui.scanButton.Value =  1;
-                gui.scanButton.String = 'Pause';
             end
 
             switch gui.data.data.plotMode
@@ -334,46 +369,15 @@ classdef mcDataViewer < handle
                     else
 %                         length(gui.r.data)
 %                         gui.r.data
-                        caxis(gui.a, [0 100]);
                         gui.i.CData =       gui.r.data;
                         gui.i.AlphaData =   ~isnan(gui.r.data);
+                        gui.scale.gray.dataChanged_Callback(0,0);
+                        
+%                         gui.a.CLimMode = 'manual';
+%                         gui.a.CLim = [0 50];
+%                         caxis(gui.a, [0 25]);
                     end
             end
-        end
-        function testPlot(gui)
-            x = 1:100;
-            y = 1:100;
-
-            lx = length(x);
-            ly = length(y);
-
-        %     params.a.DataAspectRatio = [lx ly 1];
-            params.a.DataAspectRatio = [1 1 1];
-        %     params.a.PlotBoxAspectRatio = [lx ly 1];
-
-            m = rand(ly, lx);
-            m(1:50, 1:50) = NaN;
-
-            c = repmat(m, 1, 1, 3);
-
-            c(:,:,2) = rand(ly, lx);
-            c(:,:,3) = rand(ly, lx);
-
-            params.i = image(params.a, x, y, c, 'alphadata', ~isnan(m), 'ButtonDownFcn', @figureClickCallback, 'UIContextMenu', menu);
-            params.a.XLim = [min(x), max(x)]; 
-            params.a.YLim = [min(y), max(y)];
-
-            params.a.YDir = 'reverse';
-
-
-            daspect(params.a, [1 1 1]);
-
-            hold(params.a,'on')
-            params.pos = scatter(params.a, 0, 0, 'SizeData', 40, 'CData', [1 0 0], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x');
-            params.s = scatter(params.a, [0 0 0], [0 0 0], 40, [1 0 0; 0 1 0; 0 0 1], 'PickableParts', 'none', 'Linewidth', 2);
-            hold(params.a,'off')
-
-            params.a.YDir = 'reverse';
         end
 
         function figureClickCallback(gui, src, event)
@@ -428,21 +432,25 @@ classdef mcDataViewer < handle
                 case 1
                     gui.listeners.x = event.proplistener(gui.data.data.axes{gui.data.data.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
                 case 2
+%                     ax = gui.data.data.axes{gui.data.data.layer == 1}.name()
+%                     ay = gui.data.data.axes{gui.data.data.layer == 2}.name()
                     gui.listeners.x = event.proplistener(gui.data.data.axes{gui.data.data.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
                     gui.listeners.y = event.proplistener(gui.data.data.axes{gui.data.data.layer == 2}, prop, 'PostSet', @gui.listenToAxes_Callback);
             end
         end
         function listenToAxes_Callback(gui, ~, ~)
-            if isvalid(gui.posL.act)
+            if isvalid(gui)
                 axisX = gui.data.data.axes{gui.data.data.layer == 1};
+%                 bx = axisX.name()
 
                 x = axisX.getX();
 
                 gui.posL.act.XData = [x x];
-                gui.pos.act.XData = axisX.getX();
+                gui.pos.act.XData = x;
 
                 if gui.data.data.plotMode == 2
                     axisY = gui.data.data.axes{gui.data.data.layer == 2};
+%                     by = axisY.name()
 
                     gui.pos.act.YData = axisY.getX();
                 end
@@ -547,56 +555,6 @@ end
 function copyLabelToClipboard(src, ~)
     clipboard('copy', src.Label(12:end));
 end
-
-function b(src, event)
-    'b'
-end
-
-function d(src, event)
-    'd'
-end
-
-function axisChanged_Callback(~, event, edit)
-%     src
-%     event
-    edit.String = num2str(event.AffectedObject.getX(), '%.02f');
-end
-
-% function output_txt = labeldtips(src, event)
-%     pos = get(event,'Position');
-%     x = pos(1); y = pos(2);
-% 
-% %     global xaxis yaxis raxis gaxis baxis zaxis isRGB plotMode
-% 
-%     switch lower(plotMode)
-%         case {1, '1d'}
-%             output_txt =   {[xaxis.label() ': ' num2str(x)], ...
-%                             [yaxis.label() ': ' num2str(y)]};
-%         case {2, '2d'}
-%             if isRGB
-%                 output_txt =   {[xaxis.label() ': ' num2str(x)], ...
-%                                 [yaxis.label() ': ' num2str(y)], ...
-%                                 [raxis.label() ': ' num2str(z)], ...
-%                                 [gaxis.label() ': ' num2str(z)], ...
-%                                 [baxis.label() ': ' num2str(z)]};
-%             else
-%                 output_txt =   {[xaxis.label() ': ' num2str(x)], ...
-%                                 [yaxis.label() ': ' num2str(y)], ...
-%                                 [zaxis.label() ': ' num2str(z)]};
-%             end
-%         case {3, '3d'}
-%             error('3D plotMode Not Implimented');
-%         otherwise
-%             error('plotMode not understood');
-%     end
-% 
-% 
-%     idx = find(xydata == x,1);  % Find index to retrieve obs. name
-% 
-% % The find is reliable only if there are no duplicate x values
-% % [row,col] = ind2sub(size(xydata),idx);
-% 
-% end
 
 
 

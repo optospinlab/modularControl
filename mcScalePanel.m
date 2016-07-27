@@ -14,6 +14,8 @@ classdef mcScalePanel
         gui = [];
         
         data = [];
+        
+%         datalistener = [];
     end
     
     methods
@@ -37,7 +39,7 @@ classdef mcScalePanel
             panel.gui.maxEdit =    uicontrol('Parent', panel.panel, 'Style', 'edit',   'String', 1,        'Units', 'pixels', 'Position', [2*bp+bw/4,psh-bh,bw/2,bh]); %, 'Enable', 'Inactive');
             panel.gui.maxSlid =    uicontrol('Parent', panel.panel, 'Style', 'slider', 'Value', 1,         'Units', 'pixels', 'Position', [3*bp+3*bw/4,psh-bh,5*bw/4,bh], 'Min', 0, 'Max', 2, 'SliderStep', [2/300, 2/30]);
             % uicontrol('Parent', panel.panel, 'Style', 'slider', 'Units', 'pixels', 'Position', [bp,psh,bw,bh]);
-
+            
             panel.gui.dataMinText = uicontrol('Parent', panel.panel, 'Style', 'text',  'String', 'Data Min:',  'Units', 'pixels', 'Position', [2*bp+bw,psh-2*bh,bw/2,bh], 'HorizontalAlignment', 'right');
             panel.gui.dataMinEdit = uicontrol('Parent', panel.panel, 'Style', 'edit',  'String', 0,            'Units', 'pixels', 'Position', [3*bp+3*bw/2,psh-2*bh,bw/2,bh], 'Enable', 'Inactive');
 
@@ -45,7 +47,18 @@ classdef mcScalePanel
             panel.gui.dataMaxEdit = uicontrol('Parent', panel.panel, 'Style', 'edit',  'String', 1,            'Units', 'pixels', 'Position', [3*bp+3*bw/2,psh-3*bh,bw/2,bh], 'Enable', 'Inactive');
 
             panel.gui.normAuto =    uicontrol('Parent', panel.panel, 'Style', 'check', 'String', 'Auto Normalize', 'Units', 'pixels', 'Position', [bp,psh-2*bh,1.1*bw,bh], 'Value', 1);
-            panel.gui.norm =        uicontrol('Parent', panel.panel, 'Style', 'push',  'String', 'Normalize',      'Units', 'pixels', 'Position', [bp,psh-3*bh,1.1*bw,bh]);
+            panel.gui.norm =        uicontrol('Parent', panel.panel, 'Style', 'push',  'String', 'Normalize',      'Units', 'pixels', 'Position', [bp,psh-3*bh,1.1*bw,bh], 'Callback', @panel.normalize_Callback);
+
+            panel.gui.minEdit.Callback = @panel.edit_Callback;
+            panel.gui.maxEdit.Callback = @panel.edit_Callback;
+            
+            panel.gui.minSlid.Callback = @panel.slider_Callback;
+            panel.gui.maxSlid.Callback = @panel.slider_Callback;
+            
+            % Apparently, can't have two listeners on one object...
+%             prop = findprop(mcProcessedData, 'data');
+%             panel.datalistener = event.proplistener(panel.data, prop, 'PostSet', @panel.dataChanged_Callback);
+%             listener = panel.datalistener
         end
         
         function edit_Callback(panel, src,~)
@@ -73,17 +86,17 @@ classdef mcScalePanel
                     slider_Callback(panel.gui.maxSlid, 0)
             end
         end
-        function normalize_Callback(panel, src, ~)
+        function normalize_Callback(panel, ~, ~)
             panel.gui.minSlid.Max = str2double(panel.gui.dataMinEdit.String);
             panel.gui.minSlid.Value = panel.gui.minSlid.Max;
 
             panel.gui.maxSlid.Max = str2double(panel.gui.dataMaxEdit.String);
             panel.gui.maxSlid.Value = panel.gui.maxSlid.Max;
 
-            slider_Callback(panel.gui.minSlid, -1);
-            slider_Callback(panel.gui.maxSlid, -1);
+            panel.slider_Callback(panel.gui.minSlid, -1);
+            panel.slider_Callback(panel.gui.maxSlid, -1);
         end
-        function slider_Callback(panel, src, data)
+        function slider_Callback(panel, src, ~)
             maxMagn = floor(log10(src.Max));
 
             if src.Value <= 0
@@ -141,7 +154,7 @@ classdef mcScalePanel
                         if panel.gui.maxSlid.Min > panel.gui.minSlid.Value
                             panel.gui.maxSlid.Min = panel.gui.minSlid.Value;
                         end
-                        slider_Callback(panel.gui.maxSlid, 0);      % Possible recursion if careless?
+                        panel.slider_Callback(panel.gui.maxSlid, 0);      % Possible recursion if careless?
                     case panel.gui.maxSlid
                         panel.gui.minSlid.Value = panel.gui.maxSlid.Value;
                         if panel.gui.minSlid.Max < panel.gui.maxSlid.Value
@@ -150,15 +163,31 @@ classdef mcScalePanel
                         if panel.gui.minSlid.Min > panel.gui.maxSlid.Value
                             panel.gui.minSlid.Min = panel.gui.maxSlid.Value;
                         end
-                        slider_Callback(panel.gui.minSlid, 0);
+                        panel.slider_Callback(panel.gui.minSlid, 0);
                 end
             else
                 
             end
+            
+            panel.applyScale();
         end
-        function dataChanged_Callback(panel, src, data)
-            m = panel.data.data.min();
-            M = panel.data.data.max();
+        function dataChanged_Callback(panel, ~, ~)
+%             a = panel.data
+%             b = panel.data.data
+            m = panel.data.min();
+            M = panel.data.max();
+            
+            if isnan(m)
+                m = 0;
+            end
+            if isnan(M)
+                M = 1;
+            end
+            
+%             if m == M
+%                 m = m - 1;
+%                 M = M + 1;
+%             end
 
             if m <= 0
                 str = '0';
@@ -179,6 +208,28 @@ classdef mcScalePanel
 
             if panel.gui.normAuto.Value
                 panel.normalize_Callback(0,0);
+            end
+        end
+        function applyScale(panel)
+%             disp('here1');
+%             a = panel.data
+%             a = panel.data.parent
+%             a = panel.data.parent.data
+%             a = panel.data.parent.data.data
+%             a = panel.data.parent.data.data.plotMode
+            m = panel.gui.minSlid.Value;
+            M = panel.gui.maxSlid.Value;
+            
+            if m == M
+                M = .001 + M;
+            end
+
+            if      panel.data.parent.data.plotMode == 1 	% The length of the chain is rather ridiculous. Consider changing.
+                ylim(panel.data.parent.dataViewer.a, [m M]);
+            elseif  panel.data.parent.data.plotMode == 2
+%                 disp('here');
+%                 panel.data.parent.dataViewer.a
+                caxis(panel.data.parent.dataViewer.a, [m M]);
             end
         end
     end

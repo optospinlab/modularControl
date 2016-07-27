@@ -447,6 +447,23 @@ classdef mcAxis < handle
                 switch lower(a.config.kind.kind)
                     case 'serial micrometer'
                         % The micrometers are not immediate.
+                    case 'manual'
+                        if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+                            if a.x ~= a.config.kind.ext2intConv(x)
+                                questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
+                                          ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
+
+                                a.xt = a.config.kind.ext2intConv(x);
+                                a.x = a.xt;
+                            else
+                                questdlg([a.config.message ' Is the ' a.config.name...
+                                          ' at ' num2str(a.config.kind.int2extConv(a.x)) '? If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
+
+                            end
+                        else
+                            warning([num2str(x) ' ' a.extUnits ' not a valid output.']);
+                            tf = false;
+                        end
                     otherwise
                         a.x = a.xt;
                 end
@@ -454,7 +471,7 @@ classdef mcAxis < handle
                 if a.open();   % If the axis is not already open, open it...
                     switch lower(a.config.kind.kind)
                         case 'nidaqanalog'
-                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange);
+                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
                                 a.s.outputSingleScan(x);
                                 
                                 a.xt = a.config.kind.ext2intConv(x);
@@ -478,7 +495,7 @@ classdef mcAxis < handle
                                     tf = false;
                             end
                         case 'serial micrometer'
-                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange);
+                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
                                 fprintf(a.s, [a.config.chn 'SE' num2str(a.config.kind.ext2intConv(x))]);
                                 fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
                                 
@@ -490,14 +507,20 @@ classdef mcAxis < handle
                         case 'time'
                             
                         case 'manual'
-                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange);
-                                questdlg([a.config.message '\n Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
-                                          ' from ' num2str(x) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
-                                      
-                                a.xt = a.config.kind.ext2intConv(x);
-                                a.x = a.xt;
+                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+                                if a.x ~= a.config.kind.ext2intConv(x)
+                                    questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
+                                              ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
+
+                                    a.xt = a.config.kind.ext2intConv(x);
+                                    a.x = a.xt;
+                                else
+                                    questdlg([a.config.message ' Is the ' a.config.name...
+                                              ' at ' num2str(a.config.kind.int2extConv(a.x)) '? If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
+
+                                end
                             else
-                                warning([num2str(x) ' ' a.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
+                                warning([num2str(x) ' ' a.extUnits ' not a valid output.']);
                                 tf = false;
                             end
                         otherwise
@@ -535,6 +558,6 @@ classdef mcAxis < handle
 end
 
 function tf = inRange(x, range)
-    tf = x < max(range) && x > min(range);
+    tf = x <= max(range) && x >= min(range);
 end
 
