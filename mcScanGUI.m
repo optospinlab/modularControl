@@ -75,27 +75,27 @@ classdef mcScanGUI < handle
                         'Style', 'push',...
                         'String', 'Add Axis',...
                         'Units', 'pixels',...
-                        'Position', [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-1*gui.ph + 5, gui.pw-10, gui.ph-10],...
+                        'Position', [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-2*gui.ph + 5, gui.pw-10, gui.ph-10],...
                         'Callback', @gui.makeAxis_Callback);
             gui.addInputButton = uicontrol(  gui.tab2, ...  
                         'Style', 'push',...
                         'String', 'Add Input',...
                         'Units', 'pixels',...
-                        'Position', [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-1*gui.ph + 5, gui.pw-10, gui.ph-10],...
+                        'Position', [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-2*gui.ph + 5, gui.pw-10, gui.ph-10],...
                         'Callback', @gui.makeInput_Callback);
 
             saveButton = uicontrol(  gui.tab3, ...  
                         'Style', 'push',...
                         'String', 'Save Configuration',...
                         'Units', 'pixels',...
-                        'Position', [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-1*gui.ph + 5, gui.pw/2-10, gui.ph-10],...
+                        'Position', [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-2*gui.ph + 5, gui.pw/2-10, gui.ph-10],...
                         'Callback', @rand,...
                         'Enable', 'off');
             loadButton = uicontrol(  gui.tab3, ...  
                         'Style', 'push',...
                         'String', 'Load Configuration',...
                         'Units', 'pixels',...
-                        'Position', [tabpos(3)/2 + 15, tabpos(4)-1*gui.ph + 5, gui.pw/2-10, gui.ph-10],...
+                        'Position', [tabpos(3)/2 + 15, tabpos(4)-2*gui.ph + 5, gui.pw/2-10, gui.ph-10],...
                         'Callback', @rand,...
                         'Enable', 'off');
                     
@@ -472,17 +472,17 @@ classdef mcScanGUI < handle
 %                 gui.scanAxes{index}.range = [gui.scanAxes{index}.editUp.String gui.scanAxes{index}.editDown.String gui.scanAxes{index}.editStep.String];
 %                 range = gui.scanAxes{index}.range
 %                 parentRange = axes_{ii}.config.kind.extRange
-                if gui.scanAxes{index}.range(1) < axes_{ii}.config.kind.extRange(1) || isnan(gui.scanAxes{index}.range(1))
-                    gui.scanAxes{index}.range(1) = axes_{ii}.config.kind.extRange(1);
+                if gui.scanAxes{index}.range(1) < min(axes_{ii}.config.kind.extRange) || isnan(gui.scanAxes{index}.range(1))
+                    gui.scanAxes{index}.range(1) = min(axes_{ii}.config.kind.extRange);
                 end
-                if gui.scanAxes{index}.range(1) > axes_{ii}.config.kind.extRange(2)
-                    gui.scanAxes{index}.range(1) = axes_{ii}.config.kind.extRange(2);
+                if gui.scanAxes{index}.range(1) > max(axes_{ii}.config.kind.extRange)
+                    gui.scanAxes{index}.range(1) = max(axes_{ii}.config.kind.extRange);
                 end
-                if gui.scanAxes{index}.range(2) < axes_{ii}.config.kind.extRange(1)
-                    gui.scanAxes{index}.range(2) = axes_{ii}.config.kind.extRange(1);
+                if gui.scanAxes{index}.range(2) < min(axes_{ii}.config.kind.extRange)
+                    gui.scanAxes{index}.range(2) = min(axes_{ii}.config.kind.extRange);
                 end
-                if gui.scanAxes{index}.range(2) > axes_{ii}.config.kind.extRange(2) || isnan(gui.scanAxes{index}.range(2))
-                    gui.scanAxes{index}.range(2) = axes_{ii}.config.kind.extRange(2);
+                if gui.scanAxes{index}.range(2) > max(axes_{ii}.config.kind.extRange) || isnan(gui.scanAxes{index}.range(2))
+                    gui.scanAxes{index}.range(2) = max(axes_{ii}.config.kind.extRange);
                 end
                 
                 if  ii == 1
@@ -537,17 +537,17 @@ classdef mcScanGUI < handle
                     gui.scanAxes{index}.range(2) = 10;
                 end
             else        % Otherwise, if time isn't selected...
-                if gui.scanAxes{index}.range(1) < axes_{ii}.config.kind.extRange(1) || isnan(gui.scanAxes{index}.range(1))
-                    gui.scanAxes{index}.range(1) = axes_{ii}.config.kind.extRange(1);
+                if gui.scanAxes{index}.range(1) < min(axes_{ii}.config.kind.extRange) || isnan(gui.scanAxes{index}.range(1))
+                    gui.scanAxes{index}.range(1) = min(axes_{ii}.config.kind.extRange);
                 end
-                if gui.scanAxes{index}.range(1) > axes_{ii}.config.kind.extRange(2)
-                    gui.scanAxes{index}.range(1) = axes_{ii}.config.kind.extRange(2);
+                if gui.scanAxes{index}.range(1) > max(axes_{ii}.config.kind.extRange)
+                    gui.scanAxes{index}.range(1) = max(axes_{ii}.config.kind.extRange);
                 end
-                if gui.scanAxes{index}.range(2) < axes_{ii}.config.kind.extRange(1)
-                    gui.scanAxes{index}.range(2) = axes_{ii}.config.kind.extRange(1);
+                if gui.scanAxes{index}.range(2) < min(axes_{ii}.config.kind.extRange)
+                    gui.scanAxes{index}.range(2) = min(axes_{ii}.config.kind.extRange);
                 end
-                if gui.scanAxes{index}.range(2) > axes_{ii}.config.kind.extRange(2) || isnan(gui.scanAxes{index}.range(2))
-                    gui.scanAxes{index}.range(2) = axes_{ii}.config.kind.extRange(2);
+                if gui.scanAxes{index}.range(2) > max(axes_{ii}.config.kind.extRange) || isnan(gui.scanAxes{index}.range(2))
+                    gui.scanAxes{index}.range(2) = max(axes_{ii}.config.kind.extRange);
                 end
                 if isnan(gui.scanAxes{index}.range(3)) || gui.scanAxes{index}.range(3) <= 0
                     gui.scanAxes{index}.range(3) = gui.scanAxes{index}.editStep.Value;
@@ -607,6 +607,7 @@ classdef mcScanGUI < handle
                 proceed = false;
             end
             
+            linspace(gui.scanAxes{1}.range(1), gui.scanAxes{1}.range(2), gui.scanAxes{1}.range(3))
             params.scans =      cellfun(@(x)({linspace(x.range(1), x.range(2), x.range(3))}), gui.scanAxes);
             
             [inputs, ~] = mcInstrumentHandler.getInputs();

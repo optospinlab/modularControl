@@ -36,6 +36,7 @@ classdef mcAxis < handle
         config = [];            % All static variables (e.g. valid range) go in config.
         
         s = [];                 % Session, whether serial, NIDAQ, or etc.
+        t = []                  % Timer to read the axis, for certain axes which do not travel immediately.
         
         isOpen = false;         % Boolean.
         inUse = false;          % Boolean.
@@ -49,7 +50,7 @@ classdef mcAxis < handle
         function config = defaultConfig()
             config = mcAxis.piezoConfig();
         end
-        function config = piezoConfig()
+        function config = piezoZConfig()
             config.name =               'Default Piezo';
 
             config.kind.kind =          'NIDAQanalog';
@@ -57,6 +58,29 @@ classdef mcAxis < handle
             config.kind.intRange =      [0 10];
             config.kind.int2extConv =   @(x)(5.*(x - 5));       % Conversion from 'internal' units to 'external'.
             config.kind.ext2intConv =   @(x)((x + 25)./5);      % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =           0;
+
+            config.dev =                'Dev1';
+            config.chn =                'ao2';
+            config.type =               'Voltage';
+            
+            config.keyStep =            .1;
+            config.joyStep =            .5;
+
+            config.pos =                config.kind.base;
+
+            config.intSpeed =           10;                     % 'Internal' units per second.
+        end
+        function config = piezoConfig()
+            config.name =               'Default Piezo';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'MadCity Piezo';
+            config.kind.intRange =      [0 10];
+            config.kind.int2extConv =   @(x)(5.*(5 - x));       % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)((25 - x)./5);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'um';                   % 'External' units.
             config.kind.base =           0;
@@ -363,9 +387,13 @@ classdef mcAxis < handle
                     % Should something be done?
                 else
                     switch lower(a.config.kind.kind)
-                        case {'nidaqanalog', 'nidaqdigital'}
+                        case 'nidaqanalog'
                             a.s = daq.createSession('ni');
-                            a.addToSession(a.s);
+                            addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
+                            a.s.outputSingleScan(a.x);
+                        case 'nidaqdigital'
+                            a.s = daq.createSession('ni');
+                            addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
                             a.s.outputSingleScan(a.x);
                         case 'serial micrometer'
                             a.s = serial(a.config.port);
@@ -401,13 +429,13 @@ classdef mcAxis < handle
                 else
                     switch lower(a.config.kind.kind)
                         case {'nidaqanalog', 'nidaqdigital'}
-                            a.s.close();
+                            a.s.release();
                         case 'serial micrometer'
                             fprintf(a.s, [a.config.addr 'RS']);
                             
                             fclose(a.s);    % Not sure if all of these are neccessary; Srivatsa's old code...
+%                             close(a.s);
                             delete(a.s); 
-                            clear(a.s);
                     end
                 end
                 tf = true;     % Return true because axis was open and is now closed.
@@ -436,8 +464,8 @@ classdef mcAxis < handle
                         else
                             a.x = a.xt;
                         end
-                    otherwise
-                        a.x = a.xt;
+%                     otherwise
+%                         a.x = a.xt;
                 end
             else
                 if a.isOpen
@@ -447,13 +475,22 @@ classdef mcAxis < handle
                             str = fscanf(a.s);
 
                             a.x = str2double(str(4:end));
-                        otherwise
-%                             error([a.config.kind.kind ' does not have a read() method.']);
-                            a.x = a.xt;
+%                         otherwise
+% %                             error([a.config.kind.kind ' does not have a read() method.']);
+%                             a.x = a.xt;
                     end
                 else
                     tf = false;
                 end
+            end
+        end
+        
+        function timerUpdateFcn(a, ~, ~)
+            a.read();
+            if abs(a.x - a.xt) < 1e-4
+                stop(a.t);
+                delete(a.t);
+                a.t = [];
             end
         end
         
@@ -493,10 +530,9 @@ classdef mcAxis < handle
                     switch lower(a.config.kind.kind)
                         case 'nidaqanalog'
                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                                a.s.outputSingleScan(x);
-                                
                                 a.xt = a.config.kind.ext2intConv(x);
                                 a.x = a.xt;
+                                a.s.outputSingleScan(a.x);
                             else
                                 warning([num2str(x) ' ' a.extUnits ' not a valid output for an analog NIDAQ channel.']);
                                 tf = false;
@@ -517,10 +553,15 @@ classdef mcAxis < handle
                             end
                         case 'serial micrometer'
                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                                fprintf(a.s, [a.config.chn 'SE' num2str(a.config.kind.ext2intConv(x))]);
+                                fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);
                                 fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
                                 
                                 a.xt = a.config.kind.ext2intConv(x);
+                                
+                                if isempty(a.t)
+                                    a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
+                                    start(a.t);
+                                end
                             else
                                 warning([num2str(x) ' ' a.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
                                 tf = false;

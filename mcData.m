@@ -292,6 +292,7 @@ classdef mcData < handle
             
             while d.data.aquiring
                 d.aquire1D(d.data.indexWeight * (d.data.index -1)' - d.data.index(1) + 2);
+                drawnow limitrate;
                 
                 if all(d.data.index == d.data.lengths)
                     d.data.scanMode = 2;
@@ -367,9 +368,9 @@ classdef mcData < handle
                     for ii = 1:d.data.numInputs         % ...for every input...
                         if ~d.data.isInputBeginEnd(ii)
                             if d.data.inputDimension(ii) == 0
-                                d.data.data{ii}(jj+kk) = mod(jj+kk, 64);
-                                pause(d.data.integrationTime(ii));
-%                                 d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+%                                 d.data.data{ii}(jj+kk) = mod(jj+kk, 64);
+%                                 pause(d.data.integrationTime(ii));
+                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             else
                                 d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             end

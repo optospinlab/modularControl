@@ -229,10 +229,16 @@ classdef mcInput < handle
                 if I.inEmulation
                     
                 else
-                    switch lower(I.config.type.kind)
-                        case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
+                    switch lower(I.config.kind.kind)
+                        case 'nidaqanalog'
                             I.s = daq.createSession('ni');
-                            I.addToSession(I.s);
+                            addAnalogInputChannel(  I.s, I.config.dev, I.config.chn, I.config.type);
+                        case 'nidaqdigital'
+                            I.s = daq.createSession('ni');
+                            addDigitalChannel(      I.s, I.config.dev, I.config.chn, 'InputOnly');
+                        case 'nidaqcounter'
+                            I.s = daq.createSession('ni');
+                            addCounterInputChannel( I.s, I.config.dev, I.config.chn, I.config.type);
                     end
                 end
                 
@@ -266,11 +272,13 @@ classdef mcInput < handle
             if I.inEmulation
                 switch lower(I.config.kind.kind)
                     case {'nidaqcounter'}
-                        pause(integrationTime);
+%                         pause(integrationTime);
                         data = rand*100;
                     case {'function'}
+%                         pause(integrationTime);
                         data = I.config.fnc();
                     otherwise
+%                         pause(integrationTime);
                         data = rand(I.config.kind.sizeInput)*100;
                 end
             else
@@ -286,8 +294,10 @@ classdef mcInput < handle
 
                             data = (d2 - d1)/(t2 - t1);
                         case {'function'}
+%                             pause(integrationTime);
                             data = I.config.fnc();
                         otherwise
+%                             pause(integrationTime);
                             data = rand(I.config.kind.sizeInput)*100;
                             warning('Kind not understood.');
                     end
@@ -299,7 +309,7 @@ classdef mcInput < handle
         
         function addToSession(I, s)
             if I.close()
-                switch lower(I.config.type.kind)
+                switch lower(I.config.kind.kind)
                     case 'nidaqanalog'
                         addAnalogInputChannel(  s, I.config.dev, I.config.chn, I.config.type);
                     case 'nidaqdigital'

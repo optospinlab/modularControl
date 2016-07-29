@@ -202,11 +202,14 @@ classdef mcScalePanel
                 magn = floor(log10(M));
                 STR = [num2str(M/(10^magn), '%1.1f') 'e' num2str(magn)];
             end
+            
+            str0 = panel.gui.dataMinEdit.String;
+            STR0 = panel.gui.dataMaxEdit.String;
 
             panel.gui.dataMinEdit.String = str;
             panel.gui.dataMaxEdit.String = STR;
 
-            if panel.gui.normAuto.Value
+            if panel.gui.normAuto.Value && ~(strcmpi(str0, str) && strcmpi(STR0, STR))
                 panel.normalize_Callback(0,0);
             end
         end

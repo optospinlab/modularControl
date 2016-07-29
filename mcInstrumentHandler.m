@@ -43,9 +43,15 @@ classdef mcInstrumentHandler < handle
             params = mcInstrumentHandler.params();
             
             if ~isfield(params, 'open')
+                disp('Opening mcInstrumentHandler');
+                delete(instrfind)
+                clear all
+                close all
+                daqreset
+                
                 params.open =                       true;
                 params.instruments =                {};
-                params.shouldEmulate =              true;                   
+                params.shouldEmulate =              false;                   
                 params.saveDirManual =              '';
                 params.saveDirBackground =          '';
                 params.globalWindowKeyPressFcn =    [];
@@ -162,6 +168,15 @@ classdef mcInstrumentHandler < handle
 %         function 
         
         function clearAll() % Usage not recommended.
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            
+            for instrument = params.instruments
+                if isa(instrument{1}, 'mcAxis')% && isa(obj, 'mcAxis')) || (isa(instrument{1}, 'mcInput') && isa(obj, 'mcInput'))
+                    instrument{1}.close();
+                end
+            end
+            
             mcInstrumentHandler.params([]);
         end
         

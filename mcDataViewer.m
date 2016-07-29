@@ -47,7 +47,7 @@ classdef mcDataViewer < handle
                     gui.g = mcProcessedData(gui.data);
                     gui.b = mcProcessedData(gui.data);
                 case 1
-                    gui.data = varin{1};
+                    gui.data = varin;
                     gui.data.dataViewer = gui;
                     gui.r = mcProcessedData(gui.data);
                     gui.g = mcProcessedData(gui.data);
@@ -341,8 +341,9 @@ classdef mcDataViewer < handle
                 case 2
                     gui.i.XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.i.YData = gui.data.data.scans{gui.data.data.layer == 2};
-                    gui.a.XLim = [gui.i.XData(1) gui.i.XData(end)];         % Check to see if range is zero!
-                    gui.a.YLim = [gui.i.YData(1) gui.i.YData(end)];         % Check to see if range is zero!
+                    [min(gui.i.XData) max(gui.i.XData)]
+                    gui.a.XLim = [min(gui.i.XData) max(gui.i.XData)];         % Check to see if range is zero!
+                    gui.a.YLim = [min(gui.i.YData) max(gui.i.YData)];         % Check to see if range is zero!
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.axes{gui.data.data.layer == 2}.nameUnits();
             end

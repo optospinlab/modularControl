@@ -33,13 +33,13 @@ classdef mcUserInput < handle
             
             configPiezoX = mcAxis.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
             configPiezoY = mcAxis.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
-            configPiezoZ = mcAxis.piezoConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            configPiezoZ = mcAxis.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            configMicroX = mcAxis.microConfig(); configMicroX.name = 'Micro X'; configMicroX.port = 'COM6';
-            configMicroY = mcAxis.microConfig(); configMicroY.name = 'Micro Y'; configMicroY.port = 'COM7';
+            configMicroX = mcAxis.microConfig(); configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
+            configMicroY = mcAxis.microConfig(); configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
             
-            configGalvoX = mcAxis.galvoConfig(); configGalvoX.name = 'Galvo X'; configGalvoX.chn = 'ao3';
-            configGalvoY = mcAxis.galvoConfig(); configGalvoY.name = 'Galvo Y'; configGalvoY.chn = 'ao4';
+            configGalvoX = mcAxis.galvoConfig(); configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+            configGalvoY = mcAxis.galvoConfig(); configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
             config.axesGroups = { {'Piezos',        mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
                                   {'Micrometers',   mcAxis(configMicroX), mcAxis(configMicroY), mcAxis(configPiezoZ) }, ...
@@ -318,11 +318,15 @@ classdef mcUserInput < handle
                 
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0       0];         % Red
                 pause(.05);
+%                 drawnow;
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0.9400    0.9400];
+%                 drawnow;
             else
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0         0         0.9400];  % Blue
                 pause(.05);
+%                 drawnow;
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0.9400    0.9400];
+%                 drawnow;
             end
         end
         function userAction_Callback(obj, src, ~, axis_, direction)
