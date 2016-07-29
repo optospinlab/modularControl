@@ -169,6 +169,25 @@ classdef mcAxis < handle
             config.message = 'Polarization is not currently automated...';
             config.verb = 'rotate';
         end
+        function config = gridConfig(grid, index)
+            config.name = 'Grid Axis in the A direction';
+
+            config.kind.kind =          'grid';
+            config.kind.name =          'Grid Axis';
+            config.kind.intRange =      [-Inf Inf];             % Change this?
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'sets';                  % 'Internal' units.
+            config.kind.extUnits =      'sets';                  % 'External' units.
+            config.kind.base =          1;
+            config.kind.resetParam =    '';
+            
+            config.keyStep =            0;
+            config.joyStep =            0;
+            
+            config.grid = grid;
+            config.index = index;
+        end
     end
     methods
         function a = mcAxis(varin)
@@ -449,6 +468,8 @@ classdef mcAxis < handle
                         % The micrometers are not immediate.
                     case 'manual'
                         if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+                            load(gong.mat);
+                            sound(y);
                             if a.x ~= a.config.kind.ext2intConv(x)
                                 questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
                                           ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
@@ -508,6 +529,8 @@ classdef mcAxis < handle
                             
                         case 'manual'
                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+                                load(gong.mat);
+                                sound(y);
                                 if a.x ~= a.config.kind.ext2intConv(x)
                                     questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
                                               ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');

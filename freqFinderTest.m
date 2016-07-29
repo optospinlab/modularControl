@@ -1,5 +1,5 @@
 function peakFinderTest()
-gauss = @(x, a, b, c)( a*exp(-c.*(x-b).^2));
+sine = @(x, a, b, c)( a*sin(c.*(x-b)));
 
 
 x = 1:512;
@@ -11,100 +11,19 @@ going2 = true;
     a = axes;
     
 while going2
-    y = gauss(1:512, 20+rand*20, rand*512, 1/(100 + 200*rand)^2) + gauss(1:512, 20+rand*20, rand*512, 1/(10 + 20*rand)^2) + gauss(1:512, 20+rand*20, rand*512, 1/(40 + 0*rand)^2) + 10*rand([1, 512]);
+    a = 20+rand*20;
+    b = rand*512;
+    c = 1/(20 + rand*20);
+    y = sine(1:512, a, b, c) + 10*rand([1, 512]);
+    
     hold off
-    plot(a, x, y)
+    plot(x, y);
     hold on
-    % plot(a, diff(y))
-    % plot(a, y(1:2:end) + y(2:2:end))
-    % plot(a, y(1:4:end) + y(2:4:end) + y(3:4:end) + y(4:4:end))
-
-%     std(y)
-
-    % bins  = length(y);
-    ii = 1;
-    div = 1;
-
-    going = true;
     
-    y2 = y;
-    
-    std1 = std(y - movmean(y, length(y)/2));
-
-%     while going
-%     %     x2 = linspace(1, length(y), length(y)/div) %histcounts(x, length(y)/div)/div
-%     %     y2 = histcounts(y, length(y)/div);
-% 
-%     %     y2 = discretize(y, linspace(1, length(y), length(y)/div + 1))
-%         y2 = .5*y2 + movmean(y, div);
-% 
-%         [pks{ii}, locs{ii}, wids{ii}] = findpeaks(y2, x, 'MinPeakWidth', 5, 'MinPeakProminence', std1, 'SortStr', 'ascend','Annotate','extents','WidthReference','halfheight'); % 
-% 
-%     plot(x, y2);
-%         hold on
-%         plot(a, locs{ii},pks{ii},'o','MarkerSize',ii*4)
-%     pause(1);
-% 
-%         length(pks{ii});
-% 
-%         going = (length(pks{ii}) > 1 || ii < 8) && ~isempty(pks{ii});
-%     %     going = ii < 5;
-% 
-%         ii = ii + 1;
-% 
-%     %     bins = bins/2
-%         div = div*2;
-%     end
-
-    plot(x, movmean(y, round(length(y)/10)));
-    pause(.1);
-    
-    pks = []
-    
-    prom = std1*3
-    
-    while isempty(pks)
-        [pks, locs, wids] = findpeaks(movmean([min(y) y min(y)], round(length(y)/10)), [0 x max(x)+1], 'MinPeakWidth', 3, 'MinPeakProminence', prom, 'SortStr', 'descend')
-        prom = prom*.5
-    end
-    
-    [X, ~] = myMeanAdvanced(y', x', 0);
-    
-    plot([X,X], [min(y)-5, max(y)+5]);
-    
-%     locs = locs(1) - 1;
-    X = locs(1);
-    
-    plot([X,X], [min(y)-5, max(y)+5]);
-    
-    rx = round(abs(x(end) - x(1))/20)
-    [~, m] = max(y);
-    
-    smally = (x > x(m) - rx & x < x(m) + rx)
-    [~, sm] = max(movmean(y(smally),rx));
-    sx = x(smally);
-    X = sx(sm);
-    
-    
-    plot([X,X], [min(y)-5, max(y)+5]);
-    
-%     ft = fittype('a*exp(-((x-b)^2)/c)');
-%     
-%     cf = fit(x', y', ft, 'StartPoint', [pks(1), locs(1), wids(1)], 'Lower', [0, min(x), 0], 'Upper', [2*(max(y) - min(y)), max(x), Inf]);
-%     
-%     vals = coeffvalues(cf)
-%     
-%     plot(x, y2);
-%     plot(cf);
-%     if isempty(locs{ii-1})
-%         X = locs{ii-2}(1);
-%     else
-%         X = locs{ii-1};
-%     end
-%     X = vals(2);
-%     
-%     plot([X,X], [min(y)-5, max(y)+5]);
+    y = sine(1:512, a, b, abs(meanfreq(y)/pi));
             
+    plot(x, y);
+    
     pause(1);
 end
 end
