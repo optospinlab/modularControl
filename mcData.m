@@ -248,8 +248,8 @@ classdef mcData < mcSavableClass
                     d.data.scansInternalUnits{ii} = arrayfun(d.data.axes{ii}.config.kind.ext2intConv, d.data.scans{ii});
                 end
 
-                allInputsFast = all(d.data.isInputBeginEnd | (d.data.isInputNIDAQ & d.data.inEmulation));       % Are all 'everypoint'-mode inputs NIDAQ?
-                d.data.canScanFast = strcmp('nidaq', d.data.axes{1}.config.kind.kind(1:5)) && d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
+                allInputsFast = all(d.data.isInputBeginEnd | (d.data.isInputNIDAQ & ~d.data.inEmulation));       % Are all 'everypoint'-mode inputs NIDAQ?
+                d.data.canScanFast = strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:5)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
 
                 d.resetData();
                 d.data.isInitialized = true;
@@ -302,10 +302,12 @@ classdef mcData < mcSavableClass
             
             if d.data.aquiring % shouldContinue
                 %%% CREATE THE SESSION, IF NECCESSARY %%%
-                if d.data.canScanFast && ~isfield(d.data, 's')     % If so, then make a NIDAQ session if it has not already been created.
+                if d.data.canScanFast && (~isfield(d.data, 's') || isempty(d.data.s))     % If so, then make a NIDAQ session if it has not already been created.
+                    
+%                     disp('Creating Session')
                     d.data.s = daq.createSession('ni');
 
-                    d.data.axes{1}.addToSession(s);                    % First add the axis,
+                    d.data.axes{1}.addToSession(d.data.s);            % First add the axis,
 
 %                     inputsNIDAQ = d.data.inputs(d.data.isInputNIDAQ);
 
@@ -389,8 +391,9 @@ classdef mcData < mcSavableClass
             
             %%% DESTROY THE SESSION, IF NECCESSARY %%%
             if d.data.canScanFast
-                d.data.s.close();
+                release(d.data.s);
                 delete(d.data.s);
+                d.data.s = [];
             end 
         end
         function aquire1D(d, jj)
@@ -405,7 +408,7 @@ classdef mcData < mcSavableClass
             if d.data.canScanFast
                 d.data.s.Rate = 1/max(d.data.integrationTime);   % Whoops; integration time has to be the same for all inputs... Taking the max for now...
 
-                d.data.s.queueOutputData([d.data.scanInternalUnits{1}  d.data.scanInternalUnits{1}(end)]);   % The last point (a repeat of the final params.scan point) is to count for the last pixel.
+                d.data.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel.
 
                 [data_, times] = d.data.s.startForeground();                % Should I startBackground() and use a listener?
 
@@ -413,10 +416,12 @@ classdef mcData < mcSavableClass
 
                 for ii = 1:d.data.numInputs     % Fill all of the inputs with data...
                     if ~d.data.isInputBeginEnd(ii)
-                        if d.data.inputs{ii}.normalize  % If this input expects to be divided by the exposure time...
-                            d.data.data{ii}(jj:jj+d.data.lengths(1)) = diff(double(data_(:, kk)))./diff(double(times));   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
+                        if d.data.inputs{ii}.config.kind.shouldNormalize  % If this input expects to be divided by the exposure time...
+%                             jj:jj+d.data.lengths(1)-1
+%                             (diff(double(data_(:, kk)))./diff(double(times)))'
+                            d.data.data{ii}(jj:jj+d.data.lengths(1)-1) = (diff(double(data_(:, kk)))./diff(double(times)))';   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
                         else
-                            d.data.data{ii}(jj:jj+d.data.lengths(1)) = double(data_(1:end-1, kk));
+                            d.data.data{ii}(jj:jj+d.data.lengths(1)-1) = double(data_(1:end-1, kk))';
                         end
 
                         kk = kk + 1;

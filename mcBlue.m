@@ -3,7 +3,7 @@ function mcBlue()
 % Status: see the commented classdef (below) for future plans. Possibly also make a generic class for video input (a subclass of
 %   mcInput?
 
-    f = mcInstrumentHandler.createFigure('mcBlue');
+    f = mcInstrumentHandler.createFigure('mcBlue', 'none');
 
     f.Resize =      'off';
     f.Position =    [100, 100, 1280, 960];

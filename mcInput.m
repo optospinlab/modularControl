@@ -259,7 +259,7 @@ classdef mcInput < mcSavableClass
                 else
                     switch lower(I.config.kind.kind)
                         case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
-                            I.s.close();
+                            release(I.s);
                     end
                 end
                 tf = true;     % Return true because input was open and is now closed.
@@ -291,6 +291,7 @@ classdef mcInput < mcSavableClass
                         case {'nidaqanalog', 'nidaqdigital'}
                             data = I.s.inputSingleScan();
                         case {'nidaqcounter'}
+%                             disp('here2');
                             I.s.resetCounters();
                             [d1,t1] = I.s.inputSingleScan();
                             pause(integrationTime);             % Inexact way. Should make this asyncronous also...

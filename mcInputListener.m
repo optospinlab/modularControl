@@ -19,9 +19,9 @@ function mcInputListener(varin)
 %     f.Resize =      'off';
 %     f.Visible =     'off';
     f.MenuBar =     'none';
-%     f.ToolBar =     'none';
+    f.ToolBar =     'none';
     
-    axes_ = axes(f, 'Position', [.1, 0, .9, 1]); %, 'Title', ['Listener - ' input.nameShort()]
+    axes_ = axes('Parent', f, 'Position', [.1, 0, .9, 1]); %, 'Title', ['Listener - ' input.nameShort()]
     ylabel(axes_, params.input.nameUnits()); %
     
     dims = sum(params.input.config.kind.sizeInput > 1);
@@ -47,12 +47,12 @@ function mcInputListener(varin)
     p.UserData.prevCount = NaN;
     
     axes_.XLimMode =        'manual';
-    axes_.XLim =            [1, 100];
+    axes_.XLim =            [1, params.pixels];
     axes_.YLabel.String =   params.input.nameUnits();
     
     isInputNIDAQ = strcmpi('nidaq', params.input.config.kind.kind(1:5));
     
-    if ~params.input.config.kind.isSingular
+    if sum(params.input.config.kind.sizeInput > 1) > 0
         error('Non-singular inputs currently not supported.')
     end
     
@@ -60,13 +60,22 @@ function mcInputListener(varin)
         s = daq.createSession('ni');
         params.input.addToSession(s);   % For counters, need to add an input also...
         
+        if strcmpi(params.input.config.kind.kind, 'NIDAQcounter')
+            config = mcInput.voltageConfig();
+            config.chn = 'ai7';
+            input2 = mcInput(config);
+            input2.addToSession(s);
+        end
+        
         s.Rate =                                    1/params.exposure;
-        s.isContinuous =                            true;
+        s.IsContinuous =                            true;
         s.IsNotifyWhenDataAvailableExceedsAuto =    false;
         s.NotifyWhenDataAvailableExceeds =          1;
-        s.NumberOfScans =                           s.Rate;
+%         s.NumberOfScans =                           s.Rate;
         
-        addListener(s, 'DataAvailable', @getData);
+        s
+
+        l = addlistener(s, 'DataAvailable', {@getData, p})
         
         startBackground(s);
     else

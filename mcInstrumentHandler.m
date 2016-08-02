@@ -66,7 +66,18 @@ classdef mcInstrumentHandler < handle
                 
                 tf = false;                                                         % Return whether the mcInstrumentHandler was open...
                 
-                [~, params.hostname] =              strrep(system('hostname'), '.', '_');
+                [~, params.hostname] =              system('hostname');
+                
+                params.hostname = params.hostname(1:end-1);
+                
+%                 for char = params.hostname
+%                     disp(double(char));
+%                 end
+%                 
+%                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
+%                 params.hostname = strrep(params.hostname, '\n', '');
+%                 params.hostname = strrep(params.hostname, '\r', '');
+%                 params.hostname = strrep(params.hostname, '\0', '');
                 
                 params.instruments =                {mcAxis(mcAxis.timeConfig())};  % Initialize with only time (which is special)
                       % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
@@ -74,7 +85,7 @@ classdef mcInstrumentHandler < handle
                 
                 mcInstrumentHandler.params(params);
                 
-                folder = mcInstrumentHandler.getConfigFolder();
+                folder = mcInstrumentHandler.getConfigFolder()
                 if ~exist(folder, 'file')
                     mkdir(folder);
                 end

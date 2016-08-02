@@ -35,7 +35,7 @@ function f = mcAxisListener(varin)
             f.Resize =      'off';
             f.Visible =     'off';
 %             f.MenuBar =     'none';
-%             f.ToolBar =     'none';
+            f.ToolBar =     'none';
             
             pos =           [0, 0, fw, fh];
         case 3
