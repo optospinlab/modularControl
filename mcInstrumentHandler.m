@@ -66,7 +66,7 @@ classdef mcInstrumentHandler < handle
                 
                 tf = false;                                                         % Return whether the mcInstrumentHandler was open...
                 
-                [~, params.hostname] =              system('hostname');
+                [~, params.hostname] =              strrep(system('hostname'), '.', '_');
                 
                 params.instruments =                {mcAxis(mcAxis.timeConfig())};  % Initialize with only time (which is special)
                       % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
