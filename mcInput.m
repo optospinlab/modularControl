@@ -1,16 +1,10 @@
-classdef mcInput < handle
+classdef mcInput < mcSavableClass
 % Abstract class for instruments with that measure some sort of data. This includes:
 %   - NIDAQ
 %       + Counters
 %       + Analog/Digital in
 %   - Spectrometers
 %   - Cameras
-%
-% IMPORTANT: Not sure whether a better architecture decision would be to
-% have kinds (such as piezos and galvos) extend the mcAxis class in their
-% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
-% switch statements that are currently in the code.
-% UPDATE: Decided to change this eventually, but keep it the same for now.
 %
 % Syntax:
 %   I = mcInput()                               % Open with default configuration.
@@ -26,16 +20,23 @@ classdef mcInput < handle
 %   str =   I.nameShort()                       % Returns short info about this input in a readable form.
 %   str =   I.nameVerb()                        % Returns verbose info about this input in a readable form.
 %
-%   tf =    I.open()                            % Opens a session of the axis (e.g. for the micrometers, a serial session); returns whether open or not.
-%   tf =    I.close()                           % Closes the session of the axis; returns whether closed or not.
+%   tf =    I.open()                            % Opens a session of the input (e.g. for a counter, a NIDAQ session); returns whether open or not.
+%   tf =    I.close()                           % Closes the session of the input; returns whether closed or not.
 %
-%   tf =    I.inRange(x)                        % Returns true if x is in the external range of a.
+%   data =  I.measure(integrationTime)          % Measures the input for integrationTime seconds and returns the result.
 %
-%   tf =    I.goto(x)                           % If x is in range, makes sure axis is open, moves axis to x, and returns success.
-
+%   tf =    I.addToSession(s)                   % If the input is NIDAQ, adds the input to the NIDAQ session s.
+%
+% Status: Mostly finished. Mostly commented. See below for future plans.
+%
+% IMPORTANT: Not sure whether a better architecture decision would be to
+% have kinds (such as piezos and galvos) extend the mcAxis class in their
+% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
+% switch statements that are currently in the code.
+% UPDATE: Decided to change this eventually, but keep it the same for now.
     
     properties
-        config = [];            % All static variables (e.g. valid range) go in config.
+%         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
         
         s = [];                 % Session, whether serial or NIDAQ.
         

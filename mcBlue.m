@@ -1,8 +1,8 @@
 function mcBlue()
-    % Get video source
+% mcBlue is a temperary function to get blue input.
+% Status: see the commented classdef (below) for future plans. Possibly also make a generic class for video input (a subclass of
+%   mcInput?
 
-    % Send the image from the source to the imageAxes
-%         axes(c.imageAxes);
     f = mcInstrumentHandler.createFigure('mcBlue');
 
     f.Resize =      'off';
@@ -10,9 +10,9 @@ function mcBlue()
     f.Visible =     'on';
     f.MenuBar =     'none';
     f.ToolBar =     'none';
-    % Make resize fnc
+    % Future: make resize fnc
 
-    a = axes('Position', [0 0 1 1]);
+    axes('Position', [0 0 1 1]);
 
     f.UserData = videoinput('avtmatlabadaptor64_r2009b', 1, 'F0M5_Mono8_640x480');
 %         src = getselectedsource(c.vid);
@@ -33,13 +33,33 @@ function mcBlue()
 end
     
 % classdef mcBlue
-%     %UNTITLED Summary of this class goes here
-%     %   Detailed explanation goes here
+% % mcBlue
 %     
 %     properties
+%         f = [];     % Figure; video info stored in UserData.
+%         l = [];     % Listener for blue feedback.
 %     end
 %     
 %     methods
+%         function blue = mcBlue()
+%             
+%         end
+%         
+%         function getImage(blue)
+%             
+%         end
+%         
+%         function lockFeedback(blue)
+%             
+%         end
+%         
+%         function stopFeedback(blue)
+%             
+%         end
 %     end
 %     
 % end
+
+
+
+

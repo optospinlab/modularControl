@@ -11,6 +11,7 @@ classdef mcInstrumentHandler < handle
 %
 % (Public)
 %   tf = mcInstrumentHandler.open()                 % If params has not been initiated, then initiate params... ...with default values (will search for [params.hostname].mat). Returns whether mcInstrumentHandler was open before calling this.
+%
 % % (Not currently enabled)
 % % tf = mcInstrumentHandler.open(config)           %                                                           ...with the contents of config (instruments, etc are overwritten).
 % % tf = mcInstrumentHandler.open('config.mat')     %                                                           ...with the contents of config.mat (instruments, etc are overwritten).
@@ -21,6 +22,8 @@ classdef mcInstrumentHandler < handle
 %   [inputs, names] = mcInstrumentHandler.getInputs()       % Returns a matrix inputs containing the mcAxis oject for every axis and a cell array names containing the mcInput.nameShort() for every axis.
 %
 %   obj2 = mcInstrumentHandler.register(obj)        % If obj already exists in params.instruments as obj2 (perhaps in another form or under a different name), then return obj2. Otherwise, add obj to params.instruments and return obj.
+%
+% Status: Mostly finished, but needs commenting.
 
     properties
         % No properties.
@@ -45,36 +48,93 @@ classdef mcInstrumentHandler < handle
             if ~isfield(params, 'open')
                 disp('Opening mcInstrumentHandler');
                 delete(instrfind)
-                clear all
+%                 clear all
                 close all
-                daqreset
+                if ~ismac
+                    daqreset
+                end
                 
                 params.open =                       true;
                 params.instruments =                {};
-                params.shouldEmulate =              false;                   
+                params.shouldEmulate =              false;
                 params.saveDirManual =              '';
                 params.saveDirBackground =          '';
                 params.globalWindowKeyPressFcn =    [];
-                params.figures =                    {};  
+                params.figures =                    {};
                 
                 mcInstrumentHandler.params(params);                                 % Fill params with this so that we don't risk infinite recursion when we try to add the time axis.
                 
                 tf = false;                                                         % Return whether the mcInstrumentHandler was open...
                 
                 [~, params.hostname] =              system('hostname');
-             
-%                 if exists([params.hostname '.mat'])     % If the  program has been opened before.
-%                     
-%                 else
-%                 	  
-%                 end
                 
                 params.instruments =                {mcAxis(mcAxis.timeConfig())};  % Initialize with only time (which is special)
                       % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
 %                 [~, params.hostname] =              system('hostname');
+                
+                mcInstrumentHandler.params(params);
+                
+                folder = mcInstrumentHandler.getConfigFolder();
+                if ~exist(folder, 'file')
+                    mkdir(folder);
+                end
+                
+                mcInstrumentHandler.loadParams();
+            end
+        end
+        
+        function str = getConfigFolder()
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            str = ['configs' filesep params.hostname filesep];
+        end
+        
+        function saveParams()
+            mcInstrumentHandler.open();
+            params2 = mcInstrumentHandler.params();
+            
+            params.saveDirManual = params2.saveDirManual;           % only save saveDirManual and saveDirBackground...
+            params.saveDirBackground = params2.saveDirBackground;
+            
+            save([mcInstrumentHandler.getConfigFolder() 'params.mat'], 'params');
+        end
+        function loadParams()
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            
+            fname = [mcInstrumentHandler.getConfigFolder() 'params.mat'];
+            
+            if exist(fname, 'file')
+                p = load(fname);
+                params.saveDirManual = p.params.saveDirManual;       % only load saveDirManual and saveDirBackground...
+                params.saveDirBackground = p.params.saveDirBackground;
             end
             
             mcInstrumentHandler.params(params);
+        end
+        
+        function setSaveFolder(isBackground, str)
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            
+            if isBackground
+                params.saveDirBackground = str;
+            else
+                params.saveDirManual = str;
+            end
+            
+            mcInstrumentHandler.params(params);
+            mcInstrumentHandler.saveParams();
+        end
+        function str = getSaveFolder(isBackground)
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            
+            if isBackground
+                str = params.saveDirBackground;
+            else
+                str = params.saveDirManual;
+            end
         end
         
 %         function tf = save(data)
@@ -209,10 +269,11 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.params(params);
         end
         
-        function f = createFigure(title)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for piezo control).
+        function f = createFigure(obj, toolBarMode)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for piezo control).
             mcInstrumentHandler.open();
 %             mcInstrumentHandler.removeDeadFigures();
             params = mcInstrumentHandler.params();
+            
             
 %             if ~isempty(params.figures)
 %                 a = cellfun(@(x)(isvalid(x)), params.figures);
@@ -233,8 +294,63 @@ classdef mcInstrumentHandler < handle
 %             if sum(b) == 0
 %                 
 %             end
+
+            if ischar(obj)
+                str = obj;
+            else
+                str = class(obj);
+            end
             
-            f = figure('NumberTitle', 'off', 'Name', title);
+            f = figure('NumberTitle', 'off', 'Tag', str, 'Name', str, 'MenuBar', 'none', 'ToolBar', 'figure');
+            
+            
+            toolbar = findall(gcf, 'tag', 'FigureToolBar');
+%             
+%             tools = findall(toolbar)
+            set(toolbar,'Visible','off');
+            
+            switch toolBarMode
+                case 'saveopen'
+                    toolbar2 = findall(toolbar, 'tag', 'FigureToolBar');
+                    toolbar2.Visible = 'on';
+
+                    saveButton = findall(toolbar, 'tag', 'Standard.SaveFigure');
+                    saveButton.TooltipString = ['Save ' class(obj)];
+                    saveButton.ClickedCallback = @obj.saveGUI_Callback;
+                    saveButton.Visible = 'on';
+
+                    loadButton = findall(toolbar, 'tag', 'Standard.FileOpen');
+                    loadButton.TooltipString = ['Open ' class(obj)];
+                    loadButton.ClickedCallback = @obj.loadGUI_Callback;
+                    loadButton.Visible = 'on';
+                case 'none'
+                    % Nothing.
+            end
+            
+%             toolbar = findall(tools, 'tag', 'FigureToolBar');
+%             set(toolbar,'Visible','on');
+%             
+%             hToolbar = findall(gcf,'tag','FigureToolBar');
+%             hPrintButton = findall(hToolbar,'tag','Standard.PrintFigure');
+%             set(hPrintButton, 'ClickedCallback','printpreview(gcbf)', 'TooltipString','Print Preview');
+  
+%     'FigureToolBar'
+%     'Plottools.PlottoolsOn'
+%     'Plottools.PlottoolsOff'
+%     'Annotation.InsertLegend'
+%     'Annotation.InsertColorbar'
+%     'DataManager.Linking'
+%     'Exploration.Brushing'
+%     'Exploration.DataCursor'
+%     'Exploration.Rotate'
+%     'Exploration.Pan'
+%     'Exploration.ZoomOut'
+%     'Exploration.ZoomIn'
+%     'Standard.EditPlot'
+%     'Standard.PrintFigure'
+%     'Standard.SaveFigure'
+%     'Standard.FileOpen'
+%     'Standard.NewFigure'
 
             if ~isempty(params.globalWindowKeyPressFcn)
                 f.WindowKeyPressFcn = params.globalWindowKeyPressFcn;

@@ -1,6 +1,6 @@
-classdef mcData < handle
-% mcData is an object that encapsulates our generic data structure. This
-%   allows the same data structure to be used by multiple classes.
+classdef mcData < mcSavableClass
+% mcData is an object that encapsulates our generic data structure. This allows the same data structure to be used by multiple
+%   classes. For instance, the same mcData can be used by multiple mcProcessedDatas.
 %
 % Syntax:
 %   d = mcData()
@@ -9,6 +9,7 @@ classdef mcData < handle
 %   d = mcData(axes_, scans, inputs, integrationTime)               % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
 %   d = mcData(axes_, scans, inputs, integrationTime, inputTypes)   % In addition, inputTypes is a cell array defining whether each corresponding input should only be sampled at the begining and end of each scan or not. e.g. [1 0 1 0 0] means that all inputs except for the first and center will only be sampled at the beginning and end of each scan.
 %
+% Status: Mosly finished and commented. Loading needs finished.
 
     properties (SetObservable)
         data = [];                  % Our generic data structure.
@@ -77,8 +78,6 @@ classdef mcData < handle
     
     methods
         function d = mcData(varin)
-%             d.isInitialized = false;
-            
             switch nargin
                 case 0
                     d.data = mcData.defaultConfiguration();     % If no vars are given, assume a 10x10um piezo scan centered at zero.
@@ -329,9 +328,7 @@ classdef mcData < handle
             if d.data.numBeginEnd > 0                       % If there are some inputs on 'beginend'-mode...
                 for ii = 1:d.data.numInputs                 % ...then aquire this data...
                     if d.data.isInputBeginEnd(ii)
-                        d.data.begin{ii} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));   % Should measurment time be saved also?
-%                     else
-%                         d.data.begin{ii} = NaN;             % ...inputs on 'everypoint'-mode are set to NaN.
+                        d.data.begin{ii} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));   % Should measurement time be saved also?
                     end
                 end
             end
@@ -347,8 +344,6 @@ classdef mcData < handle
 
                 for ii = 1:d.data.numInputs     % Fill all of the inputs with data...
                     if ~d.data.isInputBeginEnd(ii)
-%                         d.data.data{ii} = NaN;        % Inputs on 'beginend'-mode are set to NaN.
-%                     else
                         if d.data.inputs{ii}.normalize  % If this input expects to be divided by the exposure time...
                             d.data.data{ii}(jj:jj+d.data.lengths(1)) = diff(double(data_(:, kk)))./diff(double(times));   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
                         else
@@ -368,8 +363,6 @@ classdef mcData < handle
                     for ii = 1:d.data.numInputs         % ...for every input...
                         if ~d.data.isInputBeginEnd(ii)
                             if d.data.inputDimension(ii) == 0
-%                                 d.data.data{ii}(jj+kk) = mod(jj+kk, 64);
-%                                 pause(d.data.integrationTime(ii));
                                 d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             else
                                 d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.

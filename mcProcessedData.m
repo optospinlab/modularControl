@@ -8,14 +8,17 @@ classdef mcProcessedData < handle
 % Syntax:
 %   pd = mcProcessedData(parent)            % Proccess parent data (mcData) with default settings
 %   pd = mcProcessedData(parent, params)    % Proccess parent data (mcData) with settings defined by 'params'
-    
+%
+% Status: Mostly finished, but has no clue what to do when data is not numeric (3D not done also). params not currently used,
+%   but probably will be when RGB is implemented.
+
     properties
-        parent = [];
-        viewer = [];
+        parent = [];        % Parent mcData class.
+        viewer = [];        % Parent(ish) mcViewer class.
         
         params = [];
         
-        listener = [];
+        listener = [];      % Listens to changes in parent.
     end
     properties (SetObservable)
         data = NaN;
@@ -57,35 +60,39 @@ classdef mcProcessedData < handle
         end
         
         function process(pd)
-%             disp('here');
-%             if exists(pd.parent.dataViewer)    % If there is a dataViewer...
-                switch pd.parent.data.plotMode
-                    case {1, '1D'}
-                        
-                    case {2, '2D'}
-                        
-                        nums = 1:pd.parent.data.numAxes;
-                        
-                        axisXindex = nums(pd.parent.data.layer == 1);
-                        axisYindex = nums(pd.parent.data.layer == 2);
-        
-                        d = pd.parent.data.data{pd.parent.data.input};
-                        
-                        if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
-%                             getIndex(pd.parent.data.lengths, axisXindex, axisYindex, pd.parent.data.layer - 2)
-                            pd.data = d( getIndex(pd.parent.data.lengths, axisXindex, axisYindex, pd.parent.data.layer - 2) );
-                        else                                        % Otherwise if d will be cell...
+            switch pd.parent.data.plotMode
+                case {1, '1D'}
+                    nums = 1:pd.parent.data.numAxes;
+
+                    axisXindex = nums(pd.parent.data.layer == 1);
+
+                    d = pd.parent.data.data{pd.parent.data.input};
+
+                    if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
+                        pd.data = d( getIndex(pd.parent.data.lengths, pd.parent.data.layer - 1, axisXindex) );
+                    else                                        % Otherwise if d will be cell...
 %                             c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );
-                            error('NotImplemented');
-                        end
-                    case {3, '3D'}
-                        error('3D NotImplemented');
-                    otherwise
-                        error('Plotmode not recognized...');
-                end
-%             else
-%                 error('NotImplemented: mcProcessedData must have a data viewer (and not sure if it should be implemented)');
-%             end
+                        error('NotImplemented');
+                    end
+                case {2, '2D'}
+                    nums = 1:pd.parent.data.numAxes;
+
+                    axisXindex = nums(pd.parent.data.layer == 1);
+                    axisYindex = nums(pd.parent.data.layer == 2);
+
+                    d = pd.parent.data.data{pd.parent.data.input};
+
+                    if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
+                        pd.data = d( getIndex(pd.parent.data.lengths, pd.parent.data.layer - 2, axisXindex, axisYindex) );
+                    else                                        % Otherwise if d will be cell...
+%                             c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );
+                        error('NotImplemented');
+                    end
+                case {3, '3D'}
+                    error('3D NotImplemented');
+                otherwise
+                    error('Plotmode not recognized...');
+            end
         end
     end
     

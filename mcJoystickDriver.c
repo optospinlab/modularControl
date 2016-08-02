@@ -1,12 +1,8 @@
 #include <mex.h>
 #define WIN32_LEAN_AND_MEAN
-// #define WINVER 0x0500
 #include <pthread.h>
 #include <Windows.h>
 #include <mmsystem.h>
-// #include <Xinput.h>
-
-// extern bool utIsInterruptPending();
 
 #define VERBOSE 1
 

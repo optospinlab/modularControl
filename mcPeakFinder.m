@@ -1,5 +1,7 @@
 function peak = mcPeakFinder(data)
 % mcPeakFinder finds peaks in 'data' and returns them in cell-array form.
+%
+% Status: Currently nothing. May be used in the future.
 
 gauss = @(x, a, b, c)( a*exp(-c.*(x-b).^2));
 

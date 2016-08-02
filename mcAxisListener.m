@@ -3,15 +3,19 @@ function f = mcAxisListener(varin)
 % number of axes, specified by axes_.
 %
 %   f =  mcAxisListener()                   % Makes listener panel in new figure that listens to all registered axes.
+% %   f =  mcAxisListener(config)             % Disabled.
+% %   f =  mcAxisListener('config.mat')       % Disabled.
 %   f =  mcAxisListener(axes_)              % Makes listener panel in new figure that listens to the contents of axes_.
 %   f1 = mcAxisListener(axes_, f1, pos)     % Makes listener panel in figure f1, with Position pos.
+%
+% Status: Mostly documented. Consider moving into class form and giving loadable config.
 
     fw = 300;               % Figure width
     fh = 500;               % Figure height
 
-    pp = 5;                 % Panel padding
-    pw = fw - 40;           % Panel width
-    ph = 200;               % Panel height
+%     pp = 5;                 % Panel padding
+%     pw = fw - 40;           % Panel width
+%     ph = 200;               % Panel height
 
     bh = 20;                % Button Height
             
@@ -26,12 +30,12 @@ function f = mcAxisListener(varin)
                 axes_ = varin;
             end
             
-            f = mcInstrumentHandler.createFigure('mcAxisListener');
+            f = mcInstrumentHandler.createFigure('mcAxisListener', 'none');
             
             f.Resize =      'off';
             f.Visible =     'off';
-            f.MenuBar =     'none';
-            f.ToolBar =     'none';
+%             f.MenuBar =     'none';
+%             f.ToolBar =     'none';
             
             pos =           [0, 0, fw, fh];
         case 3
@@ -44,32 +48,31 @@ function f = mcAxisListener(varin)
     
     l = length(axes_);
     
-    if nargin <= 1
+    if nargin <= 1                                  % If no figure was given to put the listener panel in...
         pos(4) = bh*(l+1);
-        f.Position =    [[100 100] pos(3:4)];
+        f.Position =    [[100 100] pos(3:4)];       % ...then appropriately adjust the size of the figure to fit the axes.
     end
     
-    bh = pos(4)/(l+1);
+    bh = pos(4)/(l+1);                              % Otherwise, equally space the axes in the space given.
     
-    p = uipanel('Parent', f, 'Position', pos);
+    p = uipanel('Parent', f, 'Position', pos);      % Make the panel that the axes uicontrols will live in.
     
     ii = 1;
     
-    for axis_ = axes_
-        uicontrol(  'Parent', p,...
+    for axis_ = axes_                                                                       % For each axis in the given list...
+        uicontrol(  'Parent', p,...                                                         % ...label the axis,...
                     'Style', 'text',...
                     'String', [axis_{1}.nameUnits() ': '],...
                     'Position', [pos(3)/4, pos(4) - (ii+.5)*bh, pos(3)/4, bh],...
                     'HorizontalAlignment', 'right',...
                     'tooltipString', axis_{1}.name());
-        edit = uicontrol(   'Parent', p,...
+        edit = uicontrol(   'Parent', p,...                                                 % ...make an (inactive) edit box to display the position,...
                             'Style', 'edit',...
                             'String', num2str(axis_{1}.getX(), '%.02f'),...
                             'Position', [pos(3)/2, pos(4) - (ii+.5)*bh, pos(3)/4, bh],...
                             'Enable', 'inactive');
-%         mco = ?mcAxis
-%         properties = mco.PropertyList.Name
-        prop = findprop(mcAxis, 'x');
+                        
+        prop = findprop(mcAxis, 'x');                                                       % ...and assign a property listener to the axis to watch for position updates.
         edit.UserData = event.proplistener(axis_{1}, prop, 'PostSet', @(s,e)(axisChanged_Callback(s, e, edit)));
         
         ii = ii + 1;
@@ -79,11 +82,8 @@ function f = mcAxisListener(varin)
 end
 
 function axisChanged_Callback(~, event, edit)
-%     src
-%     event
-%     edit
-    if isvalid(edit)
-        edit.String = num2str(event.AffectedObject.getX(), '%.02f');
+    if isvalid(edit)                                                    % If the edit uicontrol has not been deleted yet,...
+        edit.String = num2str(event.AffectedObject.getX(), '%.02f');    % ...then set the edit uicontrol string to be the position of the axis.
     end
 end
 

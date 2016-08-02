@@ -1,19 +1,18 @@
-classdef mcScalePanel
-    %UNTITLED5 Summary of this class goes here
-    %   Detailed explanation goes here
+classdef mcScalePanel < handle
+% mcScalePanel 
     
     properties
-        panel = [];
+        panel = [];     % The actual panel that the scale uicontrols live in (not sure why this isn't in gui).
         
-        min = 0;
-        max = 1;
+        min = 0;        % The minimum that the user chooses.
+        max = 1;        % The maximum that the user chooses.
         
-        dmin = NaN;
-        dmax = NaN;
+        dmin = NaN;     % The minimum of the currently-plotted data.
+        dmax = NaN;     % The maximum of the currently-plotted data.
         
-        gui = [];
+        gui = [];       % All the gui data (e.g. uicontrols) live here in this struct.
         
-        data = [];
+        data = [];      % Reference to parent mcProcessedData.
         
 %         datalistener = [];
     end
@@ -214,29 +213,24 @@ classdef mcScalePanel
             end
         end
         function applyScale(panel)
-%             disp('here1');
-%             a = panel.data
-%             a = panel.data.parent
-%             a = panel.data.parent.data
-%             a = panel.data.parent.data.data
-%             a = panel.data.parent.data.data.plotMode
             m = panel.gui.minSlid.Value;
             M = panel.gui.maxSlid.Value;
             
             if m == M
-                M = .001 + M;
+                M = .001 + M;   % Make better?
             end
 
-            if      panel.data.parent.data.plotMode == 1 	% The length of the chain is rather ridiculous. Consider changing.
-                ylim(panel.data.parent.dataViewer.a, [m M]);
-            elseif  panel.data.parent.data.plotMode == 2
-%                 disp('here');
-%                 panel.data.parent.dataViewer.a
-                caxis(panel.data.parent.dataViewer.a, [m M]);
+            if ~isempty(panel.data)
+                if      panel.data.parent.data.plotMode == 1
+                    ylim(panel.data.parent.dataViewer.a, [m M]);
+                elseif  panel.data.parent.data.plotMode == 2
+    %                 disp('here');
+    %                 panel.data.parent.dataViewer.a
+                    caxis(panel.data.parent.dataViewer.a, [m M]);
+                end
             end
         end
     end
-    
 end
 
 

@@ -1,19 +1,19 @@
-classdef mcUserInput < handle
+classdef mcUserInput < mcSavableClass
 % mcUserInputGUI returns the uitabgroup reference that contains three tabs:
-%   - Goto:     Buttons to control the fields.
+%   - Goto:     Buttons and edit fields to control the axes.
 %   - Keyboard: which contains fields that customize wasdqe/udlr-+ keyboard input.
 %   - Joystick: which contains fields that customize a single joystick (sorry, multiple joysticks are unsupported).
 %
-%   obj = mcUserInput()             % 
-%   obj = mcUserInput(config)       % 
-%   obj = mcUserInput('config.mat') % 
+%   obj = mcUserInput()                 % 
+%   obj = mcUserInput(config)           % 
+%   obj = mcUserInput('config.mat')     % 
 %
-%   tabgroup = mcUserInputGUI()
-%   tabgroup = mcUserInputGUI(f)
-%   tabgroup = mcUserInputGUI(f)
+%   tabgroup = obj.mcUserInputGUI()
+%   tabgroup = obj.mcUserInputGUI(f)
+%   tabgroup = obj.mcUserInputGUI(f)
     
     properties
-        config = [];            % All static variables (e.g. valid range) go in config.
+%         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
         
         gui = [];               % Variables for the gui.
         
@@ -59,7 +59,7 @@ classdef mcUserInput < handle
                 case 0
                     obj.config = mcUserInput.defaultConfig();   % If no config is given, assume default config.
                 case 1
-                    obj.config = varin;                         % Otherwise, use the given config.
+                    obj.interpretConfig(varin);                 % Otherwise, use the given config (inherited from mcSavableClass).
                 otherwise
                     error('NotImplemented');
             end
@@ -82,13 +82,13 @@ classdef mcUserInput < handle
                     obj = varin;
                     mcInstrumentHandler.setGlobalWindowKeyPressFcn(@obj.keyPressFunction);
                     
-                    f = mcInstrumentHandler.createFigure('mcUserInput');
+                    f = mcInstrumentHandler.createFigure(obj, 'saveopen');
                     
                     f.Resize =      'off';
                     f.Position =    [100, 100, fw, fh];
                     f.Visible =     'off';
                     f.MenuBar =     'none';
-                    f.ToolBar =     'none';
+%                     f.ToolBar =     'none';
                     
                     units = 'normalized';
                     pos = [0 0 1 1];
@@ -194,6 +194,8 @@ classdef mcUserInput < handle
                 
                 y = y - bh;
             end
+
+            obj.gui.joyThrottle = 1;
             
             f.Visible = 'on';
         end
@@ -227,7 +229,7 @@ classdef mcUserInput < handle
         
         function joyActionFunction(obj, ~, event)
             if isvalid(obj)
-                
+                obj.gui.joyThrottle = 1;
             else
                 % Do something to stop the joystick.
             end
@@ -298,8 +300,16 @@ classdef mcUserInput < handle
                 else
                     if multiplier
                         val = a.getX() + direction*multiplier*a.config.keyStep;
+
+                        if abs(a.getXt() - val) > abs(2*direction*multiplier*a.config.keyStep)
+                            return;
+                        end
                     else
-                        val = a.getX() + direction*a.config.joyStep;
+                        val = a.getX() + direction*a.config.joyStep*obj.gui.joyThrottle;
+
+                        if abs(a.getXt() - val) > abs(2*a.config.joyStep*obj.gui.joyThrottle)
+                            return;
+                        end
                     end
                 end
                 
@@ -317,13 +327,13 @@ classdef mcUserInput < handle
                 a.goto(val);
                 
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0       0];         % Red
-                pause(.05);
-%                 drawnow;
+                pause(.016);
+%                 drawnow limitrate;
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0.9400    0.9400];
 %                 drawnow;
             else
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0         0         0.9400];  % Blue
-                pause(.05);
+                pause(.016);
 %                 drawnow;
                 obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0.9400    0.9400];
 %                 drawnow;

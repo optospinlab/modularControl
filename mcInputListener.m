@@ -1,8 +1,8 @@
 function mcInputListener(varin)
-    % mcInputListener is the equivalent of what was previously called
-    % 'the counter'. It reads and plots data from a single mcInput. This is
-    % unfinished.
-    
+% mcInputListener is the equivalent of what was previously called 'the counter'. It reads and plots data from a single mcInput. This is unfinished.
+%    
+% Status: Put in mcSavable class form? Remove entirely in favor of mcData and mcDataViewer? Not sure at the moment.
+
     switch nargin
         case 0
             params.input = mcInstrumentHandler.register(mcInput());
@@ -30,13 +30,13 @@ function mcInputListener(varin)
         p = plot(axes_, NaN(1, params.pixels));
     elseif dims == 1 && params.pixels == 0
         error('Viewing vector NotImplimented...');
-        p = plot(axes_, NaN(1, max(params.input.config.kind.sizeInput)));
+%         p = plot(axes_, NaN(1, max(params.input.config.kind.sizeInput)));
     elseif dims == 1
         error('Scrolling image NotImplimented...');
-        p = image(axes_, NaN(max(params.input.config.kind.sizeInput), params.pixels));
+%         p = image(axes_, NaN(max(params.input.config.kind.sizeInput), params.pixels));
     elseif dims == 2
         error('Viewing image NotImplimented...');
-        p = image(axes_, NaN(params.input.config.kind.sizeInput));
+%         p = image(axes_, NaN(params.input.config.kind.sizeInput));
     else
         error('The dimension of the input must be 0 (singular), 1 (vector), or 2 (image)');
     end
@@ -66,10 +66,9 @@ function mcInputListener(varin)
         s.NotifyWhenDataAvailableExceeds =          1;
         s.NumberOfScans =                           s.Rate;
         
-        lh = addListener(s, 'DataAvailable', @getData);
+        addListener(s, 'DataAvailable', @getData);
         
         startBackground(s);
-        
     else
         t = timer('TimerFcn', {@getData, p}, 'Period', params.exposure, 'ExecutionMode', 'fixedRate', 'TasksToExecute', Inf);
         start(t);
@@ -77,7 +76,7 @@ function mcInputListener(varin)
 
 end
 
-function getData(src, event, p)
+function getData(src, ~, p)
 %     event
     
     if ~isvalid(p)
@@ -100,10 +99,7 @@ function getData(src, event, p)
         p.YData = [p.YData(2:end) data];
     end
 end
-% 
-% function closeFigure(src, data, lh)
-%     delete(src);
-%     delete(lh);
-% end
+
+
 
 

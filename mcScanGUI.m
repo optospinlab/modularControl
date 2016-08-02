@@ -1,4 +1,4 @@
-classdef mcScanGUI < handle
+classdef mcScanGUI < mcSavableClass
 % mcScanGUI
     
     properties

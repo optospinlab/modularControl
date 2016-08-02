@@ -1,15 +1,5 @@
-classdef mcAxis < handle
-% Abstract class for instruments with linear motion. This includes:
-%   - NIDAQ
-%       + Piezos
-%       + Galvos
-%   - Micrometers
-%
-% IMPORTANT: Not sure whether a better architecture decision would be to
-% have kinds (such as piezos and galvos) extend the mcAxis class in their
-% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
-% switch statements that are currently in the code.
-% UPDATE: Decided to change this eventually, but keep it the same for now.
+classdef mcAxis < mcSavableClass
+% Abstract class for instruments with linear motion.
 %
 % Syntax:
 %   a = mcAxis()                                % Open with default configuration.
@@ -31,9 +21,20 @@ classdef mcAxis < handle
 %   tf =    a.inRange(x)                        % Returns true if x is in the external range of a.
 %
 %   tf =    a.goto(x)                           % If x is in range, makes sure axis is open, moves axis to x, and returns success.
+%
+%   x =     a.getX(x)                           % Returns the position of the axis (a.x) in external units.
+%   x =     a.getXt(x)                          % Returns the target position of the axis (a.xt) in external units.
+%
+% Status: Finished and mostly commented. Future plans below.
+%
+% IMPORTANT: Not sure whether a better architecture decision would be to
+% have kinds (such as piezos and galvos) extend the mcAxis class in their
+% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
+% switch statements that are currently in the code.
+% UPDATE: Decided to change this eventually, but keep it the same for now.
 
     properties
-        config = [];            % All static variables (e.g. valid range) go in config.
+%         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
         
         s = [];                 % Session, whether serial, NIDAQ, or etc.
         t = []                  % Timer to read the axis, for certain axes which do not travel immediately.
@@ -453,6 +454,10 @@ classdef mcAxis < handle
             x = a.config.kind.int2extConv(a.x);
         end
         
+        function x = getXt(a)       % Returns the value of a.xt in external units.
+            x = a.config.kind.int2extConv(a.xt);
+        end
+        
         function tf = read(a)       % Reads the value of a.x internally; Returns success.
             tf = true;
             
@@ -587,6 +592,9 @@ classdef mcAxis < handle
                                 warning([num2str(x) ' ' a.extUnits ' not a valid output.']);
                                 tf = false;
                             end
+                        case 'grid'
+                            a.config.grid.virtualPosition(a.config.grid.index) = x;     % Set the grid to the appropriate virtual coordinates...
+                            a.config.grid.goto();                                       % Then tell the grid to go to this position.
                         otherwise
                             error('Kind not understood...');
                     end
@@ -598,9 +606,13 @@ classdef mcAxis < handle
         function wait(a)            % Wait for the axis to reach the target value.
             a.read();               % Removed possibility of delay if the axis is already there but has not been read...
                 
-            while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
-                a.read();
-                pause(.1);
+            if strcmpi(a.config.kind.kind, 'grid')  % If it is a virtual grid axis...
+                a.config.grid.wait();               % ...then use the virtual grid wait() function.
+            else
+                while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
+                    a.read();
+                    pause(.1);
+                end
             end
         end
         

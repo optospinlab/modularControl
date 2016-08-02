@@ -1,6 +1,19 @@
-classdef mcDataViewer < handle
+classdef mcDataViewer < mcSavableClass
 % mcDataViewer views data.
+%
+% Status: Mostly finished, but largely uncommented. Future: definitely RGB, maybe 3D?
     
+    properties
+        colorR = [1 0 0];
+        colorG = [0 1 0];
+        colorB = [0 0 1];
+        
+        colorSel = [1 0 1];  % Color of the lines and points denoting...     ...the currently-selected position
+        colorPix = [1 1 0];  %                                               ...the pixel nearest to the currently-selected position
+        colorAct = [0 1 1];  %                                               ...the actual (physical) position of the axes
+        colorPrv = [0 .7 .7];  %                                              ...the previous (physical) position of the axes (e.g. for optimization).
+    end
+
     properties
         data = [];          % mcData structure currently being plotted.
         
@@ -186,14 +199,20 @@ classdef mcDataViewer < handle
                 end
             end
             
-            gui.df = mcInstrumentHandler.createFigure('Data Viewer (Generic)');
+            gui.df = mcInstrumentHandler.createFigure('Data Viewer (Generic)', 'saveopen');
             gui.df.CloseRequestFcn = @gui.closeRequestFcn;
             menu = uicontextmenu;
 
-            gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on'); %, 'Xgrid', 'on', 'Ygrid', 'on'
+            gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on', 'UIContextMenu', menu); %, 'Xgrid', 'on', 'Ygrid', 'on'
             colormap(gui.a, gray(256));
             
             hold(gui.a, 'on');
+            
+            gui.r.process();
+            if gui.isRGB
+                gui.g.process();
+                gui.b.process();
+            end
             
             x = 1:50;
             y = 1:50;
@@ -201,29 +220,32 @@ classdef mcDataViewer < handle
             c = mod(magic(50),2); %ones(50);
             
             gui.i = imagesc(x, y, c, 'Parent', gui.a, 'alphadata', c, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
-            gui.pos.sel = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [1 0 1], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
-            gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [1 1 0], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
-            gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [0 1 1], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
-            gui.pos.prv = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', [0 .5 .5], 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
-            
             gui.p = plot(x, rand(1, 50), x, rand(1, 50), x, rand(1, 50), 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
-            gui.p(1).Color = [1 0 0];
-            gui.p(2).Color = [0 1 0];
-            gui.p(3).Color = [0 0 1];
             
-            gui.posL.sel = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', [1 0 1], 'PickableParts', 'none', 'Linewidth', 1, 'Visible', 'off');
-            gui.posL.pix = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', [1 1 0], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
-            gui.posL.act = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', [0 1 1], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
-            gui.posL.prv = plot([0 0], [-Inf Inf], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'LineStyle', '--', 'Color', [0 .5 .5], 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
+            gui.plotData_Callback(0,0);
+            
+            gui.pos.prv = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPrv, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
+            gui.pos.sel = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorSel, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
+            gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPix, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
+            gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorAct, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
+            
+            gui.p(1).Color = gui.colorR;
+            gui.p(2).Color = gui.colorG;
+            gui.p(3).Color = gui.colorB;
+            
+            gui.posL.prv = plot([0 0], [-100 100], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'LineStyle', '--', 'Color', gui.colorPrv, 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
+            gui.posL.sel = plot([0 0], [-100 100], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', gui.colorSel, 'PickableParts', 'none', 'Linewidth', 1, 'Visible', 'off');
+            gui.posL.pix = plot([0 0], [-100 100], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', gui.colorPix, 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
+            gui.posL.act = plot([0 0], [-100 100], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', gui.colorAct, 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
             
             gui.a.YDir = 'normal';
             
-            gui.menus.ctsMenu = uimenu(menu, 'Label', ' Value:    ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
-            gui.menus.pixMenu = uimenu(menu, 'Label', ' Pixel:    [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
-            gui.menus.posMenu = uimenu(menu, 'Label', ' Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value:    ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel:    [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.posMenu = uimenu(menu, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
                 mGoto = uimenu(menu, 'Label', 'Goto');
-                mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, gui.pos.pix});
-                mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, gui.pos.sel});
+                mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0});
+                mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1});
                 mNorm = uimenu(menu, 'Label', 'Normalization', 'Enable', 'off');
                 mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',@d);
                 mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',@b);
@@ -291,13 +313,27 @@ classdef mcDataViewer < handle
             end
         end
         
-        function gotoPostion_Callback(gui, ~, ~, scatter)
-            axisX = gui.data.data.axes{gui.data.data.layer == 1};
-            axisX.goto(scatter.XData(1));
-            
-            if gui.data.data.plotMode == 2
+        function gotoPostion_Callback(gui, ~, ~, isSel)
+            if gui.data.data.plotMode == 1
+                axisX = gui.data.data.axes{gui.data.data.layer == 1};
+                
+                if isSel        % If the user wants to go to the selected position
+                    axisX.goto(gui.posL.sel.XData(1));
+                else            % If the user wants to go to the selected pixel
+                    axisX.goto(gui.posL.pix.XData(1));
+                end
+            elseif gui.data.data.plotMode == 2
+                axisX = gui.data.data.axes{gui.data.data.layer == 1};
                 axisY = gui.data.data.axes{gui.data.data.layer == 2};
-                axisY.goto(scatter.YData(1));
+                
+                
+                if isSel        % If the user wants to go to the selected position
+                    axisX.goto(gui.pos.sel.XData(1));
+                    axisY.goto(gui.pos.sel.YData(1));
+                else            % If the user wants to go to the selected pixel
+                    axisX.goto(gui.pos.pix.XData(1));
+                    axisY.goto(gui.pos.pix.YData(1));
+                end
             end
         end
         
@@ -315,7 +351,7 @@ classdef mcDataViewer < handle
             gui.posL.sel.Visible =   pvis;
             gui.posL.pix.Visible =   pvis;
             gui.posL.act.Visible =   pvis;
-            gui.posL.prv.Visible =   pvis;
+%             gui.posL.prv.Visible =   pvis;
             
             if gui.isRGB
                 gui.p(2).Visible =       pvis;
@@ -329,19 +365,25 @@ classdef mcDataViewer < handle
             gui.pos.sel.Visible =   ivis;
             gui.pos.pix.Visible =   ivis;
             gui.pos.act.Visible =   ivis;
-            gui.pos.prv.Visible =   ivis;
+%             gui.pos.prv.Visible =   ivis;
         end
         
         function plotSetup(gui)
             switch gui.data.data.plotMode
                 case 1
-                    gui.p.XData = gui.data.data.scans{gui.data.data.layer == 1};
-                    gui.a.XLim = [gui.p.XData(1) gui.p.XData(end)];         % Check to see if range is zero!
+%                     gui.data.data.layer == 1
+                    disp('here1');
+                    gui.p(1).XData = gui.data.data.scans{gui.data.data.layer == 1};
+                    gui.p(2).XData = gui.data.data.scans{gui.data.data.layer == 1};
+                    gui.p(3).XData = gui.data.data.scans{gui.data.data.layer == 1};
+                    gui.a.XLim = [min(gui.p(1).XData) max(gui.p(1).XData)];         % Check to see if range is zero!
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
+                    gui.a.YLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
+                    disp('there1');
                 case 2
                     gui.i.XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.i.YData = gui.data.data.scans{gui.data.data.layer == 2};
-                    [min(gui.i.XData) max(gui.i.XData)]
+%                     [min(gui.i.XData) max(gui.i.XData)]
                     gui.a.XLim = [min(gui.i.XData) max(gui.i.XData)];         % Check to see if range is zero!
                     gui.a.YLim = [min(gui.i.YData) max(gui.i.YData)];         % Check to see if range is zero!
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
@@ -362,21 +404,20 @@ classdef mcDataViewer < handle
                     if gui.isRGB
                         
                     else
+                        gui.a.DataAspectRatioMode = 'auto';
+%                         data = gui.r.data
                         gui.p(1).YData = gui.r.data;
+                        gui.scale.gray.dataChanged_Callback(0,0);
                     end
                 case 2
                     if gui.isRGB
-                        
                     else
-%                         length(gui.r.data)
-%                         gui.r.data
+                        gui.a.DataAspectRatioMode = 'manual';
+                        gui.a.DataAspectRatio = [1 1 1];
+%                         data = gui.r.data
                         gui.i.CData =       gui.r.data;
                         gui.i.AlphaData =   ~isnan(gui.r.data);
                         gui.scale.gray.dataChanged_Callback(0,0);
-                        
-%                         gui.a.CLimMode = 'manual';
-%                         gui.a.CLim = [0 50];
-%                         caxis(gui.a, [0 25]);
                     end
             end
         end
@@ -388,12 +429,32 @@ classdef mcDataViewer < handle
                 
                 switch gui.data.data.plotMode
                     case 1
-                        xlist = (gui.p.XData - x) .* (gui.p.XData - x);
+                        xlist = (gui.p(1).XData - x) .* (gui.p(1).XData - x);
                         xi = find(xlist == min(xlist), 1);
-                        xp = gui.i.XData(xi);
+                        xp = gui.p(1).XData(xi);
+                        
+%                         gui.posL
+%                         gui.posL.sel
+%                         gui.posL.sel.Visible
+                        
+                        axisX = gui.data.data.axes{gui.data.data.layer == 1};
                         
                         gui.posL.sel.XData = [x x];
                         gui.posL.pix.XData = [xp xp];
+                        
+%                         gui.posL.sel.YData = [-100 100];
+%                         gui.posL.pix.XData = [-100 100];
+
+                        valr = gui.p(1).YData(xi);
+
+                        if isnan(valr)
+                            gui.menus.ctsMenu.Label = 'Value:    ----- cts/sec';
+                        else
+                            gui.menus.ctsMenu.Label = ['Value:    ' num2str(valr, 4) ' '];
+                        end
+                        
+                        gui.menus.posMenu.Label = ['Position: ' num2str(x, 4)  ' ' axisX.config.kind.extUnits];
+                        gui.menus.pixMenu.Label = ['Pixel:    '    num2str(xp, 4) ' ' axisX.config.kind.extUnits];
                     case 2
                         xlist = (gui.i.XData - x) .* (gui.i.XData - x);
                         ylist = (gui.i.YData - y) .* (gui.i.YData - y);
@@ -413,13 +474,13 @@ classdef mcDataViewer < handle
                         val = gui.i.CData(yi, xi);
 
                         if isnan(val)
-                            gui.menus.ctsMenu.Label = ' Value:    ----- cts/sec';
+                            gui.menus.ctsMenu.Label = 'Value:    ----- cts/sec';
                         else
-                            gui.menus.ctsMenu.Label = [' Value:    ' num2str(val, 4) ' '];
+                            gui.menus.ctsMenu.Label = ['Value:    ' num2str(val, 4) ' '];
                         end
                         
-                        gui.menus.posMenu.Label = [' Position: [ ' num2str(x, 4)  ' ' axisX.config.kind.extUnits ', ' num2str(y, 4)  ' ' axisY.config.kind.extUnits ' ]'];
-                        gui.menus.pixMenu.Label = [' Pixel:    [ '    num2str(xp, 4) ' ' axisX.config.kind.extUnits ', ' num2str(yp, 4) ' ' axisY.config.kind.extUnits ' ]'];
+                        gui.menus.posMenu.Label = ['Position: [ ' num2str(x, 4)  ' ' axisX.config.kind.extUnits ', ' num2str(y, 4)  ' ' axisY.config.kind.extUnits ' ]'];
+                        gui.menus.pixMenu.Label = ['Pixel:    [ '    num2str(xp, 4) ' ' axisX.config.kind.extUnits ', ' num2str(yp, 4) ' ' axisY.config.kind.extUnits ' ]'];
                 end
             end
         end
@@ -470,18 +531,18 @@ classdef mcDataViewer < handle
                         changed = cellfun(@(x)(x == src), gui.params1D.chooseList);
                         
                         layer(changed) = 1;
-%                         disp(layer);
                     end
                     
                     if sum(layer == 1) > 1
                         changed = cellfun(@(x)(x == src), gui.params1D.chooseList);
                         
                         layer(layer == 1 & ~changed) = 2;
-%                         disp(layer);
                     end
                     
                     for ii = 1:length(layer)
-                        gui.params1D.chooseList{ii}.Value = layer(ii);
+%                         if layer(ii) ~= layerPrev(ii) || changed(ii)
+                            gui.params1D.chooseList{ii}.Value = layer(ii);
+%                         end
                     end
                 case 2
                     layer = cellfun(@(x)(x.Value), gui.params2D.chooseList);
@@ -509,7 +570,9 @@ classdef mcDataViewer < handle
                     end
                     
                     for ii = 1:length(layer)
-                        gui.params2D.chooseList{ii}.Value = layer(ii);
+                        if layer(ii) ~= layerPrev(ii)
+                            gui.params2D.chooseList{ii}.Value = layer(ii);
+                        end
                     end
                 otherwise
                     layer = 0;
@@ -540,7 +603,8 @@ classdef mcDataViewer < handle
                     end
             end
             
-            gui.makeProperVisibility()
+            gui.updateLayer_Callback(0, 0);
+            gui.makeProperVisibility();
         end
         function lowerTabSwitch_Callback(gui, src, event)
             switch event.NewValue
@@ -554,7 +618,7 @@ classdef mcDataViewer < handle
 end
 
 function copyLabelToClipboard(src, ~)
-    clipboard('copy', src.Label(12:end));
+    clipboard('copy', src.Label(11:end));
 end
 
 
