@@ -73,20 +73,20 @@ while going2
     plot([X,X], [min(y)-5, max(y)+5]);
     
 %     locs = locs(1) - 1;
-    X = locs(1);
-    
-    plot([X,X], [min(y)-5, max(y)+5]);
-    
-    rx = round(abs(x(end) - x(1))/20)
-    [~, m] = max(y);
-    
-    smally = (x > x(m) - rx & x < x(m) + rx)
-    [~, sm] = max(movmean(y(smally),rx));
-    sx = x(smally);
-    X = sx(sm);
-    
-    
-    plot([X,X], [min(y)-5, max(y)+5]);
+%     X = locs(1);
+%     
+%     plot([X,X], [min(y)-5, max(y)+5]);
+%     
+%     rx = round(abs(x(end) - x(1))/20)
+%     [~, m] = max(y);
+%     
+%     smally = (x > x(m) - rx & x < x(m) + rx)
+%     [~, sm] = max(movmean(y(smally),rx));
+%     sx = x(smally);
+%     X = sx(sm);
+%     
+%     
+%     plot([X,X], [min(y)-5, max(y)+5]);
     
 %     ft = fittype('a*exp(-((x-b)^2)/c)');
 %     
@@ -146,30 +146,6 @@ end
         m = min(min(final)); M = max(max(final));
         if m ~= M
             data = (final - m)/(M - m);
-
-%             try
-%                 [mx, my] = myMean(data.*(data == 1), X, Y);
-% 
-%     %             data = data*
-% 
-%                 dim = size(data);
-%     %             factor = zeros(dim(1));
-% 
-%                 for x1 = 1:dim(1)
-%                     for y1 = 1:dim(1)
-%                         data(y1, x1) = data(y1, x1)/(1 + (X(x1) - mx)^2 + (Y(y1) - my)^2);
-%                     end
-%                 end
-%                 
-%                 m = min(min(data)); M = max(max(data));
-% 
-%                 if m ~= M
-%                     data = (data - m)/(M - m);
-%                 end
-%             
-%             catch err
-%                 display(['Attenuation failed: ' err.message]);
-%             end
 
             list = .5:.05:.95;
 

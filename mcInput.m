@@ -103,11 +103,14 @@ classdef mcInput < mcSavableClass
         function config = spectrumConfig()
             config.name =               'Default Spectrometer Input';
 
-            config.kind.kind =          'INSERT_DEVICE_NAME_spectrum';
+            config.kind.kind =          'function';
             config.kind.name =          'Default Spectrum Input';
             config.kind.extUnits =      'cts';                  % 'External' units.
             config.kind.normalize =     false;                  % Should we normalize?
             config.kind.sizeInput =    [1 512];                  % This input returns a vector, not a number...
+            
+            config.fnc =                @aquireSpectrum;
+            config.description =        'Aquires a spectrum';
             
             % Not finished!
         end
@@ -271,17 +274,17 @@ classdef mcInput < mcSavableClass
         
         function data = measure(I, integrationTime)
             if I.inEmulation
-                switch lower(I.config.kind.kind)
-                    case {'nidaqcounter'}
+%                 switch lower(I.config.kind.kind)
+%                     case {'nidaqcounter'}
+% %                         pause(integrationTime);
+%                         data = rand*100;
+%                     case {'function'}
+% %                         pause(integrationTime);
+%                         data = I.config.fnc();
+%                     otherwise
 %                         pause(integrationTime);
-                        data = rand*100;
-                    case {'function'}
-%                         pause(integrationTime);
-                        data = I.config.fnc();
-                    otherwise
-%                         pause(integrationTime);
-                        data = rand(I.config.kind.sizeInput)*100;
-                end
+                        data = rand([I.config.kind.sizeInput 1])*100;
+%                 end
             else
                 if I.open()
                     switch lower(I.config.kind.kind)
@@ -322,6 +325,58 @@ classdef mcInput < mcSavableClass
                 end
             end
         end
+    end
+end
+
+function spectrum = aquireSpectrum()
+    spectrum = -1;
+
+    t = now;
+
+    % create the trigger file
+    fh = fopen('Z:\WinSpec_Scan\matlabfile.txt', 'w');  
+    if (fh == -1) 
+        error('oops, file cannot be written'); 
+    end 
+    fprintf(fh, 'Trigger Spectrum\n');
+    fclose(fh);
+
+    i = 0;
+
+    while i < 120 && all(spectrum == -1)
+        try
+            disp(['Waiting ' num2str(i)]);
+            d = dir('Z:\WinSpec_Scan\spec.SPE');
+
+%                 display(['      datenum: ' num2str(d.datenum, 100) ',']);
+%                 display(['            t: ' num2str(t, 100)]);
+            if d.datenum > t - 4/(24*60*60)
+                spectrum = readSPE('Z:\WinSpec_Scan\spec.SPE');
+            end
+        catch err
+%                 disp(err)
+        end
+
+        pause(1);
+        i = i + 1;
+    end
+
+    if ~all(spectrum == -1)
+        disp('Found Spectrum');
+        i = 0;
+        while i < 20
+            try
+                movefile('Z:\WinSpec_Scan\spec.SPE', [mcInstrumentHandler.timestamp() '.SPE']);
+                break;
+            catch err
+                pause(.5);
+                display(err.message);
+            end
+            i = i + 1;
+        end
+    else
+        disp('Did Not Find Spectrum');
+        spectrum = NaN(1, 512);
     end
 end
 

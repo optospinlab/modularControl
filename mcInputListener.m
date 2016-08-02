@@ -1,7 +1,7 @@
 function mcInputListener(varin)
 % mcInputListener is the equivalent of what was previously called 'the counter'. It reads and plots data from a single mcInput. This is unfinished.
 %    
-% Status: Put in mcSavable class form? Remove entirely in favor of mcData and mcDataViewer? Not sure at the moment.
+% Status: Put in mcSavableClass form? Remove entirely in favor of mcData and mcDataViewer? Not sure at the moment.
 
     switch nargin
         case 0
@@ -14,7 +14,7 @@ function mcInputListener(varin)
             error('mcInputListener unfinished');
     end
     
-    f = mcInstrumentHandler.createFigure(['mcInputListener - ' params.input.nameShort()]);
+    f = mcInstrumentHandler.createFigure(['mcInputListener - ' params.input.nameShort()], 'none');
             
 %     f.Resize =      'off';
 %     f.Visible =     'off';
@@ -29,13 +29,13 @@ function mcInputListener(varin)
     if dims == 0
         p = plot(axes_, NaN(1, params.pixels));
     elseif dims == 1 && params.pixels == 0
-        error('Viewing vector NotImplimented...');
+        error('Viewing vector NotImplemented...');
 %         p = plot(axes_, NaN(1, max(params.input.config.kind.sizeInput)));
     elseif dims == 1
-        error('Scrolling image NotImplimented...');
+        error('Scrolling image NotImplemented...');
 %         p = image(axes_, NaN(max(params.input.config.kind.sizeInput), params.pixels));
     elseif dims == 2
-        error('Viewing image NotImplimented...');
+        error('Viewing image NotImplemented...');
 %         p = image(axes_, NaN(params.input.config.kind.sizeInput));
     else
         error('The dimension of the input must be 0 (singular), 1 (vector), or 2 (image)');

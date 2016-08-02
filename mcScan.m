@@ -1,5 +1,5 @@
-classdef mcScanGUI < mcSavableClass
-% mcScanGUI
+classdef mcScan < mcSavableClass
+% mcScan
     
     properties
         f = [];
@@ -22,7 +22,7 @@ classdef mcScanGUI < mcSavableClass
     end
     
     methods
-        function gui = mcScanGUI(varin)
+        function gui = mcScan(varin)
             
             gui.f = figure('MenuBar', 'none', 'ToolBar', 'none', 'NumberTitle', 'off', 'Name', 'mcScanGUI (Generic)', 'Resize', 'off', 'Position', [100, 100, gui.pw + 24, 15*gui.ph]);%, 'SizeChangedFcn', @gui.sizeChangedFcn);
             

@@ -80,6 +80,9 @@ classdef mcInstrumentHandler < handle
                 end
                 
                 mcInstrumentHandler.loadParams();
+            
+                mkdir(params.saveDirManual);
+                mkdir(params.saveDirBackground);
             end
         end
         
@@ -117,6 +120,8 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
+            mkdir(str);
+            
             if isBackground
                 params.saveDirBackground = str;
             else
@@ -136,6 +141,22 @@ classdef mcInstrumentHandler < handle
                 str = params.saveDirManual;
             end
         end
+        function str = timestamp(varin)
+            if ischar(varin)
+                folder = [getSaveFolder(0) varin filesep datestr(now,'yyyy_mm_dd')];
+            elseif isnumeric(varin) || islogical(varin)
+                folder = [getSaveFolder(varin) datestr(now,'yyyy_mm_dd')];
+            else
+                error('mcInstrumentHandler: timestamp varin not understood');
+            end
+            
+            if ~exist(folder, 'folder')
+                mkdir(folder);
+            end
+            
+            str = [folder filesep datestr(now,'HH_MM_SS_FFF')];
+        end
+        
         
 %         function tf = save(data)
 %             mcInstrumentHandler.open();
@@ -268,6 +289,11 @@ classdef mcInstrumentHandler < handle
                 
             mcInstrumentHandler.params(params);
         end
+        function fcn = globalWindowKeyPressFcn()
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            fcn = params.globalWindowKeyPressFcn;
+        end
         
         function f = createFigure(obj, toolBarMode)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for piezo control).
             mcInstrumentHandler.open();
@@ -303,23 +329,65 @@ classdef mcInstrumentHandler < handle
             
             f = figure('NumberTitle', 'off', 'Tag', str, 'Name', str, 'MenuBar', 'none', 'ToolBar', 'figure');
             
-            
-            toolbar = findall(gcf, 'tag', 'FigureToolBar');
+%             toolbar = findall(gcf, 'tag', 'FigureToolBar')
+% %             
+% %             tools = findall(toolbar)
+%             set(toolbar.Children,'Visible','off');
+
+%             disableList = { 'Plottools.PlottoolsOn',...
+%                             'Plottools.PlottoolsOff',...
+%                             'Annotation.InsertLegend',...
+%                             'Annotation.InsertColorbar',...
+%                             'DataManager.Linking',...
+%                             'Exploration.Brushing',...
+%                             'Exploration.DataCursor',...
+%                             'Exploration.Rotate',...
+%                             'Exploration.Pan',...
+%                             'Exploration.ZoomOut',...
+%                             'Exploration.ZoomIn',...
+%                             'Standard.EditPlot',...
+%                             'Standard.PrintFigure',...
+%                             'Standard.SaveFigure',...
+%                             'Standard.FileOpen',...
+%                             'Standard.NewFigure'}
+%                         
+%             for str = disableList
+%                 toolbarObj = findall(gcf, 'tag', str)
+%                 if ~isempty(toolbarObj)
+%                     str
+%                     toolbarObj.Visible = 'off';
+%                 end
+%             end
+
+%             graphObjs = findall(gcf);
 %             
-%             tools = findall(toolbar)
-            set(toolbar,'Visible','off');
+%             graphObjs(3)
+% 
+%             graphObjs(3).Visible = 'off';
+
+            graphObjs = findall(gcf);
+            
+            set(graphObjs(3:end), 'Visible', 'off');
+
+%             for graphObj = graphObjs(3:end)
+%                 graphObj
+%                 graphObj(1)
+%                 graphObj(1).Visible = 'off';
+%             end
             
             switch toolBarMode
                 case 'saveopen'
-                    toolbar2 = findall(toolbar, 'tag', 'FigureToolBar');
-                    toolbar2.Visible = 'on';
+                    display('here');
+%                     toolbar2 = findall(toolbar, 'tag', 'FigureToolBar')
+%                     toolbar2.Visible = 'on';
+                    
 
-                    saveButton = findall(toolbar, 'tag', 'Standard.SaveFigure');
+                    saveButton = findall(gcf, 'tag', 'Standard.SaveFigure');
                     saveButton.TooltipString = ['Save ' class(obj)];
                     saveButton.ClickedCallback = @obj.saveGUI_Callback;
                     saveButton.Visible = 'on';
 
-                    loadButton = findall(toolbar, 'tag', 'Standard.FileOpen');
+                    loadButton = findall(gcf, 'tag', 'Standard.FileOpen');
                     loadButton.TooltipString = ['Open ' class(obj)];
                     loadButton.ClickedCallback = @obj.loadGUI_Callback;
                     loadButton.Visible = 'on';

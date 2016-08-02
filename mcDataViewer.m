@@ -44,13 +44,16 @@ classdef mcDataViewer < mcSavableClass
         
         isRGB = 0;
         
-        scaleMin = [0 0 0];
+        selData = [0 0 0];
+        
+        scaleMin = [0 0 0]; % Unused?
         scaleMax = [1 1 1];
     end
     
     methods
         function gui = mcDataViewer(varin)
             shouldAquire = true;
+            shouldMakeManager = true;
             
             switch nargin
                 case 0
@@ -60,17 +63,31 @@ classdef mcDataViewer < mcSavableClass
                     gui.g = mcProcessedData(gui.data);
                     gui.b = mcProcessedData(gui.data);
                 case 1
-                    gui.data = varin;
-                    gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data);
-                    gui.g = mcProcessedData(gui.data);
-                    gui.b = mcProcessedData(gui.data);
+                    if islogical(varin)
+                        gui = mcDataViewer();
+                        if ~varin
+                            shouldMakeManager = false;
+                        end
+                    else
+                        gui.data = varin;
+                        gui.data.dataViewer = gui;
+                        gui.r = mcProcessedData(gui.data);
+                        gui.g = mcProcessedData(gui.data);
+                        gui.b = mcProcessedData(gui.data);
+                    end
                 case 2
-                    gui.data = varin{1};
-                    gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data, varin{2});
-                    gui.g = mcProcessedData(gui.data);
-                    gui.b = mcProcessedData(gui.data);
+                    if islogical(varin{2})
+                        gui = mcDataViewer(varin{1});
+                        if ~varin{2}
+                            shouldMakeManager = false;
+                        end
+                    else
+                        gui.data = varin{1};
+                        gui.data.dataViewer = gui;
+                        gui.r = mcProcessedData(gui.data, varin{2});
+                        gui.g = mcProcessedData(gui.data);
+                        gui.b = mcProcessedData(gui.data);
+                    end
                 case 3
                     gui.data = varin{1};
                     gui.data.dataViewer = gui;
@@ -85,12 +102,12 @@ classdef mcDataViewer < mcSavableClass
                     gui.b = mcProcessedData(gui.data, varin{4});
             end
             
-            if gui.data.data.scanMode == 2 || gui.data.data.scanMode == -1 || true
+            if gui.data.data.scanMode == 2 || gui.data.data.scanMode == -1
                 shouldAquire = false;
             end
             
-            if true
-                gui.cf = mcInstrumentHandler.createFigure('Data Viewer Manager (Generic)');
+            if shouldMakeManager
+                gui.cf = mcInstrumentHandler.createFigure('Data Viewer Manager (Generic)', 'saveopen');
                 gui.cf.Position = [100,100,300,500];
                 gui.cf.CloseRequestFcn = @gui.closeRequestFcn;
                 
@@ -246,9 +263,9 @@ classdef mcDataViewer < mcSavableClass
                 mGoto = uimenu(menu, 'Label', 'Goto');
                 mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0});
                 mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1});
-                mNorm = uimenu(menu, 'Label', 'Normalization', 'Enable', 'off');
-                mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',@d);
-                mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',@b);
+                mNorm = uimenu(menu, 'Label', 'Normalization'); %, 'Enable', 'off');
+                mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',    {@gui.minmax_Callback, 0});
+                mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',   {@gui.minmax_Callback, 1});
             
 %             params.a.XLim = [min(x), max(x)]; 
 %             params.a.YLim = [min(y), max(y)];
@@ -336,6 +353,16 @@ classdef mcDataViewer < mcSavableClass
                 end
             end
         end
+        function minmax_Callback(gui, ~, ~, isMax)
+            gui.scale.gray.gui.normAuto.Value = 0;
+            if isMax
+                gui.scale.gray.gui.maxEdit.String = gui.selData(1);
+                gui.scale.gray.edit_Callback(gui.scale.gray.gui.maxEdit, 0);
+            else
+                gui.scale.gray.gui.minEdit.String = gui.selData(1);
+                gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
+            end
+        end
         
         function makeProperVisibility(gui)
             switch gui.data.data.plotMode
@@ -372,14 +399,14 @@ classdef mcDataViewer < mcSavableClass
             switch gui.data.data.plotMode
                 case 1
 %                     gui.data.data.layer == 1
-                    disp('here1');
+%                     disp('here1');
                     gui.p(1).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.p(2).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.p(3).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.a.XLim = [min(gui.p(1).XData) max(gui.p(1).XData)];         % Check to see if range is zero!
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
-                    disp('there1');
+%                     disp('there1');
                 case 2
                     gui.i.XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.i.YData = gui.data.data.scans{gui.data.data.layer == 2};
@@ -446,6 +473,8 @@ classdef mcDataViewer < mcSavableClass
 %                         gui.posL.pix.XData = [-100 100];
 
                         valr = gui.p(1).YData(xi);
+                        
+                        gui.selData(1) = valr;
 
                         if isnan(valr)
                             gui.menus.ctsMenu.Label = 'Value:    ----- cts/sec';
@@ -472,6 +501,8 @@ classdef mcDataViewer < mcSavableClass
                         axisY = gui.data.data.axes{gui.data.data.layer == 2};
 
                         val = gui.i.CData(yi, xi);
+                        
+                        gui.selData(1) = val;
 
                         if isnan(val)
                             gui.menus.ctsMenu.Label = 'Value:    ----- cts/sec';
@@ -509,13 +540,25 @@ classdef mcDataViewer < mcSavableClass
 
                 gui.posL.act.XData = [x x];
                 gui.pos.act.XData = x;
+                
+                x = gui.data.data.axisPrev(gui.data.data.layer == 1);
+                if x ~= gui.pos.prv.XData
+                    gui.posL.prv.XData = [x x];
+                    gui.pos.prv.XData = x;
+                end
 
                 if gui.data.data.plotMode == 2
                     axisY = gui.data.data.axes{gui.data.data.layer == 2};
 %                     by = axisY.name()
 
                     gui.pos.act.YData = axisY.getX();
+                
+                    y = gui.data.data.axisPrev(gui.data.data.layer == 2);
+                    if y ~= gui.pos.prv.YData
+                        gui.pos.prv.YData = [y y];
+                    end
                 end
+                
             end
         end
         

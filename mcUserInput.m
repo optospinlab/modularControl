@@ -104,6 +104,7 @@ classdef mcUserInput < mcSavableClass
             end
             
             obj.gui.f = f;
+            obj.gui.f.CloseRequestFcn = @obj.closeRequestFcn;
             
             obj.gui.tabgroup =  uitabgroup('Parent', f, 'Units', units, 'Position', pos);
             obj.gui.tabGoto =       uitab('Parent', obj.gui.tabgroup, 'Title', 'Goto', 'Units', 'pixels');
@@ -180,7 +181,7 @@ classdef mcUserInput < mcSavableClass
             
             uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', 'Enable:', 'Position', [0,   tabHeight - 2*bbh - 2*bh, pw/3, bh]); %, 'HorizontalAlignment', 'right');
             obj.gui.keyEnabled = uicontrol('Parent', obj.gui.tabInputs, 'Style', 'check', 'String', 'Keyboard', 'Position', [pw/3,   tabHeight - 2*bbh - 2*bh, pw/3, bh], 'Value', 1);
-            obj.gui.joyEnabled = uicontrol('Parent', obj.gui.tabInputs, 'Style', 'check', 'String', 'Joystick', 'Position', [2*pw/3, tabHeight - 2*bbh - 2*bh, pw/3, bh], 'Value', 1);
+            obj.gui.joyEnabled = uicontrol('Parent', obj.gui.tabInputs, 'Style', 'check', 'String', 'Joystick', 'Position', [2*pw/3, tabHeight - 2*bbh - 2*bh, pw/3, bh], 'Value', 0, 'Enable', 'off');
             
             uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', 'Keyboard Step', 'Position', [pw/3,   tabHeight - 2*bbh - 4*bh, pw/3, bh]);
             uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', 'Joystick Step', 'Position', [2*pw/3, tabHeight - 2*bbh - 4*bh, pw/3, bh]);
@@ -229,7 +230,9 @@ classdef mcUserInput < mcSavableClass
         
         function joyActionFunction(obj, ~, event)
             if isvalid(obj)
-                obj.gui.joyThrottle = 1;
+                if obj.gui.joyEnabled.Value
+                    obj.gui.joyThrottle = 1;
+                end
             else
                 % Do something to stop the joystick.
             end
@@ -238,49 +241,51 @@ classdef mcUserInput < mcSavableClass
 %             obj
 %             isvalid(obj)
             if isvalid(obj)
-                focus = gco; %(obj.gui.f);
+                if  obj.gui.keyEnabled.Value
+                    focus = gco; %(obj.gui.f);
 
-                if isprop(focus, 'Style')
-                    proceed = (~strcmpi(focus.Style, 'edit') && ~strcmpi(focus.Style, 'choose')) || ~strcmpi(focus.Enable, 'on');    % Don't continue if we are currently changing the value of a edit uicontrol...
-                else
-                    proceed = true;
-                end
-
-                if proceed
-                    multiplier = 1;
-                    if ismember(event.Modifier, 'shift')
-                        multiplier = multiplier*10;
+                    if isprop(focus, 'Style')
+                        proceed = (~strcmpi(focus.Style, 'edit') && ~strcmpi(focus.Style, 'choose')) || ~strcmpi(focus.Enable, 'on');    % Don't continue if we are currently changing the value of a edit uicontrol...
+                    else
+                        proceed = true;
                     end
-                    if ismember(event.Modifier, 'alt')
-                        multiplier = multiplier/10;
-                    end
-                    
-                    switch event.Key
-                        case {'rightarrow', 'd'}
-                            obj.userAction(1,1,multiplier);
-                        case {'leftarrow', 'a'}
-                            obj.userAction(1,-1,multiplier);
-                        case {'uparrow', 'w'}
-                            obj.userAction(2,1,multiplier);
-                        case {'downarrow', 's'}
-                            obj.userAction(2,-1,multiplier);
-                        case {'equal', 'e'}
-                            obj.userAction(3,1,multiplier);
-                        case {'hyphen', 'q'}
-                            obj.userAction(3,-1,multiplier);
-                        case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
-                            num = str2double(event.Key);
 
-                            if num <= obj.config.numGroups
-                                obj.mode = num;
-                            else
+                    if proceed
+                        multiplier = 1;
+                        if ismember(event.Modifier, 'shift')
+                            multiplier = multiplier*10;
+                        end
+                        if ismember(event.Modifier, 'alt')
+                            multiplier = multiplier/10;
+                        end
+
+                        switch event.Key
+                            case {'rightarrow', 'd'}
+                                obj.userAction(1,1,multiplier);
+                            case {'leftarrow', 'a'}
+                                obj.userAction(1,-1,multiplier);
+                            case {'uparrow', 'w'}
+                                obj.userAction(2,1,multiplier);
+                            case {'downarrow', 's'}
+                                obj.userAction(2,-1,multiplier);
+                            case {'equal', 'e'}
+                                obj.userAction(3,1,multiplier);
+                            case {'hyphen', 'q'}
+                                obj.userAction(3,-1,multiplier);
+                            case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+                                num = str2double(event.Key);
+
+                                if num <= obj.config.numGroups
+                                    obj.mode = num;
+                                else
+                                    obj.mode = 0;
+                                end
+
+                                obj.refreshUserInputMode();
+                            case {'backquote', '0'}
                                 obj.mode = 0;
-                            end
-
-                            obj.refreshUserInputMode();
-                        case {'backquote', '0'}
-                            obj.mode = 0;
-                            obj.refreshUserInputMode();
+                                obj.refreshUserInputMode();
+                        end
                     end
                 end
             else
@@ -389,6 +394,15 @@ classdef mcUserInput < mcSavableClass
             tf = 1;
 
         %     l = event.proplistener(axis_, 'inUse', 'PostSet', {@makeUIControlsInactive, [text, edit, get, goto]});
+        end
+        
+        function closeRequestFcn(obj,~,~)
+            if isequal(@obj.keyPressFunction, mcInstrumentHandler.globalWindowKeyPressFcn())
+                mcInstrumentHandler.setGlobalWindowKeyPressFcn([]);
+            end
+            
+            delete(obj.gui.f);
+            delete(obj);
         end
     end
 end

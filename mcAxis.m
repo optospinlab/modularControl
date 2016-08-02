@@ -25,7 +25,7 @@ classdef mcAxis < mcSavableClass
 %   x =     a.getX(x)                           % Returns the position of the axis (a.x) in external units.
 %   x =     a.getXt(x)                          % Returns the target position of the axis (a.xt) in external units.
 %
-% Status: Finished and mostly commented. Future plans below.
+% Status: Finished and mostly commented. Very messy, however. Future plans below.
 %
 % IMPORTANT: Not sure whether a better architecture decision would be to
 % have kinds (such as piezos and galvos) extend the mcAxis class in their
@@ -464,8 +464,8 @@ classdef mcAxis < mcSavableClass
             if a.inEmulation
                 switch lower(a.config.kind.kind)
                     case 'serial micrometer'
-                        if (a.x - a.xt)*(a.x - a.xt) > .000001  % Simple equation that attracts a.x to the target value of a.xt.
-                            a.x = a.x + (a.xt - a.x)/2;
+                        if abs(a.x - a.xt) > 1e-4  % Simple equation that attracts a.x to the target value of a.xt.
+                            a.x = a.x + (a.xt - a.x)/100;
                         else
                             a.x = a.xt;
                         end
@@ -492,6 +492,9 @@ classdef mcAxis < mcSavableClass
         
         function timerUpdateFcn(a, ~, ~)
             a.read();
+%             x = a.x
+%             xt = a.xt
+%             drawnow
             if abs(a.x - a.xt) < 1e-4
                 stop(a.t);
                 delete(a.t);
@@ -507,6 +510,10 @@ classdef mcAxis < mcSavableClass
                 
                 switch lower(a.config.kind.kind)
                     case 'serial micrometer'
+                        if isempty(a.t)
+                            a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 5fps
+                            start(a.t);
+                        end
                         % The micrometers are not immediate.
                     case 'manual'
                         if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
@@ -524,11 +531,16 @@ classdef mcAxis < mcSavableClass
 
                             end
                         else
-                            warning([num2str(x) ' ' a.extUnits ' not a valid output.']);
+                            warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output.']);
                             tf = false;
                         end
                     otherwise
-                        a.x = a.xt;
+                        if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+                            a.x = a.xt;
+                        else
+                            warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for an analog NIDAQ channel.']);
+                            tf = false;
+                        end
                 end
             else
                 if a.open();   % If the axis is not already open, open it...
@@ -539,7 +551,7 @@ classdef mcAxis < mcSavableClass
                                 a.x = a.xt;
                                 a.s.outputSingleScan(a.x);
                             else
-                                warning([num2str(x) ' ' a.extUnits ' not a valid output for an analog NIDAQ channel.']);
+                                warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for an analog NIDAQ channel.']);
                                 tf = false;
                             end
                         case 'nidaqdigital'
@@ -568,7 +580,7 @@ classdef mcAxis < mcSavableClass
                                     start(a.t);
                                 end
                             else
-                                warning([num2str(x) ' ' a.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
+                                warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
                                 tf = false;
                             end
                         case 'time'
@@ -589,7 +601,7 @@ classdef mcAxis < mcSavableClass
 
                                 end
                             else
-                                warning([num2str(x) ' ' a.extUnits ' not a valid output.']);
+                                warning([num2str(x) ' ' a.kind.extUnits ' not a valid output.']);
                                 tf = false;
                             end
                         case 'grid'

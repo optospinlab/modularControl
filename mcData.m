@@ -4,10 +4,11 @@ classdef mcData < mcSavableClass
 %
 % Syntax:
 %   d = mcData()
-%   d = mcData(params)                                              % Load old data (or just params if uninitialized) into this class
-%   d = mcData('params.mat')                                        % Load old data (from a .mat) into this class
-%   d = mcData(axes_, scans, inputs, integrationTime)               % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
-%   d = mcData(axes_, scans, inputs, integrationTime, inputTypes)   % In addition, inputTypes is a cell array defining whether each corresponding input should only be sampled at the begining and end of each scan or not. e.g. [1 0 1 0 0] means that all inputs except for the first and center will only be sampled at the beginning and end of each scan.
+%   d = mcData(params)                                                              % Load old data (or just params if uninitialized) into this class
+%   d = mcData('params.mat')                                                        % Load old data (from a .mat) into this class
+%   d = mcData(axes_, scans, inputs, integrationTime)                               % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
+%   d = mcData(axes_, scans, inputs, integrationTime, inputTypes)                   % In addition, inputTypes is a cell array defining whether each corresponding input should only be sampled at the begining and end of each scan or not. e.g. [1 0 1 0 0] means that all inputs except for the first and center will only be sampled at the beginning and end of each scan.
+%   d = mcData(axes_, scans, inputs, integrationTime, inputTypes, shouldOptimize)   % In addition to the previous, shouldOptimize tells the mcData to optimize after finishing or not (only works for 1D and 2D scans with singular data) 
 %
 % Status: Mosly finished and commented. Loading needs finished.
 
@@ -47,6 +48,8 @@ classdef mcData < mcSavableClass
 %
 %            - data.isInitialized          boolean
 %            - data.scanMode               boolean
+%
+%            - data.shouldOptimize
 
     end
     
@@ -62,6 +65,18 @@ classdef mcData < mcSavableClass
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
             data.inputs =   {mcInput(configCounter)};                                                           %               ...inputs.
             data.integrationTime = .005;
+        end
+        function data = optimizeConfiguration(axis, input, range, pixels, seconds)
+            center = axis.getX();
+            
+            scan = linspace(center - range/2, center + range/2, pixels);
+            scan = scan(scan <= max(axis.config.kind.extRange) & scan >= min(axis.config.kind.extRange));  % Truncate the scan.
+            
+            data.axes =     {axis};                     % Fill the...   ...axis...
+            data.scans =    {scan};                     %               ...scan...
+            data.inputs =   {input};                    %               ...input.
+            data.integrationTime = seconds/pixels;
+            data.shouldOptimize = true;
         end
         function str = README()
             str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
@@ -89,12 +104,18 @@ classdef mcData < mcSavableClass
                         d.data = varin;
                     end
                 case 4
-                    d.data.axes =               varin{1};                   % Otherwise, assume the three variables are axes, scans, inputs...
+                    d.data.axes =               varin{1};               % Otherwise, assume the three variables are axes, scans, inputs...
                     d.data.scans =              varin{2};
                     d.data.inputs =             varin{3};
                     d.data.integrationTime =    varin{4};
                 case 5
-                    d.data.axes =               varin{1};               % And if a 4th var is given, assume it is input types
+                    d.data.axes =               varin{1};               % And if a 4th var is given, assume it is inputTypes
+                    d.data.scans =              varin{2};
+                    d.data.inputs =             varin{3};
+                    d.data.integrationTime =    varin{4};
+                    d.data.inputTypes =         varin{5};
+                case 5
+                    d.data.axes =               varin{1};               % And if a 5th var is given, assume it is optimize
                     d.data.scans =              varin{2};
                     d.data.inputs =             varin{3};
                     d.data.integrationTime =    varin{4};
@@ -184,6 +205,7 @@ classdef mcData < mcSavableClass
                 
                 d.data.axisNames =         cell(1, d.data.numAxes);   % Same as input name generation above.
                 d.data.axisNamesUnits =    cell(1, d.data.numAxes);
+                d.data.axisPrev =          zeros(1, d.data.numAxes);
 
                 for ii = 1:d.data.numAxes
                     d.data.lengths(ii) =            length(d.data.scans{ii});
@@ -191,6 +213,24 @@ classdef mcData < mcSavableClass
                     d.data.axisNames{ii} =         d.data.axes{ii}.nameShort();
                     d.data.axisNamesUnits{ii} =    d.data.axes{ii}.nameUnits();
                 end
+            
+                if ~isfield(d.data, 'shouldOptimize')
+                    d.data.shouldOptimize = false;
+                end
+                
+                d.data.title = '';
+                
+                for ii = 1:d.data.numInputs
+                    d.data.title = [d.data.title d.data.inputs{ii}.name() ', '];
+                end
+                
+                d.data.title = [d.data.title ' vs'];
+                
+                for ii = 1:(d.data.numAxes-1)
+                    d.data.title = [d.data.title d.data.axes{ii}.name() ', '];
+                end
+                
+                d.data.title = [d.data.title d.data.axes{d.data.numAxes}.name()];
 
 %                 if d.data.numAxes > 2
 %                     for ii = 2:d.data.numAxes-1
@@ -225,19 +265,19 @@ classdef mcData < mcSavableClass
             for ii = 1:d.data.numInputs
                 if d.data.inputDimension(ii) == 0                                               % If the input is singular (if it outputs just a number)
                     if d.data.isInputBeginEnd(ii)    
-                        d.data.begin{ii} = NaN(d.data.lengths(2:end));
-                        d.data.end{ii} = NaN(d.data.lengths(2:end));
+                        d.data.begin{ii} = NaN([d.data.lengths(2:end) 1]);
+                        d.data.end{ii} = NaN([d.data.lengths(2:end) 1]);
                     else
-                        d.data.data{ii} = NaN(d.data.lengths);                                  % Then the layer is a numeric array of NaN.
+                        d.data.data{ii} = NaN([d.data.lengths 1]);                              % Then the layer is a numeric array of NaN.
                     end
                 else                                                                            % Otherwise, if the input is more complex,
                     if d.data.isInputBeginEnd(ii)    
-                        d.data.begin{ii} = cell(d.data.lengths(2:end));                         % Then the layer is a cell array containing...
+                        d.data.begin{ii} = cell([d.data.lengths(2:end) 1]);                     % Then the layer is a cell array containing...
                         d.data.begin{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};   % ...numeric arrays of NaN corresponding to the input's dimension.
-                        d.data.end{ii} = cell(d.data.lengths(2:end));                           % Then the layer is a cell array containing...
+                        d.data.end{ii} = cell([d.data.lengths(2:end) 1]);                       % Then the layer is a cell array containing...
                         d.data.end{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};     % ...numeric arrays of NaN corresponding to the input's dimension.
                     else
-                        d.data.data{ii} = cell(d.data.lengths);                                 % Then the layer is a cell array containing...
+                        d.data.data{ii} = cell([d.data.lengths 1]);                             % Then the layer is a cell array containing...
                         d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
                     end
                 end
@@ -286,6 +326,7 @@ classdef mcData < mcSavableClass
             nums = 1:d.data.numAxes;
 
             for ii = nums
+                d.data.axisPrev(ii) = d.data.axes{ii}.getX();
                 d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
             end
             
@@ -315,6 +356,34 @@ classdef mcData < mcSavableClass
 
                 for ii = [1 nums(toIncriment | toReset)]
                     d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
+                end
+            end
+            
+            if d.data.shouldOptimize
+%                 disp('begin opt');
+%                 d.data.data{1}
+                switch length(d.data.axes)
+                    case 1
+                        [x, ~] = mcPeakFinder(d.data.data{1}, d.data.scans{1}, 0);
+                        
+                        d.data.axes{1}.goto(d.data.scans{1}(1));
+                        
+                        d.data.axes{1}.goto(x);
+                    case 2
+                        [x, y] = mcPeakFinder(d.data.data{1}, d.data.scans{1}, d.data.scans{2});
+                        
+                        d.data.axes{1}.goto(d.data.scans{1}(1));
+                        d.data.axes{2}.goto(d.data.scans{2}(1));
+                        
+                        d.data.axes{1}.goto(x);
+                        d.data.axes{2}.goto(y);
+                end 
+%                 disp('end opt');
+            end
+            
+            if false
+                for ii = nums
+                    d.data.axes{ii}.goto(d.data.axisPrev(ii));
                 end
             end
             

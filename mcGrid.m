@@ -12,7 +12,12 @@ classdef mcGrid < mcSavableClass
 
     properties
 %         config = [];                % Inherited from mcSavable class.
-        
+
+        editArray = {};             % Cell array of uicontrols (edit) that will help construct the grid.
+        textArray = {};             % Cell array of uicontrols (text) that will help construct the grid.
+        rangeArray = {};            % Cell array of uicontrols (edit) that define the ranges that constrain the grid.
+        rangeText = {};             % Cell array of uicontrols (text) that label the ranges that constrain the grid.
+
         realAxes = {};              % Cell array containing the mcAxes which make up the vectorspace that the virtual axes live in
         virtualAxes = {};           % Cell array containing the virtual mcAxes.
         virtualPosition = [];       % Numeric array containing the position of all of the virtual axes. This is neccessary 
@@ -23,6 +28,8 @@ classdef mcGrid < mcSavableClass
     methods
         function grid = mcGrid(varin)
             switch nargin
+                case 0
+                    return;
 %                 case 1
 %                     wp = varin;
 %                     indices = 1:length(varin);  % Use all waypoints for grid.

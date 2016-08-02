@@ -79,10 +79,10 @@ classdef mcScalePanel < handle
             switch src
                 case panel.gui.minEdit
                     panel.gui.minSlid.Value = val;
-                    slider_Callback(panel.gui.minSlid, 0)
+                    panel.slider_Callback(panel.gui.minSlid, 0)
                 case panel.gui.maxEdit
                     panel.gui.maxSlid.Value = val;
-                    slider_Callback(panel.gui.maxSlid, 0)
+                    panel.slider_Callback(panel.gui.maxSlid, 0)
             end
         end
         function normalize_Callback(panel, ~, ~)
