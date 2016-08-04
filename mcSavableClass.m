@@ -51,11 +51,15 @@ classdef mcSavableClass < handle
 % %             end
 %         end
         function saveGUI_Callback(obj, ~, ~)        % Customize this if neccessary in the daughter class (e.g. saving a .png or a folder of data)
-            obj.makeClassFolder();
-            [FileName, PathName] = uiputfile('*.mat', 'Save Config As', [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat']);
-            if FileName ~= 0
-                config = obj.config;
-                save([PathName FileName], 'config');
+            questdlg('Config saving not fully implemented... Sorry.', 'Config Saving Not Implemented', 'Okay', 'Okay');
+
+            if false
+                obj.makeClassFolder();
+                [FileName, PathName] = uiputfile('*.mat', 'Save Config As', [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat']);
+                if FileName ~= 0
+                    config = obj.config;
+                    save([PathName FileName], 'config');
+                end
             end
         end
         
@@ -78,12 +82,15 @@ classdef mcSavableClass < handle
             end
         end
         function loadGUI_Callback(obj, ~, ~)
-            obj.makeClassFolder();
-            [FileName, PathName] = uigetfile('*.mat', 'Load Config', [mcInstrumentHandler.getConfigFolder() class(obj)]);
-            if FileName ~= 0
-                config2 = load([PathName FileName]);
-                obj.config = config2.config;
-                obj.config.src = [PathName FileName];
+            questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
+            if false
+                obj.makeClassFolder();
+                [FileName, PathName] = uigetfile('*.mat', 'Load Config', [mcInstrumentHandler.getConfigFolder() class(obj)]);
+                if FileName ~= 0
+                    config2 = load([PathName FileName]);
+                    obj.config = config2.config;
+                    obj.config.src = [PathName FileName];
+                end
             end
         end
     end

@@ -85,7 +85,7 @@ classdef mcScalePanel < handle
                     panel.slider_Callback(panel.gui.maxSlid, 0)
             end
         end
-        function normalize_Callback(panel, ~, ~)
+        function normalize_Callback(panel, src, event)
             panel.gui.minSlid.Max = str2double(panel.gui.dataMinEdit.String);
             panel.gui.minSlid.Value = panel.gui.minSlid.Max;
 

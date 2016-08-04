@@ -1,7 +1,7 @@
 classdef mcDataViewer < mcSavableClass
 % mcDataViewer views data.
 %
-% Status: Mostly finished, but largely uncommented. Future: definitely RGB, maybe 3D?
+% Status: Mostly finished, but mostly uncommented. Future: display non-singular inputs, definitely RGB, maybe 3D?
     
     properties
         colorR = [1 0 0];
@@ -41,6 +41,8 @@ classdef mcDataViewer < mcSavableClass
         
         params1D = [];
         params2D = [];
+        paramsGray = [];
+        paramsRGB = [];
         
         isRGB = 0;
         
@@ -107,7 +109,7 @@ classdef mcDataViewer < mcSavableClass
             end
             
             if shouldMakeManager
-                gui.cf = mcInstrumentHandler.createFigure('Data Viewer Manager (Generic)', 'saveopen');
+                gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
                 gui.cf.Position = [100,100,300,500];
                 gui.cf.CloseRequestFcn = @gui.closeRequestFcn;
                 
@@ -193,8 +195,8 @@ classdef mcDataViewer < mcSavableClass
                 inputlist = cellfun(@(x)({x.name()}), gui.data.data.inputs);
                                             
                 uicontrol('Parent', gui.tabs.gray, 'Style', 'text',         'String', 'Input: ', 'Units', 'pixels', 'Position', [0 tabpos(4)-3*bh tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
-                uicontrol('Parent', gui.tabs.gray, 'Style', 'popupmenu',    'String', inputlist, 'Units', 'pixels', 'Position', [tabpos(3)/3 tabpos(4)-3*bh 2*tabpos(3)/3 - bh bh], 'Value', 1);
-                            
+                gui.paramsGray.choose = uicontrol('Parent', gui.tabs.gray, 'Style', 'popupmenu',    'String', inputlist, 'Units', 'pixels', 'Position', [tabpos(3)/3 tabpos(4)-3*bh 2*tabpos(3)/3 - bh bh], 'Value', 1);
+                
                 gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 tabpos(4)-150], gui.r);
                 gui.scale.r =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 tabpos(4)-150], gui.r);
                 gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 500)/2 tabpos(4)-150], gui.g);
@@ -216,7 +218,7 @@ classdef mcDataViewer < mcSavableClass
                 end
             end
             
-            gui.df = mcInstrumentHandler.createFigure('Data Viewer (Generic)', 'saveopen');
+            gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
             gui.df.CloseRequestFcn = @gui.closeRequestFcn;
             menu = uicontextmenu;
 
@@ -257,13 +259,17 @@ classdef mcDataViewer < mcSavableClass
             
             gui.a.YDir = 'normal';
             
-            gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value:    ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
-            gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel:    [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value: ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             gui.menus.posMenu = uimenu(menu, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
                 mGoto = uimenu(menu, 'Label', 'Goto');
                 mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0});
                 mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1});
                 mNorm = uimenu(menu, 'Label', 'Normalization'); %, 'Enable', 'off');
+                panel = gui.scale.gray;
+%                 @panel.normalize_Callback
+%                 @gui.scale.gray.normalize_Callback
+                mnNorm= uimenu(mNorm, 'Label', 'Normalize', 'Callback',    @panel.normalize_Callback);
                 mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',    {@gui.minmax_Callback, 0});
                 mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',   {@gui.minmax_Callback, 1});
             
@@ -294,6 +300,31 @@ classdef mcDataViewer < mcSavableClass
             end
         end
         
+        function saveGUI_Callback(gui, ~, ~)
+            [FileName,PathName,FilterIndex] = uiputfile({'*.mat', 'Full Data File (*.mat)'; '*.png', 'Current Image (*.png)'; '*.png', 'Current Image With Axes (*.png)'}, 'Save As', gui.data.data.fnameManual);
+            
+            if all(FileName ~= 0)
+                switch FilterIndex
+                    case 1  % .mat
+                        
+                    case 2  % .png
+                        if gui.data.data.plotMode == 1      % 1D
+                            imwrite(gui.i.YData, [PathName FileName]);
+                        else
+                            imwrite(gui.i.CData, [PathName FileName]);
+                        end
+                    case 3  % .png (axes)
+                        imwrite(frame2im(getframe(gui.df)), [PathName FileName]);
+                end
+                
+                pause(.05);
+                
+                data = gui.data.data;               % Always save the .mat file, even if the user doen't want to...
+                save([PathName FileName], 'data');
+            else
+                disp('No file given...');
+            end
+        end
         function closeRequestFcn(gui, ~, ~)
             % gui.data.save();
             gui.data.data.aquiring = false;
@@ -392,10 +423,12 @@ classdef mcDataViewer < mcSavableClass
             gui.pos.sel.Visible =   ivis;
             gui.pos.pix.Visible =   ivis;
             gui.pos.act.Visible =   ivis;
-%             gui.pos.prv.Visible =   ivis;
+            gui.pos.prv.Visible =   ivis;
         end
         
         function plotSetup(gui)
+            gui.a.Title.String = gui.data.data.name;
+            
             switch gui.data.data.plotMode
                 case 1
 %                     gui.data.data.layer == 1
@@ -459,6 +492,7 @@ classdef mcDataViewer < mcSavableClass
                         xlist = (gui.p(1).XData - x) .* (gui.p(1).XData - x);
                         xi = find(xlist == min(xlist), 1);
                         xp = gui.p(1).XData(xi);
+%                         xprv = gui.data.data.axisPrev(gui.data.data.layer == 1);
                         
 %                         gui.posL
 %                         gui.posL.sel
@@ -468,6 +502,7 @@ classdef mcDataViewer < mcSavableClass
                         
                         gui.posL.sel.XData = [x x];
                         gui.posL.pix.XData = [xp xp];
+%                         gui.posL.prv.XData = [xprv xprv];
                         
 %                         gui.posL.sel.YData = [-100 100];
 %                         gui.posL.pix.XData = [-100 100];
@@ -477,13 +512,14 @@ classdef mcDataViewer < mcSavableClass
                         gui.selData(1) = valr;
 
                         if isnan(valr)
-                            gui.menus.ctsMenu.Label = 'Value:    ----- cts/sec';
+                            gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-                            gui.menus.ctsMenu.Label = ['Value:    ' num2str(valr, 4) ' '];
+%                             gui.data.data.inputs{gui.paramsGray.choose.Value}.extUnits
+                            gui.menus.ctsMenu.Label = ['Value: ' num2str(valr, 4) ' ' gui.data.data.inputs{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
                         gui.menus.posMenu.Label = ['Position: ' num2str(x, 4)  ' ' axisX.config.kind.extUnits];
-                        gui.menus.pixMenu.Label = ['Pixel:    '    num2str(xp, 4) ' ' axisX.config.kind.extUnits];
+                        gui.menus.pixMenu.Label = ['Pixel: '    num2str(xp, 4) ' ' axisX.config.kind.extUnits];
                     case 2
                         xlist = (gui.i.XData - x) .* (gui.i.XData - x);
                         ylist = (gui.i.YData - y) .* (gui.i.YData - y);
@@ -492,10 +528,14 @@ classdef mcDataViewer < mcSavableClass
                         xp = gui.i.XData(xi);
                         yp = gui.i.YData(yi);
                         
+%                         prev = gui.data.data.axisPrev
+                        
                         gui.pos.sel.XData = x;
                         gui.pos.sel.YData = y;
                         gui.pos.pix.XData = xp;
                         gui.pos.pix.YData = yp;
+%                         gui.pos.prv.XData = gui.data.data.axisPrev(gui.data.data.layer == 1);
+%                         gui.pos.prv.YData = gui.data.data.axisPrev(gui.data.data.layer == 2);
                         
                         axisX = gui.data.data.axes{gui.data.data.layer == 1};
                         axisY = gui.data.data.axes{gui.data.data.layer == 2};
@@ -505,13 +545,13 @@ classdef mcDataViewer < mcSavableClass
                         gui.selData(1) = val;
 
                         if isnan(val)
-                            gui.menus.ctsMenu.Label = 'Value:    ----- cts/sec';
+                            gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-                            gui.menus.ctsMenu.Label = ['Value:    ' num2str(val, 4) ' '];
+                            gui.menus.ctsMenu.Label = ['Value: ' num2str(val, 4) ' ' gui.data.data.inputs{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
                         gui.menus.posMenu.Label = ['Position: [ ' num2str(x, 4)  ' ' axisX.config.kind.extUnits ', ' num2str(y, 4)  ' ' axisY.config.kind.extUnits ' ]'];
-                        gui.menus.pixMenu.Label = ['Pixel:    [ '    num2str(xp, 4) ' ' axisX.config.kind.extUnits ', ' num2str(yp, 4) ' ' axisY.config.kind.extUnits ' ]'];
+                        gui.menus.pixMenu.Label = ['Pixel: [ '    num2str(xp, 4) ' ' axisX.config.kind.extUnits ', ' num2str(yp, 4) ' ' axisY.config.kind.extUnits ' ]'];
                 end
             end
         end
@@ -541,6 +581,8 @@ classdef mcDataViewer < mcSavableClass
                 gui.posL.act.XData = [x x];
                 gui.pos.act.XData = x;
                 
+%                 xprv = gui.data.data.axisPrev(gui.data.data.layer == 1);
+                
                 x = gui.data.data.axisPrev(gui.data.data.layer == 1);
                 if x ~= gui.pos.prv.XData
                     gui.posL.prv.XData = [x x];
@@ -555,7 +597,7 @@ classdef mcDataViewer < mcSavableClass
                 
                     y = gui.data.data.axisPrev(gui.data.data.layer == 2);
                     if y ~= gui.pos.prv.YData
-                        gui.pos.prv.YData = [y y];
+                        gui.pos.prv.YData = y;
                     end
                 end
                 
@@ -661,8 +703,10 @@ classdef mcDataViewer < mcSavableClass
 end
 
 function copyLabelToClipboard(src, ~)
-    clipboard('copy', src.Label(11:end));
+    split = strsplit(src.Label, ': ');
+    clipboard('copy', split{end});
 end
+
 
 
 

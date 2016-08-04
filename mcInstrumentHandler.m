@@ -154,14 +154,14 @@ classdef mcInstrumentHandler < handle
         end
         function str = timestamp(varin)
             if ischar(varin)
-                folder = [getSaveFolder(0) varin filesep datestr(now,'yyyy_mm_dd')];
+                folder = [mcInstrumentHandler.getSaveFolder(0) varin filesep datestr(now,'yyyy_mm_dd')];
             elseif isnumeric(varin) || islogical(varin)
-                folder = [getSaveFolder(varin) datestr(now,'yyyy_mm_dd')];
+                folder = [mcInstrumentHandler.getSaveFolder(varin) datestr(now,'yyyy_mm_dd')];
             else
                 error('mcInstrumentHandler: timestamp varin not understood');
             end
             
-            if ~exist(folder, 'folder')
+            if ~exist(folder, 'file')
                 mkdir(folder);
             end
             
@@ -388,7 +388,7 @@ classdef mcInstrumentHandler < handle
             
             switch toolBarMode
                 case 'saveopen'
-                    display('here');
+%                     display('here');
 %                     toolbar2 = findall(toolbar, 'tag', 'FigureToolBar')
 %                     toolbar2.Visible = 'on';
                     

@@ -50,6 +50,10 @@ classdef mcData < mcSavableClass
 %            - data.scanMode               boolean
 %
 %            - data.shouldOptimize
+%
+%            - data.fname
+%
+%            - data.name
 
     end
     
@@ -64,7 +68,7 @@ classdef mcData < mcSavableClass
             data.axes =     {mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ)};                 % Fill the...   ...axes...
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
             data.inputs =   {mcInput(configCounter)};                                                           %               ...inputs.
-            data.integrationTime = .005;
+            data.integrationTime = .05;
         end
         function data = optimizeConfiguration(axis, input, range, pixels, seconds)
             center = axis.getX();
@@ -155,6 +159,8 @@ classdef mcData < mcSavableClass
                     d.data.isInputNIDAQ(ii) =       strcmpi('nidaq', d.data.inputs{ii}.config.kind.kind(1:5));
                     
                     d.data.inEmulation(ii) =       d.data.inputs{ii}.inEmulation;
+                    
+                    d.data.inputConfigs{ii} =        d.data.inputs{ii}.config;
 
                     if isfield(d.data, 'inputTypes')                % If inputTypes is specified...
                         switch lower(d.data.inputTypes{ii})
@@ -210,27 +216,28 @@ classdef mcData < mcSavableClass
                 for ii = 1:d.data.numAxes
                     d.data.lengths(ii) =            length(d.data.scans{ii});
                     
-                    d.data.axisNames{ii} =         d.data.axes{ii}.nameShort();
-                    d.data.axisNamesUnits{ii} =    d.data.axes{ii}.nameUnits();
+                    d.data.axisNames{ii} =          d.data.axes{ii}.nameShort();
+                    d.data.axisNamesUnits{ii} =     d.data.axes{ii}.nameUnits();
+                    d.data.axisConfigs{ii} =        d.data.axes{ii}.config;
                 end
             
                 if ~isfield(d.data, 'shouldOptimize')
                     d.data.shouldOptimize = false;
                 end
                 
-                d.data.title = '';
+                d.data.name = '';
                 
-                for ii = 1:d.data.numInputs
-                    d.data.title = [d.data.title d.data.inputs{ii}.name() ', '];
+                for ii = 1:(d.data.numInputs-1)
+                    d.data.name = [d.data.name d.data.inputs{ii}.config.name ', '];
                 end
                 
-                d.data.title = [d.data.title ' vs'];
+                d.data.name = [d.data.name d.data.inputs{d.data.numInputs}.config.name ' vs '];
                 
                 for ii = 1:(d.data.numAxes-1)
-                    d.data.title = [d.data.title d.data.axes{ii}.name() ', '];
+                    d.data.name = [d.data.name d.data.axes{ii}.config.name ', '];
                 end
                 
-                d.data.title = [d.data.title d.data.axes{d.data.numAxes}.name()];
+                d.data.name = [d.data.name d.data.axes{d.data.numAxes}.config.name];
 
 %                 if d.data.numAxes > 2
 %                     for ii = 2:d.data.numAxes-1
@@ -250,7 +257,7 @@ classdef mcData < mcSavableClass
 
                 allInputsFast = all(d.data.isInputBeginEnd | (d.data.isInputNIDAQ & ~d.data.inEmulation));       % Are all 'everypoint'-mode inputs NIDAQ?
                 d.data.canScanFast = strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:5)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
-
+               
                 d.resetData();
                 d.data.isInitialized = true;
             end
@@ -286,6 +293,12 @@ classdef mcData < mcSavableClass
             d.data.index =          ones(1, d.data.numAxes);
             d.data.currentIndex =   2;
             d.data.index(1) =       d.data.lengths(1);
+            
+            d.data.fnameManual =        mcInstrumentHandler.timestamp(0);
+            d.data.fnameBackground =    mcInstrumentHandler.timestamp(1);
+            
+%             a = d.data.fnameManual
+%             b = d.data.fnameBackground
                 
             d.data.scanMode = 0;
         end

@@ -21,15 +21,17 @@ classdef mcWaypoints < mcSavableClass
         
         f = [];             % Figure
         a = [];             % Axes
-        w = [];             % Waypoints
-        p = [];             % Axes position
-        t = [];             % Axes target position
+        w = [];             % Waypoints scatter
+        p = [];             % Axes position scatter
+        t = [];             % Axes target position scatter
+        g = [];             % Grid scatter
         
         listeners = [];     % These listen to x and xt.
         
         grid = [];
         gf = [];
         gfl = {};
+        gridCoords = [];
         
         menus = [];
     end
@@ -92,29 +94,40 @@ classdef mcWaypoints < mcSavableClass
             wp.w = scatter(wp.a, [], [], 's');
             wp.p = scatter(wp.a, [], [], 'o');
             wp.t = scatter(wp.a, [], [], 'x');
+            wp.g = scatter(wp.a, [], [], 'd');
             
             hold(wp.a, 'off')
             
             wp.a.ButtonDownFcn =      @wp.windowButtonDownFcn;
             wp.w.ButtonDownFcn =      @wp.windowButtonDownFcn;
+            wp.g.ButtonDownFcn =      @wp.windowButtonDownFcn;
             wp.f.WindowButtonUpFcn =  @wp.windowButtonUpFcn;
             wp.f.WindowScrollWheelFcn =     @wp.windowScrollWheelFcn;
             
             menuA = uicontextmenu;
             menuW = uicontextmenu;
+            menuG = uicontextmenu;
             
             wp.a.UIContextMenu = menuA;
             wp.w.UIContextMenu = menuW;
+            wp.g.UIContextMenu = menuG;
             
             wp.menus.pos.name =         uimenu(menuA, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             wp.menus.pos.goto =         uimenu(menuA, 'Label', 'Goto Position', 'Callback',      @wp.gotoPosition_Callback);
             wp.menus.pos.drop =         uimenu(menuA, 'Label', 'Drop Waypoint Here', 'Callback', @wp.drop_Callback);
             wp.menus.pos.drop =         uimenu(menuA, 'Label', 'Drop Waypoint at Axes Position', 'Callback', @wp.dropAtAxes_Callback);
             
+            wp.menus.way.pos  =         uimenu(menuW, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); 
             wp.menus.way.name =         uimenu(menuW, 'Label', 'Waypoint: ~',  'Callback',       @copyLabelToClipboard); %, 'Enable', 'off');
             wp.menus.way.goto =         uimenu(menuW, 'Label', 'Goto Waypoint', 'Callback',      @wp.gotoWaypoint_Callback);
             wp.menus.way.dele =         uimenu(menuW, 'Label', 'Delete Waypoint', 'Callback',    @wp.delete_Callback);
             wp.menus.way.grid =         uimenu(menuW, 'Label', 'Add Waypoint to Grid', 'Callback',  @wp.gridAdd_Callback);
+            
+            wp.menus.grid.pos =          uimenu(menuG, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); 
+            wp.menus.grid.name =         uimenu(menuG, 'Label', 'Gridpoint: ~',  'Callback',       @copyLabelToClipboard); %, 'Enable', 'off');
+            wp.menus.grid.goto =         uimenu(menuG, 'Label', 'Goto Gridpoint', 'Callback',      @wp.gotoGridpoint_Callback);
+            wp.menus.grid.dele =         uimenu(menuG, 'Label', 'Whitelist Gridpoint', 'Callback',    @wp.delete_Callback, 'Enable', 'off');
+            wp.menus.grid.dele =         uimenu(menuG, 'Label', 'Blacklist Gridpoint', 'Callback',    @wp.delete_Callback, 'Enable', 'off');
             
             wp.menus.currentPos =       [0 0];
             wp.menus.currentWay =       0;
@@ -179,6 +192,12 @@ classdef mcWaypoints < mcSavableClass
              end
 %             drawnow;
         end
+        function gotoGridpoint_Callback(wp, ~, ~)
+            y = wp.grid.config.A * wp.gridCoords(wp.menus.currentGrid, :)';
+             for ii = 1:length(wp.config.axes)
+                wp.config.axes{ii}.goto(y(ii));
+             end
+        end
         function gridAdd_Callback(wp, ~, ~)
             
             bw = 100;
@@ -213,18 +232,25 @@ classdef mcWaypoints < mcSavableClass
                 % Add the range labels for grid coordinates (hidden when there are no grid coordinates).
                 wp.grid.rangeText{1} = uicontrol(wp.gf, 'Style', 'text',...
                                                         'Units', 'pixels',...
-                                                        'Position', [num*bw bh/2 bw bh],...
+                                                        'Position', [num*bw 3*bh/2 bw bh],...
                                                         'String', 'Range from:  ',...
                                                         'HorizontalAlignment', 'right',...
                                                         'Visible', 'off',...
-                                                        'Callback', @makePositiveInteger_Callback);
+                                                        'Callback', @makeNumber_Callback);
                 wp.grid.rangeText{2} = uicontrol(wp.gf, 'Style', 'text',...
                                                         'Units', 'pixels',...
-                                                        'Position', [num*bw 3*bh/2 bw bh],...
+                                                        'Position', [num*bw bh/2 bw bh],...
                                                         'String', 'to:  ',...
                                                         'HorizontalAlignment', 'right',...
                                                         'Visible', 'off',...
-                                                        'Callback', @makePositiveInteger_Callback);
+                                                        'Callback', @makeNumber_Callback);
+                                                    
+                previewButton = uicontrol(wp.gf, 'Style', 'push',...
+                                                        'Units', 'pixels',...
+                                                        'Position', [(num-1)*bw bh/2 bw 2*bh],...
+                                                        'String', 'Preview',...
+                                                        'HorizontalAlignment', 'right',...
+                                                        'Callback', @wp.previewGrid_Callback);
             else
                 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -249,24 +275,24 @@ classdef mcWaypoints < mcSavableClass
                 end
 
                 for ii = 1:l-1              % Add the column of edits for the additional grid coordinate on already-added axes
-                    wp.grid.editArray{l, ii} = uicontrol(wp.gf, 'Style', 'edit',...
+                    wp.grid.editArray{ii, num+(l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
                                                                 'Units', 'pixels',...
                                                                 'Position', [(num+l/2)*bw (ii-1)*bh+rh bw/2 bh],...
                                                                 'String', 0,...
-                                                                'Callback', @makePositiveInteger_Callback);
+                                                                'Callback', @makeNumber_Callback);
                 end
                 
                 % Add the range boxes for the new column of grid coordinates
-                wp.grid.rangeArray{1, num+(l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
+                wp.grid.rangeArray{1, (l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
                                                                     'Units', 'pixels',...
                                                                     'Position', [(num+l/2)*bw bh/2 bw/2 bh],...
                                                                     'String', 0,...
-                                                                    'Callback', @makePositiveInteger_Callback);
-                wp.grid.rangeArray{2, num+(l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
+                                                                    'Callback', @makeNumber_Callback);
+                wp.grid.rangeArray{2, (l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
                                                                     'Units', 'pixels',...
                                                                     'Position', [(num+l/2)*bw 3*bh/2 bw/2 bh],...
                                                                     'String', 0,...
-                                                                    'Callback', @makePositiveInteger_Callback);
+                                                                    'Callback', @makeNumber_Callback);
 
                 % Add the text box for the new column of grid coordinates
                 wp.grid.textArray{1, num+(l-1)} = uicontrol(wp.gf,  'Style', 'text',...
@@ -280,9 +306,43 @@ classdef mcWaypoints < mcSavableClass
                                                                 'Units', 'pixels',...
                                                                 'Position', [((ii+num+1)/2)*bw (l-1)*bh+rh bw/2 bh],...
                                                                 'String', double(num+(l-1) == ii),...
-                                                                'Callback', @makePositiveInteger_Callback);
+                                                                'Callback', @makeNumber_Callback);
                     wp.grid.textArray{1, ii}.Position = [((ii+num+1)/2)*bw l*bh+rh bw/2 bh];
                 end
+            end
+        end
+        function previewGrid_Callback(wp, ~, ~)
+            wp.grid.makeGridFromEdit(wp.config.axes);
+            
+%             wp.grid.rangeArray
+            if ~isempty(wp.grid.config.A)
+                ranges = cellfun(@(x)(str2double(x.String)), wp.grid.rangeArray);
+
+                ranges2(1, :) = ceil(min(ranges));
+                ranges2(2, :) = floor(max(ranges));
+
+                lengths = diff(ranges2)+1;
+
+                jj = 1;
+
+                finlen = prod(lengths);
+
+                X = zeros(finlen, length(lengths)+1);
+
+                for ii = 1:length(lengths)
+                    X(:, ii) = repmat( reshape( repmat((ranges2(1,ii):ranges2(2,ii))', [1, jj])', [], 1), [finlen/(jj*lengths(ii)), 1]);
+
+                    jj = jj*lengths(ii);
+                end
+
+                X(:, length(lengths)+1) = 1;
+
+                Y = wp.grid.config.A*(X');
+
+                wp.gridCoords = X;
+
+                wp.g.XData = Y(wp.config.xi, :);
+                wp.g.YData = Y(wp.config.yi, :);
             end
         end
 
@@ -336,15 +396,48 @@ classdef mcWaypoints < mcSavableClass
                         y = event.IntersectionPoint(2);
                         
                         wp.menus.currentPos = [x y];
+                        wp.menus.pos.name.Label = ['Position: [ ' num2str(x, 4)  ' ' wp.config.axes{wp.config.xi}.config.kind.extUnits ', ' num2str(y, 4)  ' ' wp.config.axes{wp.config.yi}.config.kind.extUnits ' ]'];
                         
-                        dlist = (wp.config.waypoints{wp.config.xi} - x) .* (wp.config.waypoints{wp.config.xi} - x) + ...
-                                (wp.config.waypoints{wp.config.yi} - y) .* (wp.config.waypoints{wp.config.yi} - y);
+                        
+                        dlist = (wp.w.XData - x) .* (wp.w.XData - x) + ...
+                                (wp.w.YData - y) .* (wp.w.YData - y);
                         
                         ii = find(dlist == min(dlist), 1);
                         
                         wp.menus.currentWay = ii;
-                        wp.menus.pos.name.Label = ['Position: [ ' num2str(x, 4)  ' ' wp.config.axes{wp.config.xi}.config.kind.extUnits ', ' num2str(y, 4)  ' ' wp.config.axes{wp.config.yi}.config.kind.extUnits ' ]'];
+                        % Fill this with the other coords (e.g. Z) too.
+                        
+                        posstr = 'Position: [ ';
+                        for kk = 1:length(wp.config.axes)-1
+                            posstr = [posstr num2str(wp.config.waypoints{kk}(wp.menus.currentWay), 4) ' ' wp.config.axes{kk}.config.kind.extUnits ', '];
+                        end
+                        posstr = [posstr num2str(wp.config.waypoints{end}(wp.menus.currentWay), 4) ' ' wp.config.axes{end}.config.kind.extUnits ' ]'];
+                        wp.menus.way.pos.Label = posstr;
                         wp.menus.way.name.Label = ['Waypoint: ' num2str(ii)];
+                        
+                        
+                        dlist = (wp.g.XData - x) .* (wp.g.XData - x) + ...
+                                (wp.g.YData - y) .* (wp.g.YData - y);
+                        
+                        jj = find(dlist == min(dlist), 1);
+                        
+                        wp.menus.currentGrid = jj;
+                        
+                        if ~isempty(wp.gridCoords)
+                            y = wp.grid.config.A * wp.gridCoords(jj, :)';
+                            
+                            posstr = 'Position: [ ';
+                            for kk = 1:length(wp.config.axes)-1
+                                posstr = [posstr num2str(y(kk), 4) ' ' wp.config.axes{kk}.config.kind.extUnits ', '];
+                            end
+                            posstr = [posstr num2str(y(end), 4) ' ' wp.config.axes{end}.config.kind.extUnits ' ]'];
+                            wp.menus.grid.pos.Label = posstr;
+    
+                            wp.menus.grid.name.Label = ['Grid: [ ' num2str(wp.gridCoords(jj, 1:(end-1))) ' ]'];
+                        else
+                            wp.menus.grid.pos.Label = ['Position: [ ' num2str(wp.g.XData(jj), 4)  ' ' wp.config.axes{wp.config.xi}.config.kind.extUnits ', ' num2str(wp.g.YData(jj), 4)  ' ' wp.config.axes{wp.config.yi}.config.kind.extUnits ' ]'];
+                            wp.menus.grid.name.Label = 'Grid: ~';
+                        end
                         
                     end
             end
@@ -427,9 +520,30 @@ function makePositiveInteger_Callback(src,~)
     
     src.String = val;
 end
+function makeInteger_Callback(src,~)
+    val = str2double(src.String);
+    
+    if isnan(val)
+        val = 1;
+    else
+        val = round(val);
+    end
+    
+    src.String = val;
+end
+function makeNumber_Callback(src,~)
+    val = str2double(src.String);
+    
+    if isnan(val)
+        val = 1;
+    end
+    
+    src.String = val;
+end
 
 function copyLabelToClipboard(src, ~)
-    clipboard('copy', src.Label(11:end));
+    split = strsplit(src.Label, ': ');
+    clipboard('copy', split{end});
 end
 
 

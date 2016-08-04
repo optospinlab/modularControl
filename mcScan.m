@@ -24,7 +24,13 @@ classdef mcScan < mcSavableClass
     methods
         function gui = mcScan(varin)
             
-            gui.f = figure('MenuBar', 'none', 'ToolBar', 'none', 'NumberTitle', 'off', 'Name', 'mcScanGUI (Generic)', 'Resize', 'off', 'Position', [100, 100, gui.pw + 24, 15*gui.ph]);%, 'SizeChangedFcn', @gui.sizeChangedFcn);
+%             gui.f = figure('MenuBar', 'none', 'ToolBar', 'none', 'NumberTitle', 'off', 'Name', 'mcScanGUI (Generic)', 'Resize', 'off', 'Position', [100, 100, gui.pw + 24, 15*gui.ph]);%, 'SizeChangedFcn', @gui.sizeChangedFcn);
+            gui.f = mcInstrumentHandler.createFigure(gui, 'saveopen');
+            gui.f.Resize =      'off';
+%             f.Visible =     'off';
+%             f.MenuBar =     'none';
+%             f.ToolBar =     'none';
+            gui.f.Position = [100, 100, gui.pw + 24, 15*gui.ph];
             
 %             f=gui.f;
 %             u1 = uicontrol('Style','push', 'parent', f,'pos',...
