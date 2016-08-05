@@ -11,7 +11,7 @@ classdef mcDataViewer < mcSavableClass
         colorSel = [1 0 1];  % Color of the lines and points denoting...     ...the currently-selected position
         colorPix = [1 1 0];  %                                               ...the pixel nearest to the currently-selected position
         colorAct = [0 1 1];  %                                               ...the actual (physical) position of the axes
-        colorPrv = [0 .7 .7];  %                                              ...the previous (physical) position of the axes (e.g. for optimization).
+        colorPrv = [0 .7 .7];  %                                             ...the previous (physical) position of the axes (e.g. for optimization).
     end
 
     properties
@@ -465,7 +465,7 @@ classdef mcDataViewer < mcSavableClass
                         
                     else
                         gui.a.DataAspectRatioMode = 'auto';
-%                         data = gui.r.data
+                        data = gui.r.data
                         gui.p(1).YData = gui.r.data;
                         gui.scale.gray.dataChanged_Callback(0,0);
                     end

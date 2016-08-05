@@ -189,11 +189,11 @@ classdef mcInput < mcSavableClass
         function str = nameShort(I)
             switch lower(I.config.kind.kind)
                 case 'nidaqanalog'
-                    str = [I.config.name ' (' I.config.dev ': ' I.config.chn ')'];
+                    str = [I.config.name ' (' I.config.dev ':' I.config.chn ')'];
                 case 'nidaqdigital'
-                    str = [I.config.name ' (' I.config.dev ': ' I.config.chn ')'];
+                    str = [I.config.name ' (' I.config.dev ':' I.config.chn ')'];
                 case 'nidaqcounter'
-                    str = [I.config.name ' (' I.config.dev ': ' I.config.chn ')'];
+                    str = [I.config.name ' (' I.config.dev ':' I.config.chn ')'];
                 case 'function'
                     str = [I.config.name ' (' I.config.description ')'];
             end

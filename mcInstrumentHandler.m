@@ -49,7 +49,7 @@ classdef mcInstrumentHandler < handle
                 disp('Opening mcInstrumentHandler');
                 delete(instrfind)
 %                 clear all
-                close all
+%                 close all
                 if ~ismac
                     daqreset
                 end
@@ -95,6 +95,12 @@ classdef mcInstrumentHandler < handle
                 mkdir(params.saveDirManual);
                 mkdir(params.saveDirBackground);
             end
+        end
+        
+        function tf = isOpen()
+            params = mcInstrumentHandler.params();
+            
+            tf = isfield(params, 'open');
         end
         
         function str = getConfigFolder()

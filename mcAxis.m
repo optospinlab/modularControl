@@ -484,6 +484,8 @@ classdef mcAxis < mcSavableClass
 % %                             error([a.config.kind.kind ' does not have a read() method.']);
 %                             a.x = a.xt;
                     end
+            
+                    drawnow limitrate;
                 else
                     tf = false;
                 end
@@ -575,7 +577,7 @@ classdef mcAxis < mcSavableClass
                                 
                                 a.xt = a.config.kind.ext2intConv(x);
                                 
-                                if isempty(a.t)
+                                if abs(a.xt - a.x) > 20 && isempty(a.t)
                                     a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
                                     start(a.t);
                                 end
@@ -610,6 +612,8 @@ classdef mcAxis < mcSavableClass
                         otherwise
                             error('Kind not understood...');
                     end
+            
+                    drawnow limitrate;
                 else
                     tf = false;
                 end

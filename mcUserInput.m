@@ -17,6 +17,8 @@ classdef mcUserInput < mcSavableClass
         
         gui = [];               % Variables for the gui.
         
+        wp = [];
+        
         mode = 1;               % userInput mode, i.e. which set of axes the commands are sent to.
     end
       
@@ -33,7 +35,7 @@ classdef mcUserInput < mcSavableClass
             
             configPiezoX = mcAxis.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
             configPiezoY = mcAxis.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
-            configPiezoZ = mcAxis.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            configPiezoZ = mcAxis.piezoZConfig();configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
             configMicroX = mcAxis.microConfig(); configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
             configMicroY = mcAxis.microConfig(); configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
@@ -41,11 +43,13 @@ classdef mcUserInput < mcSavableClass
             configGalvoX = mcAxis.galvoConfig(); configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
             configGalvoY = mcAxis.galvoConfig(); configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
-            config.axesGroups = { {'Piezos',        mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
-                                  {'Micrometers',   mcAxis(configMicroX), mcAxis(configMicroY), mcAxis(configPiezoZ) }, ...
+            config.axesGroups = { {'Micrometers',   mcAxis(configMicroX), mcAxis(configMicroY), mcAxis(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Piezos',        mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ) }, ...
                                   {'Galvometers',   mcAxis(configGalvoX), mcAxis(configGalvoY), mcAxis(configPiezoZ) } };
                               
             config.numGroups = length(config.axesGroups);
+            
+            config.joyEnabled = false;
             
 %             config.axesGroups = { {'Piezos',        mcAxis('configPiezoX.mat'), mcAxis('configPiezoY.mat'), mcAxis('configPiezoZ.mat') }, ...
 %                                   {'Micrometers',   mcAxis('configMicroX.mat'), mcAxis('configMicroY.mat'), mcAxis('configPiezoZ.mat') }, ...
@@ -108,7 +112,7 @@ classdef mcUserInput < mcSavableClass
             
             obj.gui.tabgroup =  uitabgroup('Parent', f, 'Units', units, 'Position', pos);
             obj.gui.tabGoto =       uitab('Parent', obj.gui.tabgroup, 'Title', 'Goto', 'Units', 'pixels');
-            obj.gui.tabInputs =     uitab('Parent', obj.gui.tabgroup, 'Title', 'Inputs', 'Units', 'pixels');
+            obj.gui.tabInputs =     uitab('Parent', obj.gui.tabgroup, 'Title', 'User Input', 'Units', 'pixels');
 %             obj.gui.tabJoystick =   uitab('Parent', obj.gui.tabgroup, 'Title', 'Joystick', 'Units', 'pixels');
             
             
@@ -161,7 +165,7 @@ classdef mcUserInput < mcSavableClass
             obj.refreshUserInputMode();
             
             
-            %%%%%%%%%% INPUTS %%%%%%%%%%
+            %%%%%%%%%% USER INPUTS %%%%%%%%%%
             tabHeight = obj.gui.tabInputs.Position(4) - 5*bh;
             
             bbh = (pw+10)/7; % Big button height
@@ -181,7 +185,7 @@ classdef mcUserInput < mcSavableClass
             
             uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', 'Enable:', 'Position', [0,   tabHeight - 2*bbh - 2*bh, pw/3, bh]); %, 'HorizontalAlignment', 'right');
             obj.gui.keyEnabled = uicontrol('Parent', obj.gui.tabInputs, 'Style', 'check', 'String', 'Keyboard', 'Position', [pw/3,   tabHeight - 2*bbh - 2*bh, pw/3, bh], 'Value', 1);
-            obj.gui.joyEnabled = uicontrol('Parent', obj.gui.tabInputs, 'Style', 'check', 'String', 'Joystick', 'Position', [2*pw/3, tabHeight - 2*bbh - 2*bh, pw/3, bh], 'Value', 0, 'Enable', 'off');
+            obj.gui.joyEnabled = uicontrol('Parent', obj.gui.tabInputs, 'Style', 'check', 'String', 'Joystick', 'Position', [2*pw/3, tabHeight - 2*bbh - 2*bh, pw/3, bh], 'Value', obj.config.joyEnabled, 'Callback', @obj.joyEnableFunction); %, 'Enable', 'off');
             
             uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', 'Keyboard Step', 'Position', [pw/3,   tabHeight - 2*bbh - 4*bh, pw/3, bh]);
             uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', 'Joystick Step', 'Position', [2*pw/3, tabHeight - 2*bbh - 4*bh, pw/3, bh]);
@@ -190,15 +194,31 @@ classdef mcUserInput < mcSavableClass
             
             for axis_ = obj.config.axesList
                 uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', [axis_{1}.config.name ' (' axis_{1}.config.kind.extUnits '): '], 'Position', [0,         y, pw/3, bh], 'HorizontalAlignment', 'right');
-                uicontrol('Parent', obj.gui.tabInputs, 'Style', 'edit', 'String', axis_{1}.config.keyStep, 'Position', [pw/3,    y, pw/3, bh]);
-                uicontrol('Parent', obj.gui.tabInputs, 'Style', 'edit', 'String', axis_{1}.config.joyStep, 'Position', [2*pw/3,  y, pw/3, bh]);
+                uicontrol('Parent', obj.gui.tabInputs, 'Style', 'edit', 'String', axis_{1}.config.keyStep, 'Position', [pw/3,    y, pw/3, bh], 'Callback', {@setAxisKeyStep_Callback, axis_{1}});
+                uicontrol('Parent', obj.gui.tabInputs, 'Style', 'edit', 'String', axis_{1}.config.joyStep, 'Position', [2*pw/3,  y, pw/3, bh], 'Callback', {@setAxisJoyStep_Callback, axis_{1}});
                 
                 y = y - bh;
             end
-
-            obj.gui.joyThrottle = 1;
+            
+            obj.gui.joy.throttle = 0;
+            obj.gui.joyState = -1;
+            obj.gui.axisState = [0 0 0];
+            
+            obj.openListener();
+            obj.openWaypoints();
             
             f.Visible = 'on';
+            pause(.1);
+            obj.joyEnableFunction(0,0);
+        end
+        
+        function openListener(obj)
+            fl = mcAxisListener(obj.config.axesList);
+            fl.Position(2) = 670;
+        end
+        function openWaypoints(obj)
+            obj.wp = mcWaypoints();
+            obj.wp.f.Position(2) = 400;
         end
         
         function setUserInputMode(obj, ~, ~, mode)
@@ -228,13 +248,97 @@ classdef mcUserInput < mcSavableClass
             end
         end
         
-        function joyActionFunction(obj, ~, event)
+        function joyEnableFunction(obj, ~, ~)
             if isvalid(obj)
+%                 check = obj.gui.joyEnabled.Value
                 if obj.gui.joyEnabled.Value
-                    obj.gui.joyThrottle = 1;
+                    mcJoystickDriver(@obj.joyActionFunction);
+                else
+                    
                 end
             else
                 % Do something to stop the joystick.
+            end
+        end
+        function shouldContinue = joyActionFunction(obj, ~, event)
+            shouldContinue = 1;
+            
+%             event
+            
+            if isvalid(obj)
+%                 check = obj.gui.joyEnabled.Value
+                
+                if obj.gui.joyEnabled.Value
+                    switch event.type
+                        case 0      % Debug
+%                             src
+                            obj.gui.joyState = event.axis;      % -1:off, 0:can't find id, 1:running
+                        case 1      % Button
+                            if event.value == 1
+                                num = obj.config.numGroups+1;
+
+                                switch event.axis
+                                    case 1
+                                        if ~isempty(obj.wp) && isvalid(obj.wp)
+                                            obj.wp.dropAtAxes_Callback(0, 0);
+                                        else
+                                            disp('No waypoints connected; not sure what to do...');
+                                        end
+                                    case 2
+                                        'Side'
+                                    case 3
+                                        '3'
+                                    case 4
+                                        obj.userAction(3, -1, 1);
+                                    case 5
+                                        '5'
+                                    case 6
+                                        obj.userAction(3, 1, 1);
+                                    case 7
+                                        num = 1;
+                                    case 8
+                                        num = 4;
+                                    case 9
+                                        num = 2;
+                                    case 10
+                                        num = 5;
+                                    case 11
+                                        num = 3;
+                                    case 12
+                                        num = 6;
+                                end
+
+                                if num <= obj.config.numGroups
+                                    obj.setUserInputMode(0, 0, num);
+                                end
+                            end
+                        case 2      % POV
+                            if event.value < 360
+%                                 event.value
+                                x = sind(event.value);
+                                y = cosd(event.value);
+                                
+                                obj.userAction(1, x, 1);
+                                obj.userAction(2, y, 1);
+                            end
+                        case 3      % Axis
+%                             event
+                            
+                            obj.gui.axisState(event.axis) = event.value;
+%                             state = obj.gui.axisState
+                            
+                            if event.axis ~= 3 || sum(obj.gui.axisState(1:2).*obj.gui.axisState(1:2)) < .25     % If XY is displaced by more than .25, block Z.
+                                userAction(obj, event.axis, event.value*event.value*event.value, 0)     % Note the cube...
+                            end
+                        case 4      % Throttle
+                            obj.gui.joy.throttle = event.value;
+                    end
+                else
+                    shouldContinue = 0;
+                end
+            else
+                % Do something to stop the joystick.
+                shouldContinue = 0;
             end
         end
         function keyPressFunction(obj, src, event)
@@ -261,17 +365,17 @@ classdef mcUserInput < mcSavableClass
 
                         switch event.Key
                             case {'rightarrow', 'd'}
-                                obj.userAction(1,1,multiplier);
+                                obj.userAction(1,  multiplier, 1);
                             case {'leftarrow', 'a'}
-                                obj.userAction(1,-1,multiplier);
+                                obj.userAction(1, -multiplier, 1);
                             case {'uparrow', 'w'}
-                                obj.userAction(2,1,multiplier);
+                                obj.userAction(2,  multiplier, 1);
                             case {'downarrow', 's'}
-                                obj.userAction(2,-1,multiplier);
+                                obj.userAction(2, -multiplier, 1);
                             case {'equal', 'e'}
-                                obj.userAction(3,1,multiplier);
+                                obj.userAction(3,  multiplier, 1);
                             case {'hyphen', 'q'}
-                                obj.userAction(3,-1,multiplier);
+                                obj.userAction(3, -multiplier, 1);
                             case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
                                 num = str2double(event.Key);
 
@@ -293,60 +397,60 @@ classdef mcUserInput < mcSavableClass
             end
         end
         
-        function userAction(obj, axis_, direction, multiplier)
-            if obj.mode > 0 && obj.mode <= obj.config.numGroups
-                a = obj.config.axesGroups{obj.mode}{axis_+1};
-                if strcmpi(a.config.kind.kind, 'nidaqdigital')
-                    if multiplier
-                        val = a.getX() + direction;
+        function userAction(obj, axis_, value, isKey)
+            if value ~= 0
+                if obj.mode > 0 && obj.mode <= obj.config.numGroups
+                    a = obj.config.axesGroups{obj.mode}{axis_+1};
+
+                    if strcmpi(a.config.kind.kind, 'nidaqdigital')
+                        dVal = sign(value);
                     else
-                        val = a.getX() + direction;
+                        if isKey
+                            dVal = value*a.config.keyStep;
+                        else
+                            dVal = value*a.config.joyStep*obj.gui.joy.throttle;
+                        end
+                    end
+
+                    if dVal ~= 0                                                        % If there was a change...
+                        val = a.getX() + dVal;                                          % ...calculate the result.
+
+                        if abs(val - a.getXt()) > abs(5*dVal)                           % If the axis is lagging too far behind...
+                            obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0.9400 0], isKey);    % ...then flash green
+                        else
+                            if val >  max(a.config.kind.extRange)                       % Make sure the axis doesn't go out of bounds
+                                val = max(a.config.kind.extRange);
+                            end
+                            if val <  min(a.config.kind.extRange)
+                                val = min(a.config.kind.extRange);
+                            end
+
+                            if abs(val) < 1e-14
+                                val = 0;                                                % Account for arithmatic error.
+                            end
+
+                            a.goto(val);                                                % Finally, go to the new position.
+
+                            obj.flashKey(2*axis_ + (sign(value)-1)/2, [0.9400 0 0], isKey);    % ...then flash red
+                        end
+                    else                                                                % If there wasn't a change...
+                        obj.flashKey(2*axis_ + (sign(value)-1)/2, [0.9400 0.9400 0], isKey);   % ...then flash yellow
                     end
                 else
-                    if multiplier
-                        val = a.getX() + direction*multiplier*a.config.keyStep;
-
-                        if abs(a.getXt() - val) > abs(2*direction*multiplier*a.config.keyStep)
-                            return;
-                        end
-                    else
-                        val = a.getX() + direction*a.config.joyStep*obj.gui.joyThrottle;
-
-                        if abs(a.getXt() - val) > abs(2*a.config.joyStep*obj.gui.joyThrottle)
-                            return;
-                        end
-                    end
+                    obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0 0.9400], isKey);            % ...then flash blue
                 end
-                
-                if val >  max(a.config.kind.extRange)
-                    val = max(a.config.kind.extRange);
-                end
-                if val <  min(a.config.kind.extRange)
-                    val = min(a.config.kind.extRange);
-                end
-                
-                if abs(val) < 1e-14
-                    val = 0;            % Account for arithmatic error.
-                end
-                
-                a.goto(val);
-                
-                obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0       0];         % Red
+            end
+        end
+        function flashKey(obj, key, color, isKey)
+            if isKey
+                obj.gui.keylist(key).BackgroundColor = color;
                 pause(.016);
-%                 drawnow limitrate;
-                obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0.9400    0.9400];
-%                 drawnow;
-            else
-                obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0         0         0.9400];  % Blue
-                pause(.016);
-%                 drawnow;
-                obj.gui.keylist(2*axis_ + (direction-1)/2).BackgroundColor = [0.9400    0.9400    0.9400];
-%                 drawnow;
+                obj.gui.keylist(key).BackgroundColor = [0.9400    0.9400    0.9400];
             end
         end
         function userAction_Callback(obj, src, ~, axis_, direction)
             src.Enable = 'off';
-            drawnow;
+%             drawnow;
             src.Enable = 'on';  % This is to remove focus on whatever object may be focused.
             obj.userAction(axis_, direction, 1);
         end
@@ -397,14 +501,40 @@ classdef mcUserInput < mcSavableClass
         end
         
         function closeRequestFcn(obj,~,~)
-            if isequal(@obj.keyPressFunction, mcInstrumentHandler.globalWindowKeyPressFcn())
+            obj.gui.joyEnabled.Enable = 'off';
+            obj.gui.joyEnabled.Value = 0;
+            
+            if mcInstrumentHandler.isOpen() && isequal(@obj.keyPressFunction, mcInstrumentHandler.globalWindowKeyPressFcn())
                 mcInstrumentHandler.setGlobalWindowKeyPressFcn([]);
             end
+            
+            pause(1);
             
             delete(obj.gui.f);
             delete(obj);
         end
     end
+end
+
+function setAxisKeyStep_Callback(src, ~, axis_)
+    val = str2double(src.String);
+
+    if isnan(val)
+        val = axis_.config.keyStep;
+    end
+
+    src.String = val;
+    axis_.config.keyStep = val;
+end
+function setAxisJoyStep_Callback(src, ~, axis_)
+    val = str2double(src.String);
+
+    if isnan(val)
+        val = axis_.config.joyStep;
+    end
+
+    src.String = val;
+    axis_.config.joyStep = val;
 end
 
 function limit_Callback(src, event, range)

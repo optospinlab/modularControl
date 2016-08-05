@@ -59,11 +59,11 @@ classdef mcWaypoints < mcSavableClass
                 case 0
                     wp.config = mcWaypoints.defaultConfig();
                     wp.emptyWaypoints();
-                    wp.config.waypoints{1} = rand(1, 100);  % Comment this...
-                    wp.config.waypoints{2} = rand(1, 100);
-                    wp.config.waypoints{3} = rand(1, 100);
-                    wp.config.waypoints{4} = 1:100;         % Color in the future?
-                    wp.config.waypoints{5} = 1:100;         % Name?
+%                     wp.config.waypoints{1} = rand(1, 100);  % Comment this...
+%                     wp.config.waypoints{2} = rand(1, 100);
+%                     wp.config.waypoints{3} = rand(1, 100);
+%                     wp.config.waypoints{4} = 1:100;         % Color in the future?
+%                     wp.config.waypoints{5} = 1:100;         % Name?
                 case 1
                     if iscell(varin)
                         wp.config = emptyConfig();
@@ -87,9 +87,9 @@ classdef mcWaypoints < mcSavableClass
             wp.f.ToolBar =     'none';
             wp.f.CloseRequestFcn = @wp.figureClose_Callback;
             
-            wp.a = axes(wp.f, 'Position', [0 0 1 1], 'TickDir', 'in', 'DataAspectRatioMode', 'manual', 'DataAspectRatio', [1 1 1]);
+            wp.a = axes('Parent', wp.f, 'Position', [0 0 1 1], 'TickDir', 'in', 'XLimMode', 'manual', 'YLimMode', 'manual');%, 'DataAspectRatioMode', 'manual', 'DataAspectRatio', [1 1 1]);
             
-            hold(wp.a, 'on')
+            hold(wp.a, 'on');
             
             wp.w = scatter(wp.a, [], [], 's');
             wp.p = scatter(wp.a, [], [], 'o');
@@ -103,6 +103,11 @@ classdef mcWaypoints < mcSavableClass
             wp.g.ButtonDownFcn =      @wp.windowButtonDownFcn;
             wp.f.WindowButtonUpFcn =  @wp.windowButtonUpFcn;
             wp.f.WindowScrollWheelFcn =     @wp.windowScrollWheelFcn;
+ 
+            % Static legend
+%             set(wp.a, 'LegendColorbarListeners', []); 
+            setappdata(wp.a, 'LegendColorbarManualSpace', 1);
+            setappdata(wp.a, 'LegendColorbarReclaimSpace', 1);
             
             menuA = uicontextmenu;
             menuW = uicontextmenu;
@@ -343,30 +348,64 @@ classdef mcWaypoints < mcSavableClass
 
                 wp.g.XData = Y(wp.config.xi, :);
                 wp.g.YData = Y(wp.config.yi, :);
+                
+                wp.computeLimits();
             end
         end
 
         function render(wp)
             wp.w.XData = wp.config.waypoints{wp.config.xi};
             wp.w.YData = wp.config.waypoints{wp.config.yi};
+                
+            wp.computeLimits();
         end
         
         function resetAxisListeners(wp)
             delete(wp.listeners.x);
             delete(wp.listeners.y);
             
-            prop = findprop(mcAxis, 'x');
-            wp.listeners.x = event.proplistener(wp.config.axes{wp.config.xi}, prop, 'PostSet', @wp.listenToAxes_Callback);
-            wp.listeners.y = event.proplistener(wp.config.axes{wp.config.yi}, prop, 'PostSet', @wp.listenToAxes_Callback);
+%             prop = findprop(mcAxis, 'x');
+%             wp.listeners.x = event.proplistener(wp.config.axes{wp.config.xi}, prop, 'PostSet', @wp.listenToAxes_Callback);
+%             wp.listeners.y = event.proplistener(wp.config.axes{wp.config.yi}, prop, 'PostSet', @wp.listenToAxes_Callback);
         end
         function listenToAxes_Callback(wp, ~, ~)
             if isvalid(wp)
-%                 drawnow limitrate;
                 wp.p.XData = wp.config.axes{wp.config.xi}.getX();
                 wp.p.YData = wp.config.axes{wp.config.yi}.getX();
                 wp.t.XData = wp.config.axes{wp.config.xi}.getXt();
                 wp.t.YData = wp.config.axes{wp.config.yi}.getXt();
-%                 drawnow;
+                
+                wp.computeLimits();
+                
+%                 drawnow limitrate;
+            end
+        end
+        
+        function computeLimits(wp)
+            xlist = [wp.p.XData wp.p.XData wp.w.XData wp.g.XData];
+            ylist = [wp.p.YData wp.p.YData wp.w.YData wp.g.YData];
+            
+            if ~(isempty(xlist) || isempty(ylist))
+                xr = [min(xlist) max(xlist)];
+                yr = [min(ylist) max(ylist)];
+
+                xw = (diff(xr) + 10)/2;
+                yh = (diff(yr) + 10)/2;
+
+                dims = wp.f.Position(3:4);
+
+                if dims(1)/dims(2) > xw/yh  % Then we need to expand x.
+                    xw = yh*(dims(1)/dims(2));
+                else                        % Then we need to expand y.
+                    yh = xw*(dims(2)/dims(1));
+                end
+
+                x = mean(xr);
+                y = mean(yr);
+
+                wp.a.XLim = [x-xw x+xw];
+                wp.a.YLim = [y-yh y+yh];
+                drawnow limitrate;
             end
         end
         
@@ -396,7 +435,7 @@ classdef mcWaypoints < mcSavableClass
                         y = event.IntersectionPoint(2);
                         
                         wp.menus.currentPos = [x y];
-                        wp.menus.pos.name.Label = ['Position: [ ' num2str(x, 4)  ' ' wp.config.axes{wp.config.xi}.config.kind.extUnits ', ' num2str(y, 4)  ' ' wp.config.axes{wp.config.yi}.config.kind.extUnits ' ]'];
+                        wp.menus.pos.name.Label = ['Position: [ ' num2str(x, 4)  ' ' wp.config.axes{wp.config.xi}.config.kind.extUnits ', ' num2str(y, 4)  ' ' wp.config.axes{wp.config.yi}.config.kind.extUnits ' ]']; % Display all axes on this
                         
                         
                         dlist = (wp.w.XData - x) .* (wp.w.XData - x) + ...

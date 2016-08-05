@@ -11,8 +11,9 @@ classdef mcDiamond
     
     methods
         function dc = mcDiamond()
+            mcBlue();
             mcUserInput(mcUserInput.diamondConfig());
-            mcAxesListener();
+%             mcAxisListener();
             
             mcAxis(mcAxis.polarizationConfig());
             
