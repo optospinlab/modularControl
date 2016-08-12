@@ -36,19 +36,20 @@ classdef (Sealed) mcaMicro < mcAxis
         end
     end
     
-    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these.
+    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
+    %   more-complex methods defined in mcAxis.
     methods (Access = private)
-        % EQ
-        function tf = Eq(a, b)
-            tf = strcmpi(a.config.port,  b.config.port);
-        end
-        
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.port ':' a.config.addr ')'];
         end
         function str = NameVerb(a)
-            str = [a.config.name ' (serial micrometer on port ' a.config.port ', address' a.config.addr ')'];
+            str = [a.config.name ' (serial micrometer on port ' a.config.port ', address ' a.config.addr ')'];
+        end
+        
+        % EQ
+        function tf = Eq(a, b)
+            tf = strcmpi(a.config.port,  b.config.port);
         end
         
         % OPEN/CLOSE
@@ -59,9 +60,8 @@ classdef (Sealed) mcaMicro < mcAxis
             fopen(a.s);
 
             % The following is Srivatsa's code and should be examined.
-
             pause(.25);
-            fprintf(a.s, [a.config.addr 'HT1']);         % Simplyfying function for this?
+            fprintf(a.s, [a.config.addr 'HT1']);         % Simplifying function for this?
             fprintf(a.s, [a.config.addr 'SL-5']);        % negative software limit x=-5
             fprintf(a.s, [a.config.addr 'BA0.003']);     % change backlash compensation
             fprintf(a.s, [a.config.addr 'FF05']);        % set friction compensation
@@ -112,7 +112,9 @@ classdef (Sealed) mcaMicro < mcAxis
                 start(a.t);
             end
         end
-        
+    end
+    
+    methods
         % EXTRA
         function timerUpdateFcn(a, ~, ~)
             a.read();

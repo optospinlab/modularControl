@@ -97,15 +97,9 @@ classdef (Sealed) mcaDAQ < mcAxis
         end
     end
     
-    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these.
+    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
+    %   more-complex methods defined in mcAxis.
     methods (Access = private)
-        %EQ
-        function tf = Eq(a, b)
-            tf = strcmpi(a.config.dev,  b.config.dev) && ...
-                 strcmpi(a.config.chn,  b.config.chn) && ...
-                 strcmpi(a.config.type, b.config.type);
-        end
-        
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.dev ':' a.config.chn ':' a.config.type ')'];
@@ -119,6 +113,13 @@ classdef (Sealed) mcaDAQ < mcAxis
                 otherwise
                     str = a.config.name;
             end
+        end
+        
+        %EQ
+        function tf = Eq(a, b)
+            tf = strcmpi(a.config.dev,  b.config.dev) && ...
+                 strcmpi(a.config.chn,  b.config.chn) && ...
+                 strcmpi(a.config.type, b.config.type);
         end
         
         % OPEN/CLOSE
@@ -147,7 +148,9 @@ classdef (Sealed) mcaDAQ < mcAxis
             a.GotoEmulation(x);        % No need to rewrite code.
             a.s.outputSingleScan(x);
         end
-        
+    end
+    
+    methods
         % EXTRA
         function addToSession(a, s)
             if a.close();  % If the axis is not already closed, close it...

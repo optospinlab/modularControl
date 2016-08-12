@@ -44,77 +44,7 @@ classdef mcInput < mcSavableClass
         inUse = false;          % Boolean.
         inEmulation = false;    % Boolean.
     end
-    methods (Static)
-        function config = defaultConfig()
-            config = mcInput.functionConfig();
-        end
-        function config = counterConfig()
-            config.name =               'Default Counter';
-
-            config.kind.kind =          'NIDAQcounter';
-            config.kind.name =          'DAQ Counter';
-            config.kind.extUnits =      'cts/sec';              % 'External' units.
-            config.kind.shouldNormalize = true;                 % If this variable is flagged, the measurement is subtracted from the previous and is divided by the time spent on a pixel.
-            config.kind.sizeInput =    [1 1];
-            
-            config.dev =                'Dev1';
-            config.chn =                'ctr0';
-            config.type =               'EdgeCount';
-        end
-        function config = voltageConfig()
-            config.name =               'Default Voltage Input';
-
-            config.kind.kind =          'NIDAQanalog';
-            config.kind.name =          'DAQ Voltage Input';
-            config.kind.extUnits =      'V';                    % 'External' units.
-            config.kind.shouldNormalize = false;
-            config.kind.sizeInput =    [1 1];
-            
-            config.dev =                'Dev1';
-            config.chn =                'ai0';
-            config.type =               'Voltage';
-        end
-        function config = digitalConfig()
-            config.name =               'Digital Output';
-
-            config.kind.kind =          'NIDAQdigital';
-            config.kind.name =          'Digital Output';
-            config.kind.shouldNormalize = false;                % If this variable is flagged, the measurement is subtracted from the previous and is divided by the time spent on a pixel.
-            config.kind.sizeInput =    [1 1];
-
-            config.dev =                'Dev1';
-            config.chn =                'Port0/Line0';
-            config.type =               'Output';               % This must be there to differentiate outputs from inputs
-
-%             config.intSpeed =           10;                  % 'Internal' units per second.
-        end
-        function config = functionConfig()
-            config.name =               'Default Function Input';
-
-            config.kind.kind =          'function';
-            config.kind.name =          'Default Function Input';
-            config.kind.extUnits =      'arb';                  % 'External' units.
-            config.kind.normalize =     false;
-            config.kind.sizeInput =    [1 1];
-            
-            config.fnc =                @rand;
-            config.description =        'wraps the MATLAB rand() function';
-        end
-        function config = spectrumConfig()
-            config.name =               'Default Spectrometer Input';
-
-            config.kind.kind =          'function';
-            config.kind.name =          'Default Spectrum Input';
-            config.kind.extUnits =      'cts';                  % 'External' units.
-            config.kind.normalize =     false;                  % Should we normalize?
-            config.kind.sizeInput =    [1 512];                  % This input returns a vector, not a number...
-            
-            config.fnc =                @aquireSpectrum;
-            config.description =        'Aquires a spectrum';
-            
-            % Not finished!
-        end
-    end
+    
     methods
         function I = mcInput(varin)
             % Constructor 
@@ -163,18 +93,20 @@ classdef mcInput < mcSavableClass
         end
         
         function tf = eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
-            if strcmp(I.config.kind.kind, b.config.kind.kind)               % If they are the same kind...
-                switch lower(I.config.kind.kind)
-                    case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
-                        tf = strcmp(I.config.dev,  b.config.dev) && ... % ...then check if all of the other variables are the same.
-                             strcmp(I.config.chn,  b.config.chn) && ...
-                             strcmp(I.config.type, b.config.type);
-                    case 'function'
-                        tf = isequal(I.config.fnc,  b.config.fnc);      % Note that the function handles have to be the same; the equations can't merely be the same.
-                    otherwise
-                        warning('Specific equality conditions not written for this sort of axis.')
-                        tf = true;
+            if ~isprop(b, 'config')
+                tf = false; return;
+            else
+                if ~isfield(b.config, 'kind')
+                    tf = false; return;
+                else
+                    if ~isfield(b.config.kind, 'kind')
+                        tf = false; return;
+                    end
                 end
+            end
+            
+            if strcmp(I.config.kind.kind, b.config.kind.kind)               % If they are the same kind...
+                tf = I.Eq(b);
             else
                 tf = false;
             end
@@ -187,35 +119,17 @@ classdef mcInput < mcSavableClass
             str = [I.config.name ' (' I.config.kind.extUnits ')'];
         end
         function str = nameShort(I)
-            switch lower(I.config.kind.kind)
-                case 'nidaqanalog'
-                    str = [I.config.name ' (' I.config.dev ':' I.config.chn ')'];
-                case 'nidaqdigital'
-                    str = [I.config.name ' (' I.config.dev ':' I.config.chn ')'];
-                case 'nidaqcounter'
-                    str = [I.config.name ' (' I.config.dev ':' I.config.chn ')'];
-                case 'function'
-                    str = [I.config.name ' (' I.config.description ')'];
-            end
-            
             if I.inEmulation
-                str = [str ' (Emulation)'];
+                str = [I.NameShort() ' (Emulation)'];
+            else
+                str = I.NameShort();
             end
         end
         function str = nameVerb(I)
-            switch lower(I.config.kind.kind)
-                case 'nidaqanalog'
-                    str = [I.config.name ' (analog ' I.config.type ' input on '  I.config.dev ', channel ' I.config.chn ')'];
-                case 'nidaqdigital'
-                    str = [I.config.name ' (digital input on ' I.config.dev ', channel ' I.config.chn ')'];
-                case 'nidaqcounter'
-                    str = [I.config.name ' (counter ' I.config.type ' input on ' I.config.dev ', channel ' I.config.chn ')'];
-                case 'function'
-                    str = [I.config.name ' (function input with description: ' I.config.description ')'];
-            end
-            
             if I.inEmulation
-                str = [str ' (currently in emulation)'];
+                str = [I.NameVerb() ' (Emulation)'];
+            else
+                str = I.NameVerb();
             end
         end
         
@@ -231,22 +145,16 @@ classdef mcInput < mcSavableClass
                 I.inUse = true;
                 
                 if I.inEmulation
-                    
+                    % Do something?
                 else
-                    switch lower(I.config.kind.kind)
-                        case 'nidaqanalog'
-                            I.s = daq.createSession('ni');
-                            addAnalogInputChannel(  I.s, I.config.dev, I.config.chn, I.config.type);
-                        case 'nidaqdigital'
-                            I.s = daq.createSession('ni');
-                            addDigitalChannel(      I.s, I.config.dev, I.config.chn, 'InputOnly');
-                        case 'nidaqcounter'
-                            I.s = daq.createSession('ni');
-                            addCounterInputChannel( I.s, I.config.dev, I.config.chn, I.config.type);
+                    try
+                        I.Open();
+                        tf = true;     % Return true because axis has been opened.
+                    catch err
+                        disp(['mcInput.open() - ' I.config.name ': ' err]);
+                        tf = false;
                     end
                 end
-                
-                tf = true;
             end
         end
         function tf = close(I)          % Closes the session of the axis; returns whether closed or not.
@@ -273,111 +181,28 @@ classdef mcInput < mcSavableClass
         end
         
         function data = measure(I, integrationTime)
-            if I.inEmulation
-%                 switch lower(I.config.kind.kind)
-%                     case {'nidaqcounter'}
-% %                         pause(integrationTime);
-%                         data = rand*100;
-%                     case {'function'}
-% %                         pause(integrationTime);
-%                         data = I.config.fnc();
-%                     otherwise
-%                         pause(integrationTime);
-                        data = rand([I.config.kind.sizeInput 1])*100;
-%                 end
-            else
-                if I.open()
-                    switch lower(I.config.kind.kind)
-                        case {'nidaqanalog', 'nidaqdigital'}
-                            data = I.s.inputSingleScan();
-                        case {'nidaqcounter'}
-%                             disp('here2');
-                            I.s.resetCounters();
-                            [d1,t1] = I.s.inputSingleScan();
-                            pause(integrationTime);             % Inexact way. Should make this asyncronous also...
-                            [d2,t2] = I.s.inputSingleScan();
-
-                            data = (d2 - d1)/(t2 - t1);
-                        case {'function'}
-%                             pause(integrationTime);
-                            data = I.config.fnc();
-                        otherwise
-%                             pause(integrationTime);
-                            data = rand(I.config.kind.sizeInput)*100;
-                            warning('Kind not understood.');
-                    end
+            if I.open()
+                if I.inEmulation
+                    data = I.MeasureEmulation(integrationTime);
                 else
-                    data = NaN;
+                    data = I.Measure(integrationTime);
                 end
-            end
-        end
-        
-        function addToSession(I, s)
-            if I.close()
-                switch lower(I.config.kind.kind)
-                    case 'nidaqanalog'
-                        addAnalogInputChannel(  s, I.config.dev, I.config.chn, I.config.type);
-                    case 'nidaqdigital'
-                        addDigitalChannel(      s, I.config.dev, I.config.chn, 'InputOnly');
-                    case 'nidaqcounter'
-                        addCounterInputChannel( s, I.config.dev, I.config.chn, I.config.type);
-                    otherwise
-                        warning('This only works for NIDAQ outputs');
+                
+                if len(size(data)) ~= I.config.kind.sizeInput
+                    data = NaN(I.config.kind.sizeInput);
+                    warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
+                    return;
                 end
+                
+                if ~all(size(data) == I.config.kind.sizeInput)
+                    data = NaN(I.config.kind.sizeInput);
+                    warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
+                end
+            else
+                data = NaN(I.config.kind.sizeInput);
+                warning(['mcInput - ' I.config.name ': could not open input...']);
             end
         end
-    end
-end
-
-function spectrum = aquireSpectrum()
-    spectrum = -1;
-
-    t = now;
-
-    % create the trigger file
-    fh = fopen('Z:\WinSpec_Scan\matlabfile.txt', 'w');  
-    if (fh == -1) 
-        error('oops, file cannot be written'); 
-    end 
-    fprintf(fh, 'Trigger Spectrum\n');
-    fclose(fh);
-
-    i = 0;
-
-    while i < 120 && all(spectrum == -1)
-        try
-            disp(['Waiting ' num2str(i)]);
-            d = dir('Z:\WinSpec_Scan\spec.SPE');
-
-%                 display(['      datenum: ' num2str(d.datenum, 100) ',']);
-%                 display(['            t: ' num2str(t, 100)]);
-            if d.datenum > t - 4/(24*60*60)
-                spectrum = readSPE('Z:\WinSpec_Scan\spec.SPE');
-            end
-        catch err
-%                 disp(err)
-        end
-
-        pause(1);
-        i = i + 1;
-    end
-
-    if ~all(spectrum == -1)
-        disp('Found Spectrum');
-        i = 0;
-        while i < 20
-            try
-                movefile('Z:\WinSpec_Scan\spec.SPE', [mcInstrumentHandler.timestamp() '.SPE']);
-                break;
-            catch err
-                pause(.5);
-                display(err.message);
-            end
-            i = i + 1;
-        end
-    else
-        disp('Did Not Find Spectrum');
-        spectrum = NaN(1, 512);
     end
 end
 

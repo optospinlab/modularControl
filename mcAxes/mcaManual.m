@@ -36,19 +36,20 @@ classdef (Sealed) mcaManual < mcAxis
         end
     end
     
-    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these.
+    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
+    %   more-complex methods defined in mcAxis.
     methods (Access = private)
-        %EQ
-        function tf = Eq(a, b)
-            tf = strcmpi(a.config.message,  b.config.message) && strcmpi(a.config.verb,  b.config.verb);
-        end
-        
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.kind.name ':' a.config.verb ')'];
         end
         function str = NameVerb(a)
             str = [a.config.name ' (' a.config.message ' We must ' a.config.verb ' the ' a.config.kind.name ')'];
+        end
+        
+        %EQ
+        function tf = Eq(a, b)
+            tf = strcmpi(a.config.message,  b.config.message) && strcmpi(a.config.verb,  b.config.verb);
         end
         
         % OPEN/CLOSE not neccessary

@@ -37,11 +37,6 @@ classdef (Sealed) mcaTemplate < mcAxis
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these.
     methods (Access = private)
-        %EQ
-        function tf = Eq(a, b)          % Compares two mcaTemplates
-            tf = strcmpi(a.config.customVar1,  b.config.customVar1) && strcmpi(a.config.customVar2,  b.config.customVar2);
-        end
-        
         % NAME
         function str = NameShort(a)
             % This is the reccommended a.nameShort().
@@ -49,6 +44,11 @@ classdef (Sealed) mcaTemplate < mcAxis
         end
         function str = NameVerb(a)
             str = [a.config.name ' (a template for custom mcAxes with custom vars ' a.config.customVar1 ' and ' a.config.customVar2 ')'];
+        end
+        
+        %EQ
+        function tf = Eq(a, b)          % Compares two mcaTemplates
+            tf = strcmpi(a.config.customVar1,  b.config.customVar1) && strcmpi(a.config.customVar2,  b.config.customVar2);
         end
         
         % OPEN/CLOSE
@@ -71,7 +71,9 @@ classdef (Sealed) mcaTemplate < mcAxis
             a.xt = a.config.kind.ext2intConv(x);    % Set the target position to the user's x.
             a.x = a.xt;                             % If this axis immediately advances to the target (e.g. peizos), then set a.x.
         end
+    end
         
+    methods
         % EXTRA
         function specificFunction(a)
             % A function specific to mcaTemplate.
