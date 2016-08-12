@@ -1,0 +1,133 @@
+classdef (Sealed) mcaMicro < mcAxis
+% mcaMicro is the subclass of mcAxis that manages all serial micrometers.
+    
+    methods (Static)
+        % Neccessary extra vars:
+        %  - port
+        %  - addr
+        
+        function config = defaultConfig()
+            config = mcaMicro.microConfig();
+        end
+        function config = microConfig()
+            config.name =               'Default Micrometers';
+
+            config.kind.kind =          'Serial Micrometer';
+            config.kind.name =          'Tholabs Micrometer';   % Check for better name.
+            config.kind.intRange =      [0 25];
+            config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'mm';                   % 'Internal' units.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =          0;                      % The (internal) value that the axis seeks at startup.
+            config.kind.resetParam =    '';
+
+            config.port =               'COM6';                 % Micrometer Port.
+            config.addr =               '1';                    % Micrometer Address.
+            
+            config.keyStep =            .5;
+            config.joyStep =            5;
+        end
+    end
+    
+    methods
+        function a = mcaMicro(varin)
+            a = a@mcAxis(varin);
+        end
+    end
+    
+    % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these.
+    methods (Access = private)
+        % EQ
+        function tf = Eq(a, b)
+            tf = strcmpi(a.config.port,  b.config.port);
+        end
+        
+        % NAME
+        function str = NameShort(a)
+            str = [a.config.name ' (' a.config.port ':' a.config.addr ')'];
+        end
+        function str = NameVerb(a)
+            str = [a.config.name ' (serial micrometer on port ' a.config.port ', address' a.config.addr ')'];
+        end
+        
+        % OPEN/CLOSE
+        function Open(a)        % Consider putting error detection on this?
+            a.s = serial(a.config.port);
+            set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
+                'FlowControl', 'software', 'Terminator', 'CR/LF');
+            fopen(a.s);
+
+            % The following is Srivatsa's code and should be examined.
+
+            pause(.25);
+            fprintf(a.s, [a.config.addr 'HT1']);         % Simplyfying function for this?
+            fprintf(a.s, [a.config.addr 'SL-5']);        % negative software limit x=-5
+            fprintf(a.s, [a.config.addr 'BA0.003']);     % change backlash compensation
+            fprintf(a.s, [a.config.addr 'FF05']);        % set friction compensation
+            fprintf(a.s, [a.config.addr 'PW0']);         % save to controller memory
+            pause(.25);
+
+            fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
+            pause(.25);
+        end
+        function Close(a)
+            fprintf(a.s, [a.config.addr 'RS']);
+            fclose(a.s);    % Not sure if all of these are neccessary; Srivatsa's old code...
+%            close(a.s);
+            delete(a.s);
+        end
+        
+        % READ
+        function ReadEmulation(a)
+            if abs(a.x - a.xt) > 1e-4           % Simple equation that attracts a.x to the target value of a.xt.
+                a.x = a.x + (a.xt - a.x)/100;
+            else
+                a.x = a.xt;
+            end
+        end
+        function Read(a)
+            fprintf(a.s, [a.config.addr 'TP']);	% Get device state
+            str = fscanf(a.s);
+
+            a.x = str2double(str(4:end));
+        end
+        
+        % GOTO
+        function GotoEmulation(a, ~)
+            % The micrometers are not immediate, so...
+            if isempty(a.t)         % ...if the timer to update the position of the micrometers is not currently running...
+                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 5fps
+                start(a.t);         % ...then run it.
+            end
+        end
+        function Goto(a, x)
+            fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);
+            fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
+
+            a.xt = a.config.kind.ext2intConv(x);
+
+            if abs(a.xt - a.x) > 20 && isempty(a.t)
+                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
+                start(a.t);
+            end
+        end
+        
+        % EXTRA
+        function timerUpdateFcn(a, ~, ~)
+            a.read();
+%             x = a.x
+%             xt = a.xt
+%             drawnow
+            if abs(a.x - a.xt) < 1e-4
+                stop(a.t);
+                delete(a.t);
+                a.t = [];
+            end
+        end
+    end
+end
+
+
+
+

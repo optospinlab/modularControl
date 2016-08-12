@@ -1,0 +1,7 @@
+Todo:
+ - Separate mcAxis and mcInput types into daughter classes; removing the increasingly-cluttered switch statements.
+ - Make mcDataViewer work with non-singular inputs.
+ - Make mcDataViewer work with time (and acquire with time)
+ - Make loading and saving configs functional.
+ - Make quick-use GUI specifically for the diamond room.
+ - Finish automation.

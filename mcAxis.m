@@ -41,6 +41,7 @@ classdef mcAxis < mcSavableClass
         
         isOpen = false;         % Boolean.
         inUse = false;          % Boolean.
+        isReserved = false;     % Boolean.    
         inEmulation = false;    % Boolean.
     end
     properties (Access=private, SetObservable)
@@ -216,7 +217,7 @@ classdef mcAxis < mcSavableClass
     end
     methods
         function a = mcAxis(varin)
-            % Constructor 
+            % Constructor
             switch nargin
                 case 0
                     a.config = mcAxis.defaultConfig();
@@ -277,14 +278,8 @@ classdef mcAxis < mcSavableClass
             else
                 if mcInstrumentHandler.open();
                     warning('Time is automatically added and does not need to be added again...');
-                
-%                     instruments = mcInstrumentHandler.getInstruments();
-% 
-%                     a = instruments{1};
                 end
             end
-            
-%             a.inEmulation
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
@@ -300,28 +295,8 @@ classdef mcAxis < mcSavableClass
                 end
             end
             
-%             a.config
-%             b.config
-            
             if strcmpi(a.config.kind.kind, b.config.kind.kind)     % If they are the same kind...
-                switch lower(a.config.kind.kind)                   % ...then check if all of the other variables are the same.
-                    case {'nidaqanalog', 'nidaqdigital'}
-                        tf = strcmpi(a.config.dev,  b.config.dev) && ...
-                             strcmpi(a.config.chn,  b.config.chn) && ...
-                             strcmpi(a.config.type, b.config.type);
-                    case 'serial micrometer'
-                        tf = strcmpi(a.config.port,  b.config.port) && ...
-                             strcmpi(a.config.addr,  b.config.addr);
-                    case 'time'
-                        tf = true;
-                    case 'wait'
-                        tf = strcmpi(a.config.name,     b.config.name) && ...
-                             strcmpi(a.config.message,  b.config.message) && ...
-                             strcmpi(a.config.verb,     b.config.verb);
-                    otherwise
-                        warning('Specific equality conditions not written for this sort of axis.')
-                        tf = true;
-                end
+                tf = Eq(a,b);
             else
                 tf = false;
             end
@@ -337,39 +312,43 @@ classdef mcAxis < mcSavableClass
             str = ['Range: ' num2str(a.config.kind.extRange(1)) ' to ' num2str(a.config.kind.extRange(2)) ' (' a.config.kind.extUnits ')'];
         end
         function str = nameShort(a) % Returns description in 'name (info1:info2)' form with ' (Emulation)' if emulating.
-            switch lower(a.config.kind.kind)
-                case 'nidaqanalog'
-                    str = [a.config.name ' (' a.config.dev ':' a.config.chn ')'];
-                case 'nidaqdigital'
-                    str = [a.config.name ' (' a.config.dev ':' a.config.chn ')'];
-                case 'serial micrometer'
-                    str = [a.config.name ' (' a.config.port ':' a.config.addr ')'];
-                case 'manual'
-                    str = [a.config.name ' (' a.config.kind.name ':' a.config.verb ')'];
-                otherwise
-                    str = a.config.name;
-            end
+%             switch lower(a.config.kind.kind)
+%                 case 'nidaqanalog'
+%                     str = [a.config.name ' (' a.config.dev ':' a.config.chn ')'];
+%                 case 'nidaqdigital'
+%                     str = [a.config.name ' (' a.config.dev ':' a.config.chn ')'];
+%                 case 'serial micrometer'
+%                     str = [a.config.name ' (' a.config.port ':' a.config.addr ')'];
+%                 case 'manual'
+%                     str = [a.config.name ' (' a.config.kind.name ':' a.config.verb ')'];
+%                 otherwise
+%                     str = a.config.name;
+%             end
             
             if a.inEmulation
-                str = [str ' (Emulation)'];
+                str = [a.NameShort() ' (Emulation)'];
+            else
+                str = a.NameShort();
             end
         end
         function str = nameVerb(a)  % Returns a more-detailed description of the Axis.
-            switch lower(a.config.kind.kind)
-                case 'nidaqanalog'
-                    str = [a.config.name ' (analog input on '  a.config.dev ', channel ' a.config.chn ' with type ' a.config.type ')'];
-                case 'nidaqdigital'
-                    str = [a.config.name ' (digital input on ' a.config.dev ', channel ' a.config.chn ' with type ' a.config.type ')'];
-                case 'serial micrometer'
-                    str = [a.config.name ' (serial micrometer on port ' a.config.port ', address' a.config.addr ')'];
-                case 'manual'
-                    str = [a.config.name ' (' a.config.message ' We must ' a.config.verb 'the ' a.config.kind.name ')'];
-                otherwise
-                    str = a.config.name;
-            end
+%             switch lower(a.config.kind.kind)
+%                 case 'nidaqanalog'
+%                     str = [a.config.name ' (analog input on '  a.config.dev ', channel ' a.config.chn ' with type ' a.config.type ')'];
+%                 case 'nidaqdigital'
+%                     str = [a.config.name ' (digital input on ' a.config.dev ', channel ' a.config.chn ' with type ' a.config.type ')'];
+%                 case 'serial micrometer'
+%                     str = [a.config.name ' (serial micrometer on port ' a.config.port ', address' a.config.addr ')'];
+%                 case 'manual'
+%                     str = [a.config.name ' (' a.config.message ' We must ' a.config.verb 'the ' a.config.kind.name ')'];
+%                 otherwise
+%                     str = a.config.name;
+%             end
             
             if a.inEmulation
-                str = [str ' (currently in emulation)'];
+                str = [a.NameVerb() ' (Emulation)'];
+            else
+                str = a.NameVerb();
             end
         end
         
@@ -387,37 +366,37 @@ classdef mcAxis < mcSavableClass
                 if a.inEmulation
                     % Should something be done?
                 else
-                    switch lower(a.config.kind.kind)
-                        case 'nidaqanalog'
-                            a.s = daq.createSession('ni');
-                            addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
-                            a.s.outputSingleScan(a.x);
-                        case 'nidaqdigital'
-                            a.s = daq.createSession('ni');
-                            addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
-                            a.s.outputSingleScan(a.x);
-                        case 'serial micrometer'
-                            a.s = serial(a.config.port);
-                            set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
-                                'FlowControl', 'software', 'Terminator', 'CR/LF');
-                            fopen(a.s);
-
-                            % The following is Srivatsa's code and should be examined.
-
-                            pause(.25);
-                            fprintf(a.s, [a.config.addr 'HT1']);        % Simplyfying function for this?
-                            fprintf(a.s, [a.config.addr 'SL-5']);        % negative software limit x=-5
-                            fprintf(a.s, [a.config.addr 'BA0.003']);     % change backlash compensation
-                            fprintf(a.s, [a.config.addr 'FF05']);        % set friction compensation
-                            fprintf(a.s, [a.config.addr 'PW0']);         % save to controller memory
-                            pause(.25);
-
-                            fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
-                            pause(.25);
-                    end
+%                     switch lower(a.config.kind.kind)
+%                         case 'nidaqanalog'
+%                             a.s = daq.createSession('ni');
+%                             addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
+%                             a.s.outputSingleScan(a.x);
+%                         case 'nidaqdigital'
+%                             a.s = daq.createSession('ni');
+%                             addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
+%                             a.s.outputSingleScan(a.x);
+%                         case 'serial micrometer'
+%                             a.s = serial(a.config.port);
+%                             set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
+%                                 'FlowControl', 'software', 'Terminator', 'CR/LF');
+%                             fopen(a.s);
+% 
+%                             % The following is Srivatsa's code and should be examined.
+% 
+%                             pause(.25);
+%                             fprintf(a.s, [a.config.addr 'HT1']);        % Simplyfying function for this?
+%                             fprintf(a.s, [a.config.addr 'SL-5']);        % negative software limit x=-5
+%                             fprintf(a.s, [a.config.addr 'BA0.003']);     % change backlash compensation
+%                             fprintf(a.s, [a.config.addr 'FF05']);        % set friction compensation
+%                             fprintf(a.s, [a.config.addr 'PW0']);         % save to controller memory
+%                             pause(.25);
+% 
+%                             fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
+%                             pause(.25);
+%                     end
+                    tf = a.Open();
                 end
-                
-                tf = true;
+%                 tf = true;
             end
         end
         function tf = close(a)      % Closes the session of the axis; returns whether closed or not.
@@ -428,18 +407,24 @@ classdef mcAxis < mcSavableClass
                 if a.inEmulation
                     % Should something be done?
                 else
-                    switch lower(a.config.kind.kind)
-                        case {'nidaqanalog', 'nidaqdigital'}
-                            a.s.release();
-                        case 'serial micrometer'
-                            fprintf(a.s, [a.config.addr 'RS']);
-                            
-                            fclose(a.s);    % Not sure if all of these are neccessary; Srivatsa's old code...
-%                             close(a.s);
-                            delete(a.s); 
+%                     switch lower(a.config.kind.kind)
+%                         case {'nidaqanalog', 'nidaqdigital'}
+%                             a.s.release();
+%                         case 'serial micrometer'
+%                             fprintf(a.s, [a.config.addr 'RS']);
+%                             
+%                             fclose(a.s);    % Not sure if all of these are neccessary; Srivatsa's old code...
+% %                             close(a.s);
+%                             delete(a.s); 
+%                     end
+                    try
+                        tf = a.Close();
+                    catch err
+                        disp(['mcAxis.close(): ' err]);
+                        tf = false;
                     end
                 end
-                tf = true;     % Return true because axis was open and is now closed.
+%                 tf = true;     % Return true because axis was open and is now closed.
             elseif a.inUse
                 warning([a.name() ' is in use elsewhere and cannot be used...']);
                 tf = false;     % Return false because axis is in use by something else.
@@ -461,46 +446,27 @@ classdef mcAxis < mcSavableClass
         function tf = read(a)       % Reads the value of a.x internally; Returns success.
             tf = true;
             
-            if a.inEmulation
-                switch lower(a.config.kind.kind)
-                    case 'serial micrometer'
-                        if abs(a.x - a.xt) > 1e-4  % Simple equation that attracts a.x to the target value of a.xt.
-                            a.x = a.x + (a.xt - a.x)/100;
-                        else
-                            a.x = a.xt;
-                        end
-%                     otherwise
-%                         a.x = a.xt;
+            if a.isOpen
+                if a.inEmulation
+                    a.ReadEmulation();
+                else
+                    a.Read();
                 end
             else
-                if a.isOpen
-                    switch lower(a.config.kind.kind)
-                        case 'serial micrometer'
-                            fprintf(a.s, [a.config.addr 'TP']);	% Get device state
-                            str = fscanf(a.s);
-
-                            a.x = str2double(str(4:end));
-%                         otherwise
-% %                             error([a.config.kind.kind ' does not have a read() method.']);
-%                             a.x = a.xt;
-                    end
-            
-                    drawnow limitrate;
-                else
-                    tf = false;
-                end
+                tf = false;
             end
         end
         
-        function timerUpdateFcn(a, ~, ~)
-            a.read();
-%             x = a.x
-%             xt = a.xt
-%             drawnow
-            if abs(a.x - a.xt) < 1e-4
-                stop(a.t);
-                delete(a.t);
-                a.t = [];
+        function tf = inRange(a, x)
+            if iscell(a.config.kind.extRange)
+                switch x
+                    case a.config.kind.extRange
+                        tf = true;
+                    otherwise
+                        tf = false;
+                end
+            else
+                tf = x <= max(a.config.kind.extRange) && x >= min(a.config.kind.extRange);
             end
         end
         
@@ -511,101 +477,97 @@ classdef mcAxis < mcSavableClass
                 a.xt = a.config.kind.ext2intConv(x);        % Check range?
                 
                 switch lower(a.config.kind.kind)
-                    case 'serial micrometer'
-                        if isempty(a.t)
-                            a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 5fps
-                            start(a.t);
-                        end
-                        % The micrometers are not immediate.
-                    case 'manual'
-                        if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                            load(gong.mat);
-                            sound(y);
-                            if a.x ~= a.config.kind.ext2intConv(x)
-                                questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
-                                          ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
-
-                                a.xt = a.config.kind.ext2intConv(x);
-                                a.x = a.xt;
-                            else
-                                questdlg([a.config.message ' Is the ' a.config.name...
-                                          ' at ' num2str(a.config.kind.int2extConv(a.x)) '? If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
-
-                            end
-                        else
-                            warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output.']);
-                            tf = false;
-                        end
-                    otherwise
-                        if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                            a.x = a.xt;
-                        else
-                            warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for an analog NIDAQ channel.']);
-                            tf = false;
-                        end
+%                     case 'serial micrometer'
+%                         % The micrometers are not immediate.
+%                     case 'manual'
+%                         if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+%                             load(gong.mat);
+%                             sound(y);
+%                             if a.x ~= a.config.kind.ext2intConv(x)
+%                                 questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
+%                                           ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
+% 
+%                                 a.xt = a.config.kind.ext2intConv(x);
+%                                 a.x = a.xt;
+%                             else
+%                                 questdlg([a.config.message ' Is the ' a.config.name...
+%                                           ' at ' num2str(a.config.kind.int2extConv(a.x)) '? If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
+% 
+%                             end
+%                         else
+%                             warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output.']);
+%                             tf = false;
+%                         end
+%                     otherwise
+%                         if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+%                             a.x = a.xt;
+%                         else
+%                             warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for an analog NIDAQ channel.']);
+%                             tf = false;
+%                         end
                 end
             else
                 if a.open();   % If the axis is not already open, open it...
                     switch lower(a.config.kind.kind)
-                        case 'nidaqanalog'
-                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                                a.xt = a.config.kind.ext2intConv(x);
-                                a.x = a.xt;
-                                a.s.outputSingleScan(a.x);
-                            else
-                                warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for an analog NIDAQ channel.']);
-                                tf = false;
-                            end
-                        case 'nidaqdigital'
-                            switch x    % Should this switch be in inRange() also? It isn't currently to save time.
-                                case {0, 'low', 'LOW', 'lo', 'LO'}
-                                    a.s.outputSingleScan(0);
-                                    a.x = 0;
-                                    a.xt = 0;
-                                case {1, 'high', 'HIGH', 'hi', 'HI'}
-                                    a.s.outputSingleScan(1);
-                                    a.x = 1;
-                                    a.xt = 1;
-                                otherwise
-                                    warning([num2str(x) ' not a valid output for a digital NIDAQ channel.']);
-                                    tf = false;
-                            end
-                        case 'serial micrometer'
-                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                                fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);
-                                fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
-                                
-                                a.xt = a.config.kind.ext2intConv(x);
-                                
-                                if abs(a.xt - a.x) > 20 && isempty(a.t)
-                                    a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
-                                    start(a.t);
-                                end
-                            else
-                                warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
-                                tf = false;
-                            end
+%                         case 'nidaqanalog'
+%                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+%                                 a.xt = a.config.kind.ext2intConv(x);
+%                                 a.x = a.xt;
+%                                 a.s.outputSingleScan(a.x);
+%                             else
+%                                 warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for an analog NIDAQ channel.']);
+%                                 tf = false;
+%                             end
+%                         case 'nidaqdigital'
+%                             switch x    % Should this switch be in inRange() also? It isn't currently to save time.
+%                                 case {0, 'low', 'LOW', 'lo', 'LO'}
+%                                     a.s.outputSingleScan(0);
+%                                     a.x = 0;
+%                                     a.xt = 0;
+%                                 case {1, 'high', 'HIGH', 'hi', 'HI'}
+%                                     a.s.outputSingleScan(1);
+%                                     a.x = 1;
+%                                     a.xt = 1;
+%                                 otherwise
+%                                     warning([num2str(x) ' not a valid output for a digital NIDAQ channel.']);
+%                                     tf = false;
+%                             end
+%                         case 'serial micrometer'
+%                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+%                                 fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);
+%                                 fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
+%                                 
+%                                 a.xt = a.config.kind.ext2intConv(x);
+%                                 
+%                                 if abs(a.xt - a.x) > 20 && isempty(a.t)
+%                                     a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
+%                                     start(a.t);
+%                                 end
+%                             else
+%                                 warning([num2str(x) ' ' a.config.kind.extUnits ' not a valid output for 0 -> 25mm micrometers.']);
+%                                 tf = false;
+%                             end
                         case 'time'
                             
-                        case 'manual'
-                            if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
-                                load(gong.mat);
-                                sound(y);
-                                if a.x ~= a.config.kind.ext2intConv(x)
-                                    questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
-                                              ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
-
-                                    a.xt = a.config.kind.ext2intConv(x);
-                                    a.x = a.xt;
-                                else
-                                    questdlg([a.config.message ' Is the ' a.config.name...
-                                              ' at ' num2str(a.config.kind.int2extConv(a.x)) '? If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
-
-                                end
-                            else
-                                warning([num2str(x) ' ' a.kind.extUnits ' not a valid output.']);
-                                tf = false;
-                            end
+%                         case 'manual'
+%                             if inRange(a.config.kind.ext2intConv(x), a.config.kind.intRange)
+%                                 load(gong.mat);
+%                                 sound(y);
+%                                 if a.x ~= a.config.kind.ext2intConv(x)
+%                                     questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
+%                                               ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
+% 
+%                                     a.xt = a.config.kind.ext2intConv(x);
+%                                     a.x = a.xt;
+%                                 else
+%                                     questdlg([a.config.message ' Is the ' a.config.name...
+%                                               ' at ' num2str(a.config.kind.int2extConv(a.x)) '? If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
+% 
+%                                 end
+%                             else
+%                                 warning([num2str(x) ' ' a.kind.extUnits ' not a valid output.']);
+%                                 tf = false;
+%                             end
                         case 'grid'
                             a.config.grid.virtualPosition(a.config.grid.index) = x;     % Set the grid to the appropriate virtual coordinates...
                             a.config.grid.goto();                                       % Then tell the grid to go to this position.
@@ -631,25 +593,34 @@ classdef mcAxis < mcSavableClass
                 end
             end
         end
+    end
+    
+    methods (Access = private)
+        function tf = Eq(~, ~)
+            tf = false;
+        end
         
-        function addToSession(a, s) % Only for NIDAQ; adds axis to some NIDAQ session s.
-            if a.close();  % If the axis is not already closed, close it...
-                switch lower(a.config.kind.kind)
-                    case 'nidaqanalog'
-                        addAnalogOutputChannel( s, a.config.dev, a.config.chn, a.config.type);
-                    case 'nidaqdigital'
-                        addDigitalChannel(      s, a.config.dev, a.config.chn, 'OutputOnly');
-                    otherwise
-                        error('This only works for NIDAQ outputs');
-                end
-            else
-                error([a.name() ' could not be added to session.'])
-            end
+        function str = NameShort(~)
+            str = '';
+        end
+        function str = NameVerb(~)
+            str = '';
+        end
+        
+        function Open(~)
+        end
+        function Close(~)
+        end
+        
+        function ReadEmulation(~, ~)
+        end
+        function Read(~, ~)
+        end
+        
+        function GotoEmulation(~, ~)
+        end
+        function Goto(~, ~)
         end
     end
-end
-
-function tf = inRange(x, range)
-    tf = x <= max(range) && x >= min(range);
 end
 
