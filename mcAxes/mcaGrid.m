@@ -13,7 +13,6 @@ classdef (Sealed) mcaGrid < mcAxis
             config = mcaGrid.gridConfig();
         end
         function config = gridConfig(grid, index)
-
             config.kind.kind =          'grid';
             config.kind.name =          'Grid Axis';
             config.kind.intRange =      [-Inf Inf];             % Change this?

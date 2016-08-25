@@ -1,5 +1,5 @@
 % readSPE.m
-function image = readSPE(dirPath, filename)
+function [image, exposure] = readSPE(dirPath, filename)
 % readSPE.m  Read princeton instrument *.SPE image file
 %
 % image = readSPE(filename)
@@ -110,6 +110,7 @@ end
 stripDim = getData(fd, '2A', 'uint16');     %first dim
 pixelDim = getData(fd, '290', 'uint16');    %second dim
 nDim = getData(fd, '5A6', 'uint32');        %third dim
+exposure = getData(fd, '0A', 'float');      % exposure time in seconds
 
 % Get the pixel data type
 dataType = getData(fd, '6C', 'uint16');
@@ -147,6 +148,8 @@ switch dataType
         image = -1;
 end
 fclose(fd);
+
+image = double(image)
 
 %% 
 % getData() reads one piece of data at a specific location

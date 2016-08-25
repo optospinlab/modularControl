@@ -42,8 +42,9 @@ classdef mcAxis < mcSavableClass
         
         isOpen = false;         % Boolean.
         inUse = false;          % Boolean.
-        isReserved = false;     % Boolean.    
         inEmulation = false;    % Boolean.
+        
+        reservedBy = [];        % Boolean.    
     end
     
     properties (Access=private, SetObservable)
@@ -51,6 +52,34 @@ classdef mcAxis < mcSavableClass
         xt = 0;                 % Target position.
     end
     
+    methods (Static)
+        function config = timeConfig()
+            config.name =               'Time';
+
+            config.kind.kind =          'Time';
+            config.kind.name =          'Time';
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            
+            % Seconds:
+%             config.kind.intRange =      [0 Inf];
+%             config.kind.intUnits =      's';                    % 'Internal' units.
+%             config.kind.extUnits =      's';                    % 'External' units.
+%             config.kind.base =          0;
+            
+            % Scans:
+            config.kind.intRange =      [1 Inf];
+            config.kind.intUnits =      'scans ago';                    % 'Internal' units.
+            config.kind.extUnits =      'scans ago';                    % 'External' units.
+            config.kind.base =          1;
+            
+            % Not sure which one to use...
+            
+            config.keyStep =            0;
+            config.joyStep =            0;
+        end
+    end
+        
     methods
         function a = mcAxis(varin)
             % Constructor
@@ -119,7 +148,7 @@ classdef mcAxis < mcSavableClass
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
-            if ~isprop(b, 'config')
+            if ~isprop(b, 'config')     % Make sure that b.config.kind.kind exists...
                 tf = false; return;
             else
                 if ~isfield(b.config, 'kind')
@@ -270,6 +299,29 @@ classdef mcAxis < mcSavableClass
             end
         end
         
+        function tf = reserve(a, reservedBy)    % Returns whether the axis was successfully reserved by the object.
+            tf = false;
+            
+            if ~a.isReserved()
+                a.isReserved = reservedBy;
+                tf = true;
+            end
+        end
+        function tf = isReserved(a) % Returns whether the axis is currently reserved by a valid object.
+            tf = isValid(a.reservedBy);
+            
+            if ~tf
+                a.reservedBy = [];
+            end
+        end
+        function str = reservedByStr(a)         % Returns the name of th reserving object.
+            if isempty(a.reservedBy)
+                str = 'Axis is not currently reserved.';
+            else
+                str = class(a.reservedBy);
+            end
+        end
+        
         function wait(a)            % Wait for the axis to reach the target value.
             a.read();               % Removed possibility of delay if the axis is already there but has not been read...
                 
@@ -312,4 +364,7 @@ classdef mcAxis < mcSavableClass
         end
     end
 end
+
+
+
 

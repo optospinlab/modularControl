@@ -39,6 +39,7 @@ classdef mcDataViewer < mcSavableClass
         
         listeners = [];
         
+        params = [];
         params1D = [];
         params2D = [];
         paramsGray = [];
@@ -120,11 +121,11 @@ classdef mcDataViewer < mcSavableClass
                 inputNames2D = {};
                 
                 for ii = 1:gui.data.data.numInputs
-                    if gui.data.data.inputDimension == 1
+                    if gui.data.data.inputDimension(ii) == 1
                         inputNames1D{jj} = gui.data.data.inputNames{ii};
                         jj = jj + 1;
                     end
-                    if gui.data.data.inputDimension == 2
+                    if gui.data.data.inputDimension(ii) == 2
                         inputNames2D{kk} = gui.data.data.inputNames{ii};
                         kk = kk + 1;
                     end
@@ -153,8 +154,10 @@ classdef mcDataViewer < mcSavableClass
 
                 uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
                 
-                gui.params1D.chooseList = cell(1, gui.data.data.numAxes);
+                gui.params1D.chooseList = cell(1, gui.data.data.numAxes); % This will be longer, but we choose not to calculate.
                 gui.params2D.chooseList = cell(1, gui.data.data.numAxes);
+                
+                ii = 0;
                 
                 for ii = 1:gui.data.data.numAxes
                     levellist = strcat(strread(num2str(gui.data.data.scans{ii}), '%s')', [' ' gui.data.data.axes{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
@@ -170,7 +173,7 @@ classdef mcDataViewer < mcSavableClass
 
                         val = length(axeslist)+1;
 
-                        if ii == 1 && val > 1
+                        if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
                             val = 1;
                         elseif ii == 2 && val > 2
                             val = 2;
@@ -182,6 +185,59 @@ classdef mcDataViewer < mcSavableClass
                             gui.params1D.chooseList{ii} = choose;
                         else
                             gui.params2D.chooseList{ii} = choose;
+                        end
+            
+                        gui.data.data.layerType(ii) = 0;     % The layer is an axis.
+                        gui.data.data.layerIndex(ii) = ii;
+                        gui.data.data.layerDim(ii) = 1;
+                    end
+                end
+                
+                inputLetters = 'XYZUVW';
+                
+                for kk = 1:gui.data.data.numInputs
+                    ii = ii + 1;    % Use the ii from the axis loop.
+                    
+                    if gui.data.data.inputDimension(kk) - 1 > length(inputLetters)
+                        jj = 0;
+                        
+                        for sizeInput = gui.data.data.inputs{kk}.config.kind.sizeInput
+                            if sizeInput ~= 1       % A vector, according to matlab, has size [1 N]. We don't want to count the 1.
+                                jj = jj + 1;
+                                
+                                levellist = strcat('pixel ', strread(num2str(1:sizeInput), '%s')');  % Returns the pixels in 'pixel ##' form.
+
+                                for tab = [gui.tabs.t1d gui.tabs.t2d]
+                                    % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
+                                    uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.data.inputs{kk}.nameShort() ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+
+                                    if tab == gui.tabs.t1d
+                                        axeslist = {'X'};
+                                    else
+                                        axeslist = {'X', 'Y'};
+                                    end
+
+                                    val = length(axeslist)+1;
+
+                                    if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
+                                        val = 1;
+                                    elseif ii == 2 && val > 2
+                                        val = 2;
+                                    end
+
+                                    choose = uicontrol('Parent', tab, 'Style', 'popupmenu', 'String', [axeslist, levellist], 'Units', 'pixels', 'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii-2*bh tabpos(3)/3 - bh bh], 'Value', val, 'Callback', @gui.updateLayer_Callback);
+
+                                    if tab == gui.tabs.t1d
+                                        gui.params1D.chooseList{ii} = choose;
+                                    else
+                                        gui.params2D.chooseList{ii} = choose;
+                                    end
+
+                                    gui.data.data.layerType(ii) = 1;     % The layer is an input.
+                                    gui.data.data.layerIndex(ii) = kk;
+                                    gui.data.data.layerDim(ii) = 1;
+                                end
+                            end
                         end
                     end
                 end

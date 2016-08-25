@@ -93,7 +93,7 @@ classdef mcInput < mcSavableClass
         end
         
         function tf = eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
-            if ~isprop(b, 'config')
+            if ~isprop(b, 'config')     % Make sure that b.config.kind.kind exists...
                 tf = false; return;
             else
                 if ~isfield(b.config, 'kind')

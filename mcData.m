@@ -129,14 +129,14 @@ classdef mcData < mcSavableClass
             d.initialize();
         end
         
-        function save(d, fname)
-            switch (lower(fname(end-2:end)))
-                case 'mat'
-                    save(fname, 'd.data');  % Not sure if this works.
-                otherwise
-                    error('Saving filetypes other than .mat NotImplemented');
-            end
-        end
+%         function save(d, fname)
+%             switch (lower(fname(end-2:end)))
+%                 case 'mat'
+%                     save(fname, 'd.data');  % Not sure if this works.
+%                 otherwise
+%                     error('Saving filetypes other than .mat NotImplemented');
+%             end
+%         end
         
         function initialize(d)
             if ~isfield(d.data, 'isInitialized')     % If not initialized, then intialize.

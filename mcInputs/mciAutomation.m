@@ -1,5 +1,10 @@
-classdef mciFunction < mcInput
-% mciFunction is the subclass of mcInput that wraps (near) arbitrary functions.
+classdef mciAutomation < mcInput
+% mciAutomation is the subclass of mcInput that controls what an automation routine should do at each point of a grid.
+
+    properties
+        autoVars = [];  % To store variables that the automation function will use each tick.
+        f = [];         % Figure for automation menu.
+    end
 
     methods (Static)
         % Neccessary extra vars:
@@ -7,9 +12,9 @@ classdef mciFunction < mcInput
         %  - description
         
         function config = defaultConfig()
-            config = mciFunction.randConfig();
+            config = mciFunction.diamondConfig();
         end
-        function config = randConfig()
+        function config = diamondConfig()
             config.name =               'Default Function Input';
 
             config.kind.kind =          'function';
@@ -24,9 +29,15 @@ classdef mciFunction < mcInput
     end
     
     methods
-        function I = mciFunction(varin)
+        function I = mciAutomation(varin)
             I = I@mcInput(varin);
-            I.config.giveIntegration = nargin(config.fnc) ~= -1;    % Internal variable to decide whether the integration time in I.measure(integrationTime) should be passed to the mciFunction function as an input.
+            I.config.giveIntegration = nargin(config.fnc) ~= -1;
+            
+            vid.f = mcInstrumentHandler.createFigure(I, 'none');
+
+            vid.f.Resize =      'off';
+            vid.f.Position =    [100, 100, 300, 100];
+            vid.f.Visible =     'on';
         end
     end
     
