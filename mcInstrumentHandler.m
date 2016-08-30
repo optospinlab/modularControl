@@ -61,6 +61,7 @@ classdef mcInstrumentHandler < handle
                 params.saveDirBackground =          '';
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
+                params.registeredInstruments =      [];
                 
                 mcInstrumentHandler.params(params);                                 % Fill params with this so that we don't risk infinite recursion when we try to add the time axis.
                 
@@ -263,6 +264,32 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.params(params);
         end 
         
+        function registerControl(control, controlledInstruments)
+            mcInstrumentHandler.open();
+            
+            params = mcInstrumentHandler.params();
+            
+            if ~isa(control, 'matlab.ui.control.UIControl')
+                error('mcInstrumentHandler.registerControl(control, controlledInstruments): Expected a UIControl as first input...');
+            end
+            
+            if isempty(params.registeredAxes)
+                params.registeredInstruments = containers.Map('UniformValues', false);
+            end
+            
+            for instrument = controlledInstruments
+                str = instrument.name();
+                
+                if params.registeredInstruments.isKey(str)
+                    
+                else
+                    
+                end
+            end
+            
+            mcInstrumentHandler.params(params);
+        end
+        
 %         function 
         
         function clearAll() % Usage not recommended.
@@ -277,18 +304,6 @@ classdef mcInstrumentHandler < handle
             
             mcInstrumentHandler.params([]);
         end
-        
-%         function removeDeadFigures()
-%             mcInstrumentHandler.open();
-%             
-%             params = mcInstrumentHandler.params();
-%             
-%             if ~isempty(params.figures)
-%                 params.figures{cellfun(@(f)(~isvalid(f)), params.figures)} = [];
-%             end
-%             
-%             mcInstrumentHandler.params(params);
-%         end
         
         function setGlobalWindowKeyPressFcn(fcn)
             mcInstrumentHandler.open();

@@ -24,13 +24,15 @@ classdef mcDataViewer < mcSavableClass
         cf = [];            % Control figure.
         
         df = [];            % Data figure.
-        a = [];             % Main axes.
+        a = [];             % Main axes in the data figure.
         
-        p = [];             % plot() object.
-        i = [];             % image() object.
+        p = [];             % plot() object (for 1D).
+        i = [];             % image() object (for 2D).
+        % s = [];             % surf() object (for 3D)?
         
         pos = [];           % Contains four scatter plots (each containing one point) that denote the selected point, the selected pixel, the current point (of the axes), and the previous point (e.g. before optimization).
         posL = [];          % Contains four lines plots (each containing one line...   "     "     "   ...
+        patches = [];       % Contains four patches  (each containing four points; the corners of a rectangle...   "     "     "   ...
         
         menus = [];
         tabs = [];
@@ -380,6 +382,9 @@ classdef mcDataViewer < mcSavableClass
             else
                 disp('No file given...');
             end
+        end
+        function loadGUI_Callback(gui, ~, ~)
+            
         end
         function closeRequestFcn(gui, ~, ~)
             % gui.data.save();
@@ -756,6 +761,11 @@ classdef mcDataViewer < mcSavableClass
             end
         end
     end
+end
+
+function drawSquarePatch(p, x1, y1, x2, y2)
+    p.XData = [x1 x1 x2 x2];
+    p.YData = [y1 y2 y2 y1];
 end
 
 function copyLabelToClipboard(src, ~)

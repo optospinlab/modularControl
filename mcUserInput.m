@@ -11,6 +11,8 @@ classdef mcUserInput < mcSavableClass
 %   tabgroup = obj.mcUserInputGUI()
 %   tabgroup = obj.mcUserInputGUI(f)
 %   tabgroup = obj.mcUserInputGUI(f)
+%
+% Status: Finished; Mostly commented.
     
     properties
 %         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
@@ -501,16 +503,17 @@ classdef mcUserInput < mcSavableClass
         end
         
         function closeRequestFcn(obj,~,~)
-            obj.gui.joyEnabled.Enable = 'off';
+            obj.gui.joyEnabled.Enable = 'off';      % Stop the joystick
             obj.gui.joyEnabled.Value = 0;
             
+            % If this mcUserInput's keyPressFunction is used as the globalWindowKeyPressFcn...
             if mcInstrumentHandler.isOpen() && isequal(@obj.keyPressFunction, mcInstrumentHandler.globalWindowKeyPressFcn())
-                mcInstrumentHandler.setGlobalWindowKeyPressFcn([]);
+                mcInstrumentHandler.setGlobalWindowKeyPressFcn([]);     % Then remove this from every figure.
             end
             
-            pause(1);
+            pause(1);               % Give the joystick a chance to keep up...
             
-            delete(obj.gui.f);
+            delete(obj.gui.f);      % Then delete everything.
             delete(obj);
         end
     end

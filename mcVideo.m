@@ -33,14 +33,12 @@ classdef mcVideo < mcInput
             
             config.adaptor =            'avtmatlabadaptor64_r2009b';
             config.format =             'F0M5_Mono8_640x480';
-            config.fbAxes =             {};
+            config.fbAxes =             {mcaDAQ(mcaDAQ.piezoConfig()), mcaDAQ(mcaDAQ.piezoConfig()), mcaDAQ(mcaDAQ.piezoConfig())};
         end
     end
     
     methods
         function vid = mcVideo(varin)
-            vid = 
-            
             vid.f = mcInstrumentHandler.createFigure(vid, 'none');
 
             vid.f.Resize =      'off';

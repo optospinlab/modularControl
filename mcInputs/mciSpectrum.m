@@ -3,6 +3,10 @@ classdef mciSpectrum < mcInput
 %
 % Future: Generalize this to a mciPyTrigger?
 
+    properties
+        prevIntegrationTime;
+    end
+
     methods (Static)
         % Neccessary extra vars:
         %  - triggerfile
@@ -28,6 +32,7 @@ classdef mciSpectrum < mcInput
     methods
         function I = mciSpectrum(varin)
             I = I@mcInput(varin);
+            I.prevIntegrationTime = NaN;
         end
     end
     
@@ -117,7 +122,7 @@ classdef mciSpectrum < mcInput
                     d = dir(I.config.datafile);
 
                     if d.datenum > t - 4/(24*60*60)
-                        data = readSPE(I.config.datafile);
+                        [data, exposure] = readSPE(I.config.datafile);
                     end
                 catch
                     
@@ -125,6 +130,11 @@ classdef mciSpectrum < mcInput
 
                 pause(1);
                 i = i + 1;
+            end
+            
+            if integrationTime ~= exposure && I.prevIntegrationTime ~= 
+                questdlg([a.config.message ' Is the ' a.config.name ' at ' num2str(a.config.kind.int2extConv(a.x)) '? '...
+                          'If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
             end
 
             if ~all(data == -1)     % If we found the spectrum....
