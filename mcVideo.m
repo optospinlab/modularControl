@@ -112,8 +112,8 @@ classdef mcVideo < mcInput
             if ~empty(filteredPoints)                       % If there are points left after the filtering...
                 offset = mean(delta(filteredPoints, :));
                 
-                x = pidArray(1).input(offset(1));           % Calculate the output of the pids (recommended um), based on the input offset...
-                y = pidArray(2).input(offset(2));
+                x = vid.pidArray(1).input(offset(1));           % Calculate the output of the pids (recommended um), based on the input offset...
+                y = vid.pidArray(2).input(offset(2));
                 
                 vid.config.fbAxes{1}.goto(x);               % ...and then send the axes to these values.
                 vid.config.fbAxes{2}.goto(y);
