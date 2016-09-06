@@ -31,12 +31,17 @@ classdef (Sealed) mcaTemplate < mcAxis
     
     methods
         function a = mcaTemplate(varin)     % Insert mca[Custom] name here...
-            a = a@mcAxis(varin);
+            if nargin == 0
+                a.construct(a.defaultConfig());
+            else
+                a.construct(varin);
+            end
+            a = mcInstrumentHandler.register(a);
         end
     end
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these.
-    methods (Access = private)
+    methods %(Access = ?mcAxis)
         % NAME
         function str = NameShort(a)
             % This is the reccommended a.nameShort().

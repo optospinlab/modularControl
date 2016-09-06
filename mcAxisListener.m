@@ -72,7 +72,7 @@ function f = mcAxisListener(varin)
                             'Position', [pos(3)/2, pos(4) - (ii+.5)*bh, pos(3)/4, bh],...
                             'Enable', 'inactive');
                         
-        prop = findprop(mcAxis, 'x');                                                       % ...and assign a property listener to the axis to watch for position updates.
+        prop = axis_{1}.findprop('x');                                                     % ...and assign a property listener to the axis to watch for position updates.
         edit.UserData = event.proplistener(axis_{1}, prop, 'PostSet', @(s,e)(axisChanged_Callback(s, e, edit)));
         
         ii = ii + 1;

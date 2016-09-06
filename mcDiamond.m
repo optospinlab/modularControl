@@ -11,19 +11,19 @@ classdef mcDiamond
     
     methods
         function dc = mcDiamond()
-            mcBlue();
+            mcVideo();
             mcUserInput(mcUserInput.diamondConfig());
 %             mcAxisListener();
             
-            mcAxis(mcAxis.polarizationConfig());
+            mcaManual(mcaManual.polarizationConfig());
             
-            configCounter = mcInput.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
+            configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
             
-            mcInput(configCounter);
-            mcInput(mcInput.spectrumConfig());
+            mciDAQ(configCounter);
+            mciSpectrum();
             
             
-            dc.f = mcInstrumentHandler.createFigure(gui, 'saveopen');
+            dc.f = mcInstrumentHandler.createFigure(dc, 'saveopen');
             dc.f.Resize =      'off';
 %             f.Visible =     'off';
 %             f.MenuBar =     'none';

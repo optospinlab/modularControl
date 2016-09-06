@@ -8,11 +8,9 @@ classdef mciAutomation < mcInput
 
     methods (Static)
         % Neccessary extra vars:
-        %  - fnc
-        %  - description
         
         function config = defaultConfig()
-            config = mciFunction.diamondConfig();
+            config = mciAutomation.diamondConfig();
         end
         function config = diamondConfig()
             config.name =               'Default Function Input';
@@ -22,15 +20,16 @@ classdef mciAutomation < mcInput
             config.kind.extUnits =      'arb';                  % 'External' units.
             config.kind.normalize =     false;
             config.kind.sizeInput =    [1 1];
-            
-            config.fnc =                @rand;
-            config.description =        'wraps the MATLAB rand() function';
         end
     end
     
     methods
         function I = mciAutomation(varin)
-            I = I@mcInput(varin);
+            if nargin == 0
+                I.construct(I.defaultConfig());
+            else
+                I.construct(varin);
+            end
             I.config.giveIntegration = nargin(config.fnc) ~= -1;
             
             vid.f = mcInstrumentHandler.createFigure(I, 'none');

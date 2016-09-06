@@ -46,11 +46,52 @@ classdef mcInput < mcSavableClass
     end
     
     methods
+        function construct(I, varin)
+            % Constructor
+            if iscell(varin)
+                config = varin{1};
+                
+                if length(varin) == 2
+                    if islogical(varin{2}) || isnumeric(varin{2})
+                        I.inEmulation = varin{2};
+                    else
+                        warning('Second argument not understood; it needs to be logical or numeric');
+                    end
+                end
+            else
+                config = varin;
+            end
+                    
+            if ischar(config)
+                if exist(config, 'file') && strcmpi(config(end-3:end), '.mat')
+                    vars = load(config);
+                    if isfield(vars, 'config')
+                        I.config = vars.config;
+                    else
+                        error('.mat file given for config has no field config...');
+                    end
+                else
+                    error('File given for config does not exist or is not .mat...');
+                end
+            elseif isstruct(config)
+                I.config = config;
+            else
+                error('Not sure how to interpret config in mcInput(config)...');
+            end
+            
+            params = mcInstrumentHandler.getParams();
+            if ismac || params.shouldEmulate
+                I.inEmulation = true;
+            end
+            
+            I = mcInstrumentHandler.register(I);
+        end
+        
         function I = mcInput(varin)
             % Constructor 
             switch nargin
                 case 0
-                    I.config = mcInput.defaultConfig();
+                    I.config = I.defaultConfig();
                 case {1, 2}
                     if nargin == 1
                         config = varin;
@@ -202,6 +243,35 @@ classdef mcInput < mcSavableClass
                 data = NaN(I.config.kind.sizeInput);
                 warning(['mcInput - ' I.config.name ': could not open input...']);
             end
+        end
+    end
+    
+    methods
+        % EQ
+        function tf = Eq(~, ~)
+            tf = false;     % or true?
+        end
+        
+        % NAME
+        function str = NameShort(~)
+            str = '';
+        end
+        function str = NameVerb(~)
+            str = '';
+        end
+        
+        % OPEN/CLOSE
+        function Open(~)
+        end
+        function Close(~)
+        end
+        
+        % MEASURE
+        function data = MeasureEmulation(~, ~)
+            data = NaN(I.config.kind.sizeInput);
+        end
+        function data = Measure(~, ~)
+            data = NaN(I.config.kind.sizeInput);
         end
     end
 end

@@ -36,13 +36,18 @@ classdef (Sealed) mcaGrid < mcAxis
     
     methods
         function a = mcaGrid(varin)
-            a = a@mcAxis(varin);
+            if nargin == 0
+                a.construct(a.defaultConfig());
+            else
+                a.construct(varin);
+            end
+            a = mcInstrumentHandler.register(a);
         end
     end
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
     %   more-complex methods defined in mcAxis.
-    methods (Access = private)
+    methods %(Access = ?mcAxis)
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.dev ':' a.config.chn ':' a.config.type ')'];

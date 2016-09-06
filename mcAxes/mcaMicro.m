@@ -32,13 +32,18 @@ classdef (Sealed) mcaMicro < mcAxis
     
     methods
         function a = mcaMicro(varin)
-            a = a@mcAxis(varin);
+            if nargin == 0
+                a.construct(a.defaultConfig());
+            else
+                a.construct(varin);
+            end
+            a = mcInstrumentHandler.register(a);
         end
     end
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
     %   more-complex methods defined in mcAxis.
-    methods (Access = private)
+    methods %(Access = ?mcAxis)
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.port ':' a.config.addr ')'];
@@ -49,17 +54,19 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % EQ
         function tf = Eq(a, b)
+%             a.config
             tf = strcmpi(a.config.port,  b.config.port);
         end
         
         % OPEN/CLOSE
         function Open(a)        % Consider putting error detection on this?
+            disp('Opening micrometer')
             a.s = serial(a.config.port);
             set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
                 'FlowControl', 'software', 'Terminator', 'CR/LF');
             fopen(a.s);
 
-            % The following is Srivatsa's code and should be examined.
+            % The following is Srivatsa's code.
             pause(.25);
             fprintf(a.s, [a.config.addr 'HT1']);         % Simplifying function for this?
             fprintf(a.s, [a.config.addr 'SL-5']);        % negative software limit x=-5
@@ -70,6 +77,7 @@ classdef (Sealed) mcaMicro < mcAxis
 
             fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
             pause(.25);
+            disp('Finished opening micrometer')
         end
         function Close(a)
             fprintf(a.s, [a.config.addr 'RS']);
@@ -106,6 +114,10 @@ classdef (Sealed) mcaMicro < mcAxis
             fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
 
             a.xt = a.config.kind.ext2intConv(x);
+            
+%             a
+%             a.s
+%             abs(a.xt - a.x)
 
             if abs(a.xt - a.x) > 20 && isempty(a.t)
                 a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps

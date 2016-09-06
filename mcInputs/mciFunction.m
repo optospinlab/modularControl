@@ -25,7 +25,12 @@ classdef mciFunction < mcInput
     
     methods
         function I = mciFunction(varin)
-            I = I@mcInput(varin);
+            if nargin == 0
+                I.construct(I.defaultConfig());
+            else
+                I.construct(varin);
+            end
+            
             I.config.giveIntegration = nargin(config.fnc) ~= -1;    % Internal variable to decide whether the integration time in I.measure(integrationTime) should be passed to the mciFunction function as an input.
         end
     end

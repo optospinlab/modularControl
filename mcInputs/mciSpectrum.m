@@ -31,6 +31,10 @@ classdef mciSpectrum < mcInput
     
     methods
         function I = mciSpectrum(varin)
+            if nargin == 0
+                varin = mciSpectrum.defaultConfig();
+            end
+            
             I = I@mcInput(varin);
             I.prevIntegrationTime = NaN;
         end
@@ -38,58 +42,22 @@ classdef mciSpectrum < mcInput
     
     % These methods overwrite the empty methods defined in mcInput. mcInput will use these. The capitalized methods are used in
     %   more-complex methods defined in mcInput.
-    methods (Access = private)
+    methods
         % EQ
         function tf = Eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
-            if strcmp(I.config.kind.kind, b.config.kind.kind)               % If they are the same kind...
-                switch lower(I.config.kind.kind)
-                    case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
-                        tf = strcmp(I.config.dev,  b.config.dev) && ... % ...then check if all of the other variables are the same.
-                             strcmp(I.config.chn,  b.config.chn) && ...
-                             strcmp(I.config.type, b.config.type);
-                    case 'function'
-                        tf = isequal(I.config.fnc,  b.config.fnc);      % Note that the function handles have to be the same; the equations can't merely be the same.
-                    otherwise
-                        warning('Specific equality conditions not written for this sort of axis.')
-                        tf = true;
-                end
-            else
-                tf = false;
-            end
+            tf = strcmp(I.config.triggerfile,   b.config.triggerfile) && ... % ...then check if all of the other variables are the same.
+                 strcmp(I.config.datafile,      b.config.datafile);
         end
         
         % NAME
         function str = NameShort(I)
-            str = [I.config.name ' (' I.config.dev ':' I.config.chn ':' I.config.type ')'];
+            str = I.config.name;
         end
         function str = NameVerb(I)
-            switch lower(I.config.kind.kind)
-                case 'nidaqanalog'
-                    str = [I.config.name ' (analog ' I.config.type ' input on '  I.config.dev ', channel ' I.config.chn ')'];
-                case 'nidaqdigital'
-                    str = [I.config.name ' (digital input on ' I.config.dev ', channel ' I.config.chn ')'];
-                case 'nidaqcounter'
-                    str = [I.config.name ' (counter ' I.config.type ' input on ' I.config.dev ', channel ' I.config.chn ')'];
-            end
+            str = [I.config.name '(with triggerfile ' I.config.triggerfile ' and datafile ' I.config.datafile];
         end
         
-        % OPEN/CLOSE
-        function Open(I)
-            switch lower(I.config.kind.kind)
-                case 'nidaqanalog'
-                    I.s = daq.createSession('ni');
-                    addAnalogInputChannel(  I.s, I.config.dev, I.config.chn, I.config.type);
-                case 'nidaqdigital'
-                    I.s = daq.createSession('ni');
-                    addDigitalChannel(      I.s, I.config.dev, I.config.chn, 'InputOnly');
-                case 'nidaqcounter'
-                    I.s = daq.createSession('ni');
-                    addCounterInputChannel( I.s, I.config.dev, I.config.chn, I.config.type);
-            end
-        end
-        function Close(I)
-            release(I.s);
-        end
+        % OPEN/CLOSE not neccessary
         
         % MEASURE
         function data = MeasureEmulation(I, integrationTime)
@@ -132,7 +100,7 @@ classdef mciSpectrum < mcInput
                 i = i + 1;
             end
             
-            if integrationTime ~= exposure && I.prevIntegrationTime ~= 
+            if integrationTime ~= exposure && I.prevIntegrationTime ~= integrationTime
                 questdlg([a.config.message ' Is the ' a.config.name ' at ' num2str(a.config.kind.int2extConv(a.x)) '? '...
                           'If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
             end

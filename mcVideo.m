@@ -7,6 +7,7 @@ classdef mcVideo < mcInput
         a = [];         % Axes; video displayed here.
         v = [];         % videoinput object
         i = [];         % image object
+        p = [];         % plot object (for border);
         
         fb = [];        % Feedback vars
         
@@ -20,7 +21,7 @@ classdef mcVideo < mcInput
         %  - fbAxes     cell array with {x,y,z}; [] for no feedback
         
         function config = defaultConfig()
-            config = mciFunction.randConfig();
+            config = mcVideo.blueConfig();
         end
         function config = blueConfig()
             config.name =               'Blue Video Input';
@@ -33,23 +34,51 @@ classdef mcVideo < mcInput
             
             config.adaptor =            'avtmatlabadaptor64_r2009b';
             config.format =             'F0M5_Mono8_640x480';
-            config.fbAxes =             {mcaDAQ(mcaDAQ.piezoConfig()), mcaDAQ(mcaDAQ.piezoConfig()), mcaDAQ(mcaDAQ.piezoConfig())};
+            
+            
+            configPiezoX = mcaDAQ.piezoConfig();    configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
+            configPiezoY = mcaDAQ.piezoConfig();    configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
+            configPiezoZ = mcaDAQ.piezoZConfig();   configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            
+            config.fbAxes = {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};
         end
     end
     
     methods
         function vid = mcVideo(varin)
-            vid.f = mcInstrumentHandler.createFigure(vid, 'none');
+            if nargin == 0
+                varin = mcVideo.defaultConfig();
+            end
+            
+            vid = vid@mcInput(varin);
+            
+            vid.f = mcInstrumentHandler.createFigure(vid, 'saveopen');
 
             vid.f.Resize =      'off';
-            vid.f.Position =    [100, 100, 1280, 960];
+            vid.f.Position =    [50, 50, 1280, 960];
             vid.f.Visible =     'on';
 %             f.MenuBar =     'none';
 %             f.ToolBar =     'none';
             % Future: make resize fnc
             % Future: make close fnc
 
+            % Read an image
+            [icon, map] = imread(fullfile('icons','feedback.png'));
+%             icon = ind2rgb(img, map);        % Convert image from indexed to truecolor
+            
+            hToolbar = findall(vid.f, 'tag', 'FigureToolBar');
+            % Create a uipushtool in the toolbar
+            p = uitoggletool(hToolbar, 'TooltipString', 'Image Feedback',...
+                                            'ClickedCallback',...
+                                            @vid.toggleFeedback_Callback);
+
+            % Set the button icon
+            p.CData = icon;
+
             vid.a = axes('Position', [0 0 1 1], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
+%             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
+            
+%             hold(vid.a, 'on')
 
             vid.v = videoinput(vid.config.adaptor, 1, vid.config.format);
 
@@ -59,11 +88,36 @@ classdef mcVideo < mcInput
             vid.i = image(zeros(vidRes(2), vidRes(1), nBands), 'YData', [vidRes(2) 1]);
             preview(vid.v, vid.i);     % this appears on the axes we made.
             
+            hold(vid.a, 'on')
+            
+            vid.p = plot([1 1 vidRes(1) vidRes(1) 1], [1 vidRes(2) vidRes(2) 1 1]);
+            vid.p.Color = [0 1 0];      
+            vid.p.LineWidth = .01;
+            
             vid.config.kind.sizeInput = vidRes;
+            
+            vid.config.fbAxes{1}.name()
+            vid.config.fbAxes{2}.name()
+            vid.config.fbAxes{3}.name()
+            
+            vid.pidArray = {mcPID(vid.config.fbAxes{1}), mcPID(vid.config.fbAxes{2}), mcPID(vid.config.fbAxes{3})};
         end
         
         function image = getImage(vid)
-            image = getsnapshot(vid.v);
+            image = flipud(getsnapshot(vid.v));
+        end
+        
+        function saveGUI_Callback(vid, ~, ~)
+            [FileName, PathName, FilterIndex] = uiputfile({'*.png', 'Image (*.png)'}, 'Save As');
+            
+            if all(FileName ~= 0)
+                switch FilterIndex
+                    case 1  % .png
+                        imwrite(vid.getImage(), [PathName FileName]);
+                end
+            else
+                disp('No file given...');
+            end
         end
         
 %         function focusFcn(vid, ~, event, ~)
@@ -75,24 +129,41 @@ classdef mcVideo < mcInput
 %         function stopFocus_Callback(vid, ~, ~)
 %             vid.i.UpdatePreviewWindowFcn = [];
 %         end
-        
+        function toggleFeedback_Callback(vid, src, ~)
+            switch src.State
+                case 'on'
+                    startFeedback_Callback(vid, 0, 0);
+                case 'off'
+                    stopFeedback_Callback(vid, 0, 0);
+            end
+        end
         function startFeedback_Callback(vid, ~, ~)
+            disp('Starting Feedback');
             % Srivatsa's code:
-            vid.fb.frame_init = imadjust(vid.getImage());         % imadjust increases the contrast of the image by normalizing the data.
+            vid.fb.frame_init = imadjust(flipud(vid.getImage()));         % imadjust increases the contrast of the image by normalizing the data.
             vid.fb.points1 = detectSURFFeatures(vid.fb.frame_init, 'NumOctaves', 6, 'NumScaleLevels', 10,'MetricThreshold', 500);
             [vid.fb.features1, vid.fb.valid_points1] = extractFeatures(vid.fb.frame_init,  vid.fb.points1);
             
-            vid.i.UpdatePreviewWindowFcn = @vid.feedbackFcn;
+            vid.fb.targetContrast = getContrast(vid.fb.frame_init);
+            
+            setappdata(vid.i, 'UpdatePreviewWindowFcn', @vid.feedbackFcn);
         end
         function stopFeedback_Callback(vid, ~, ~)
-            vid.i.UpdatePreviewWindowFcn = [];
+            disp('Stopping Feedback');
+%             vid.i.UpdatePreviewWindowFcn = [];
+            setappdata(vid.i, 'UpdatePreviewWindowFcn', []);
+            vid.p.Color = [0 1 0];       
+            vid.p.LineWidth = .01;
         end
         function feedbackFcn(vid, ~, event, ~)  % Third input is handle to image (special to this callback).
+            vid.i.CData = event.Data;
+            
             frame = imadjust(event.Data);   % Normalize image (remove for performance?)
             
             % XY FEEDBACK
             points2 = detectSURFFeatures(frame, 'NumOctaves', 6, 'NumScaleLevels', 10,'MetricThreshold', 500);
             [features2, valid_points2] = extractFeatures(frame,  points2);
+%             points2.selectStrongest(50))
 
             indexPairs = matchFeatures(vid.fb.features1, features2);
 
@@ -107,41 +178,66 @@ classdef mcVideo < mcInput
             stdev_dist = std(dist);
             
             % And filter the points such that only those within one standard deviation of the mean remain (change in the future?).
-            filteredPoints = dist < mean_dist + stdev_dist & dist > mean_dist - stdev_dist;
+            filteredPoints = dist <= mean_dist + stdev_dist & dist >= mean_dist - stdev_dist;
             
-            if ~empty(filteredPoints)                       % If there are points left after the filtering...
+            if ~isempty(filteredPoints)                       % If there are points left after the filtering...
                 offset = mean(delta(filteredPoints, :));
                 
-                x = vid.pidArray(1).input(offset(1));           % Calculate the output of the pids (recommended um), based on the input offset...
-                y = vid.pidArray(2).input(offset(2));
-                
-                vid.config.fbAxes{1}.goto(x);               % ...and then send the axes to these values.
-                vid.config.fbAxes{2}.goto(y);
-                
-                dx = x - vid.config.fbAxes{1}.getX();
-                dy = y - vid.config.fbAxes{2}.getX();
-                
-                d2 = dx*dx + dy*dy;
-                
-                vid.a.Color = [1 - 1/(1 + 4*d2) 1/(1 + 4*d2) 0];       % Amount of red represents the deviation from the desired value.
-                vid.a.LineWidth = 8 - 4/(1 + 4*d2);
+                if length(offset) == 2
+                    vid.pidArray{1}.compute(-offset(1));         % Calculate the output of the pids (recommended um), based on the input offset...
+                    vid.pidArray{2}.compute(-offset(2));    % WARNING, this will need to be modified to account for negative axes...
+
+                    d = sum(offset.*offset);
+
+                    if ~isnan(d)
+                        vid.p.Color = [1 - 1/(1 + .25*d) 1/(1 + .25*d) 0];       % Amount of red represents the deviation from the desired value.
+                        vid.p.LineWidth = 5 - 4/(1 + .25*d);
+                    end
+                end
             end
             
             % Z FEEDBACK
-            contrast = getContrast(frame);
+%             contrast = getContrast(frame);
+%             
+%             if contrast < .9*vid.fb.targetContrast     % If the contrast is significantly less than 
+%                 contrast
+%                 vid.fb.targetContrast
+%             end
             
-            if contrast < .9*targetContrast     % If the contrast is significantly less than 
-                
-            end
+            drawnow limitrate
         end
     end
-    
+
+    methods
+        % EQ
+        function tf = Eq(vid, b)  % Check if a foreign object (b) is equal to this input object (a).
+            tf = strcmp(vid.config.adaptor,  b.config.adaptor) && strcmp(vid.config.format, b.config.format);
+        end
+        
+        % NAME
+        function str = NameShort(vid)
+            str = [vid.config.name ' (' vid.config.adaptor ', ' vid.config.format ')'];
+        end
+        function str = NameVerb(vid)
+            str = [vid.config.name ' (video object with adaptor ' vid.config.adaptor ' and format ' vid.config.format ')'];
+        end
+        
+        % OPEN/CLOSE uneccessary.
+        
+        % MEASURE
+        function data = MeasureEmulation(~, ~)
+            data = vid.getImage();
+        end
+        function data = Measure(vid, ~)
+            data = vid.getImage();
+        end
+    end
 end
 
 function contrast = getContrast(image)  % Returns a number proportional(?) to the contrast of the image
-    i = gpuArray(image);    % Use GPU acceleration or not?
+%     i = gpuArray(image);    % Use GPU acceleration or not?
     
-    contrast = sum(sum(imabsdiff(i, imfilter(i, fspecial('guassian')))));
+    contrast = sum(sum(imabsdiff(image, imfilter(image, fspecial('gaussian')))));
 end
 
 

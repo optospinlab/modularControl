@@ -53,30 +53,22 @@ classdef mciDAQ < mcInput
     
     methods
         function I = mciDAQ(varin)
-            I = I@mcInput(varin);
+            if nargin == 0
+                I.construct(I.defaultConfig());
+            else
+                I.construct(varin);
+            end
         end
     end
     
     % These methods overwrite the empty methods defined in mcInput. mcInput will use these. The capitalized methods are used in
     %   more-complex methods defined in mcInput.
-    methods (Access = private)
+    methods
         % EQ
         function tf = Eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
-            if strcmp(I.config.kind.kind, b.config.kind.kind)               % If they are the same kind...
-                switch lower(I.config.kind.kind)
-                    case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
-                        tf = strcmp(I.config.dev,  b.config.dev) && ... % ...then check if all of the other variables are the same.
-                             strcmp(I.config.chn,  b.config.chn) && ...
-                             strcmp(I.config.type, b.config.type);
-                    case 'function'
-                        tf = isequal(I.config.fnc,  b.config.fnc);      % Note that the function handles have to be the same; the equations can't merely be the same.
-                    otherwise
-                        warning('Specific equality conditions not written for this sort of axis.')
-                        tf = true;
-                end
-            else
-                tf = false;
-            end
+            tf = strcmp(I.config.dev,  b.config.dev) && ... % ...then check if all of the other variables are the same.
+                 strcmp(I.config.chn,  b.config.chn) && ...
+                 strcmp(I.config.type, b.config.type);
         end
         
         % NAME

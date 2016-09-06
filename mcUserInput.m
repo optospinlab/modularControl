@@ -35,19 +35,19 @@ classdef mcUserInput < mcSavableClass
             
             config.name =               'Default User Input';
             
-            configPiezoX = mcAxis.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
-            configPiezoY = mcAxis.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
-            configPiezoZ = mcAxis.piezoZConfig();configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            configPiezoX = mcaDAQ.piezoConfig();    configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
+            configPiezoY = mcaDAQ.piezoConfig();    configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
+            configPiezoZ = mcaDAQ.piezoZConfig();   configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            configMicroX = mcAxis.microConfig(); configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
-            configMicroY = mcAxis.microConfig(); configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
+            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
+            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
             
-            configGalvoX = mcAxis.galvoConfig(); configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
-            configGalvoY = mcAxis.galvoConfig(); configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
-            config.axesGroups = { {'Micrometers',   mcAxis(configMicroX), mcAxis(configMicroY), mcAxis(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
-                                  {'Piezos',        mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ) }, ...
-                                  {'Galvometers',   mcAxis(configGalvoX), mcAxis(configGalvoY), mcAxis(configPiezoZ) } };
+            config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'Galvometers',   mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) } };
                               
             config.numGroups = length(config.axesGroups);
             
@@ -346,6 +346,7 @@ classdef mcUserInput < mcSavableClass
         function keyPressFunction(obj, src, event)
 %             obj
 %             isvalid(obj)
+%             event
             if isvalid(obj)
                 if  obj.gui.keyEnabled.Value
                     focus = gco; %(obj.gui.f);
@@ -374,9 +375,9 @@ classdef mcUserInput < mcSavableClass
                                 obj.userAction(2,  multiplier, 1);
                             case {'downarrow', 's'}
                                 obj.userAction(2, -multiplier, 1);
-                            case {'equal', 'e'}
+                            case {'equal', 'add', 'e'}
                                 obj.userAction(3,  multiplier, 1);
-                            case {'hyphen', 'q'}
+                            case {'hyphen', 'subtract', 'q'}
                                 obj.userAction(3, -multiplier, 1);
                             case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
                                 num = str2double(event.Key);

@@ -14,7 +14,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config = mcaDAQ.piezoConfig();
         end
         function config = piezoZConfig()
-            config.name =               'Default Piezo';
+            config.name =               'Default Piezo Z';
 
             config.kind.kind =          'NIDAQanalog';
             config.kind.name =          'MadCity Piezo';
@@ -93,13 +93,20 @@ classdef (Sealed) mcaDAQ < mcAxis
     
     methods
         function a = mcaDAQ(varin)
-            a = a@mcAxis(varin);
+            if nargin == 0
+                a.construct(a.defaultConfig());
+            else
+                a.construct(varin);
+            end
+            a.name()
+            a = mcInstrumentHandler.register(a);
+            a.name()
         end
     end
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
     %   more-complex methods defined in mcAxis.
-    methods (Access = private)
+    methods
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.dev ':' a.config.chn ':' a.config.type ')'];
@@ -146,7 +153,7 @@ classdef (Sealed) mcaDAQ < mcAxis
         end
         function Goto(a, x)
             a.GotoEmulation(x);        % No need to rewrite code.
-            a.s.outputSingleScan(x);
+            a.s.outputSingleScan(a.x);
         end
     end
     

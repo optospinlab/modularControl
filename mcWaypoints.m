@@ -43,11 +43,11 @@ classdef mcWaypoints < mcSavableClass
             config.yi = 2;
         end
         function config = defaultConfig()
-            configMicroX = mcAxis.microConfig(); configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
-            configMicroY = mcAxis.microConfig(); configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
-            configPiezoZ = mcAxis.piezoConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
+            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
+            configPiezoZ = mcaDAQ.piezoConfig();    configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            config.axes = {mcAxis(configMicroX), mcAxis(configMicroY), mcAxis(configPiezoZ)};
+            config.axes = {mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ)};
             config.xi = 1;
             config.yi = 2;
         end

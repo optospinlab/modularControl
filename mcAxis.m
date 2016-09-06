@@ -47,12 +47,15 @@ classdef mcAxis < mcSavableClass
         reservedBy = [];        % Boolean.    
     end
     
-    properties (Access=private, SetObservable)
+    properties (SetObservable)
         x = 0;                  % Current position.
         xt = 0;                 % Target position.
     end
     
     methods (Static)
+        function config = defaultConfig()
+            config = mcAxis.timeConfig();
+        end
         function config = timeConfig()
             config.name =               'Time';
 
@@ -82,41 +85,44 @@ classdef mcAxis < mcSavableClass
         
     methods
         function a = mcAxis(varin)
+            if nargin == 0
+                a.config = a.defaultConfig();
+            else
+                a.construct(varin);
+            end
+        end
+        
+        function construct(a, varin)
             % Constructor
-            switch nargin
-                case 0
-                    a.config = mcAxis.defaultConfig();
-                case {1, 2}
-                    if nargin == 1
-                        config = varin;
+            if iscell(varin)
+                config = varin{1};
+                
+                if length(varin) == 2
+                    if islogical(varin{2}) || isnumeric(varin{2})
+                        a.inEmulation = varin{2};
                     else
-                        config = varin{1};
+                        warning('Second argument not understood; it needs to be logical or numeric');
                     end
+                end
+            else
+                config = varin;
+            end
                     
-                    if ischar(config)
-                        if exist(config, 'file') && strcmpi(config(end-3:end), '.mat')
-                            vars = load(config);
-                            if isfield(vars, 'config')
-                                a.config = vars.config;
-                            else
-                                error('.mat file given for config has no field config...');
-                            end
-                        else
-                        	error('File given for config does not exist or is not .mat...');
-                        end
-                    elseif isstruct(config)
-                        a.config = config;
+            if ischar(config)
+                if exist(config, 'file') && strcmpi(config(end-3:end), '.mat')
+                    vars = load(config);
+                    if isfield(vars, 'config')
+                        a.config = vars.config;
                     else
-                        error('Not sure how to interpret config in mcAxis(config)...');
+                        error('.mat file given for config has no field config...');
                     end
-                    
-                    if nargin == 2
-                        if islogical(varin{2}) || isnumeric(varin{2})
-                            a.inEmulation = varin{2};
-                        else
-                            warning('Second argument not understood; it needs to be logical or numeric');
-                        end
-                    end
+                else
+                    error('File given for config does not exist or is not .mat...');
+                end
+            elseif isstruct(config)
+                a.config = config;
+            else
+                error('Not sure how to interpret config in mcAxis(config)...');
             end
             
             a.config.kind.extRange = a.config.kind.int2extConv(a.config.kind.intRange);
@@ -138,13 +144,13 @@ classdef mcAxis < mcSavableClass
             a.xt = a.x;
 %             a.goto(a.x);
             
-            if ~strcmpi(a.config.name, 'time')      % This prevents infinite recursion...
-                a = mcInstrumentHandler.register(a);
-            else
-                if mcInstrumentHandler.open();
-                    warning('Time is automatically added and does not need to be added again...');
-                end
-            end
+%             if ~strcmpi(a.config.name, 'time')      % This prevents infinite recursion...
+%                 a = mcInstrumentHandler.register(a);
+%             else
+%                 if mcInstrumentHandler.open();
+%                     warning('Time is automatically added and does not need to be added again...');
+%                 end
+%             end
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
@@ -213,7 +219,7 @@ classdef mcAxis < mcSavableClass
                         a.Open();
                         tf = true;     % Return true because axis has been opened.
                     catch err
-                        disp(['mcAxis.open() - ' a.config.name ': ' err]);
+                        disp(['mcAxis.open() - ' a.config.name ': ' err.message]);
                         tf = false;
                     end
                 end
@@ -231,7 +237,7 @@ classdef mcAxis < mcSavableClass
                         a.Close();
                         tf = true;     % Return true because axis was open and is now closed.
                     catch err
-                        disp(['mcAxis.close() - ' a.config.name ': ' err]);
+                        disp(['mcAxis.close() - ' a.config.name ': ' err.message]);
                         tf = false;
                     end
                 end
@@ -288,7 +294,6 @@ classdef mcAxis < mcSavableClass
                 else
                     if a.open();                % If the axis is not already open, open it...
                         a.Goto(x);
-
     %                     drawnow limitrate;
                     else
                         tf = false;
@@ -336,7 +341,7 @@ classdef mcAxis < mcSavableClass
         end
     end
     
-    methods (Access = private)
+    methods
         function tf = Eq(~, ~)
             tf = false;     % or true?
         end
