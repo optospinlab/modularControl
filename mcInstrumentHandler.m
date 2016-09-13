@@ -97,7 +97,6 @@ classdef mcInstrumentHandler < handle
                 mkdir(params.saveDirBackground);
             end
         end
-        
         function tf = isOpen()
             params = mcInstrumentHandler.params();
             
@@ -183,6 +182,7 @@ classdef mcInstrumentHandler < handle
 %             mcInstrumentHandler.open();
 %         end
         
+        % GETTING FUNCTIONS
         function params = getParams()
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
@@ -228,6 +228,7 @@ classdef mcInstrumentHandler < handle
             end
         end
         
+        % INSTRUMENT REGISTRATION
         function obj2 = register(obj)
             mcInstrumentHandler.open();
 %             if ~isfield(obj, 'config')
@@ -264,6 +265,7 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.params(params);
         end 
         
+        % UICONTROL REGISTRATION
         function registerControl(control, controlledInstruments)
             mcInstrumentHandler.open();
             
@@ -292,7 +294,8 @@ classdef mcInstrumentHandler < handle
         
 %         function 
         
-        function clearAll() % Usage not recommended.
+        % CLEAR PARAMS
+        function clearAll() % Resets params; Usage not recommended.
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
@@ -305,6 +308,7 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.params([]);
         end
         
+        % KEYPRESSFCN
         function setGlobalWindowKeyPressFcn(fcn)
             mcInstrumentHandler.open();
             
@@ -327,6 +331,7 @@ classdef mcInstrumentHandler < handle
             fcn = params.globalWindowKeyPressFcn;
         end
         
+        % FIGURE
         function f = createFigure(obj, toolBarMode)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for piezo control).
             mcInstrumentHandler.open();
 %             mcInstrumentHandler.removeDeadFigures();
@@ -359,7 +364,32 @@ classdef mcInstrumentHandler < handle
                 str = class(obj);
             end
             
-            f = figure('NumberTitle', 'off', 'Tag', str, 'Name', str, 'MenuBar', 'none', 'ToolBar', 'figure');
+            f = figure('NumberTitle', 'off', 'Tag', str, 'Name', str, 'MenuBar', 'none', 'ToolBar', 'none');    % , 'ToolBar', 'figure');
+            
+            if isa(obj, 'mcSavableClass')
+                
+            end
+            
+%             if isfield(obj, 'config')
+%                 if isfield(obj.config, 'gui')
+%                     if isfield(obj.config.gui, 'position')
+%                         f.Position = obj.config.gui.position;
+%                     end
+%                 end
+%             end
+            
+            if strcmp(toolBarMode, 'saveopen')
+                t = uitoolbar(f, 'tag', 'FigureToolBar');
+                
+                class(imread(fullfile('icons','file_open_new.png')))
+                class(imread(fullfile('icons','file_open.png')))
+                
+                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', imread(fullfile('icons','file_open_new.png')));
+                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', imread(fullfile('icons','file_open.png')));
+                
+                uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', imread(fullfile('icons','file_save_as.png')));
+                uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', imread(fullfile('icons','file_save.png')));
+            end
             
 %             toolbar = findall(gcf, 'tag', 'FigureToolBar')
 % %             
@@ -397,35 +427,37 @@ classdef mcInstrumentHandler < handle
 % 
 %             graphObjs(3).Visible = 'off';
 
-            graphObjs = findall(gcf);
             
-            set(graphObjs(3:end), 'Visible', 'off');
 
-%             for graphObj = graphObjs(3:end)
-%                 graphObj
-%                 graphObj(1)
-%                 graphObj(1).Visible = 'off';
+%             graphObjs = findall(gcf);
+%             
+%             set(graphObjs(3:end), 'Visible', 'off');
+% 
+% %             for graphObj = graphObjs(3:end)
+% %                 graphObj
+% %                 graphObj(1)
+% %                 graphObj(1).Visible = 'off';
+% %             end
+%             
+%             switch toolBarMode
+%                 case 'saveopen'
+% %                     display('here');
+% %                     toolbar2 = findall(toolbar, 'tag', 'FigureToolBar')
+% %                     toolbar2.Visible = 'on';
+%                     
+% 
+%                     saveButton = findall(gcf, 'tag', 'Standard.SaveFigure');
+%                     saveButton.TooltipString = ['Save ' class(obj)];
+%                     saveButton.ClickedCallback = @obj.saveGUI_Callback;
+%                     saveButton.Visible = 'on';
+% 
+%                     loadButton = findall(gcf, 'tag', 'Standard.FileOpen');
+%                     loadButton.TooltipString = ['Open ' class(obj)];
+%                     loadButton.ClickedCallback = @obj.loadGUI_Callback;
+%                     loadButton.Visible = 'on';
+%                 case 'none'
+%                     % Nothing.
 %             end
-            
-            switch toolBarMode
-                case 'saveopen'
-%                     display('here');
-%                     toolbar2 = findall(toolbar, 'tag', 'FigureToolBar')
-%                     toolbar2.Visible = 'on';
-                    
-
-                    saveButton = findall(gcf, 'tag', 'Standard.SaveFigure');
-                    saveButton.TooltipString = ['Save ' class(obj)];
-                    saveButton.ClickedCallback = @obj.saveGUI_Callback;
-                    saveButton.Visible = 'on';
-
-                    loadButton = findall(gcf, 'tag', 'Standard.FileOpen');
-                    loadButton.TooltipString = ['Open ' class(obj)];
-                    loadButton.ClickedCallback = @obj.loadGUI_Callback;
-                    loadButton.Visible = 'on';
-                case 'none'
-                    % Nothing.
-            end
             
 %             toolbar = findall(tools, 'tag', 'FigureToolBar');
 %             set(toolbar,'Visible','on');

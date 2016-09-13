@@ -94,13 +94,13 @@ classdef (Sealed) mcaDAQ < mcAxis
     methods
         function a = mcaDAQ(varin)
             if nargin == 0
-                a.construct(a.defaultConfig());
+                a.construct(mcaDAQ.defaultConfig());
             else
                 a.construct(varin);
             end
-            a.name()
+%             a.name()
             a = mcInstrumentHandler.register(a);
-            a.name()
+%             a.name()
         end
     end
     

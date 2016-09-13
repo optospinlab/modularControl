@@ -82,8 +82,8 @@ classdef mcSavableClass < handle
             end
         end
         function loadGUI_Callback(obj, ~, ~)
-            questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
-            if false
+%             questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
+            if true
                 obj.makeClassFolder();
                 [FileName, PathName] = uigetfile('*.mat', 'Load Config', [mcInstrumentHandler.getConfigFolder() class(obj)]);
                 if FileName ~= 0
@@ -91,6 +91,13 @@ classdef mcSavableClass < handle
                     obj.config = config2.config;
                     obj.config.src = [PathName FileName];
                 end
+            end
+        end
+        function loadNewGUI_Callback(obj, ~, ~)
+%             questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
+            if true
+                newobj = eval([class(obj) '()']);
+                newobj.loadGUI_Callback(0, 0);
             end
         end
     end

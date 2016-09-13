@@ -364,20 +364,20 @@ classdef mcDataViewer < mcSavableClass
             if all(FileName ~= 0)
                 switch FilterIndex
                     case 1  % .mat
-                        
+                        % This case is covered below (saves in all cases).
                     case 2  % .png
                         if gui.data.data.plotMode == 1      % 1D
-                            imwrite(gui.i.YData, [PathName FileName]);
+                            imwrite(repmat(gui.p(1).YData, 3, 3),   [PathName FileName], 'Alpha', isnan(gui.p(1).YData));
                         else
-                            imwrite(gui.i.CData, [PathName FileName]);
+                            imwrite(repmat(gui.i.CData, 3, 3),      [PathName FileName], 'Alpha', gui.i.AlphaData);
                         end
                     case 3  % .png (axes)
                         imwrite(frame2im(getframe(gui.df)), [PathName FileName]);
                 end
                 
-                pause(.05);
+                pause(.05);                         % Pause to give time for the file to save.
                 
-                data = gui.data.data;               % Always save the .mat file, even if the user doen't want to...
+                data = gui.data.data;               % Always save the .mat file, even if the user doen't want to... (change?)
                 save([PathName FileName], 'data');
             else
                 disp('No file given...');
@@ -405,7 +405,7 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function scanButton_Callback(gui, ~, ~)
-            switch gui.data.data.scanMode
+            switch gui.data.data.scanMode   % -1 = paused, 0 = new, 1 = scanning, 2 = finished
                 case {0, -1}                                % If new or paused
                     gui.scanButton.String = 'Pause';
                     gui.data.data.scanMode = 1;
@@ -422,6 +422,7 @@ classdef mcDataViewer < mcSavableClass
             end
         end
         
+        % Right-click menu callbacks
         function gotoPostion_Callback(gui, ~, ~, isSel)
             if gui.data.data.plotMode == 1
                 axisX = gui.data.data.axes{gui.data.data.layer == 1};
@@ -454,6 +455,13 @@ classdef mcDataViewer < mcSavableClass
                 gui.scale.gray.gui.minEdit.String = gui.selData(1);
                 gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
             end
+        end
+        function openCounter_Callback(gui, ~, ~)
+            mcDataViewer(mcData('counter'), false);
+        end
+        function openCounterAtPoint_Callback(gui, ~, ~, isSel)
+            gui.gotoPostion_Callback(0, 0, isSel);
+            gui.openCounter_Callback(0, 0);
         end
         
         function makeProperVisibility(gui)
@@ -617,6 +625,7 @@ classdef mcDataViewer < mcSavableClass
             end
         end
         
+        % Functions to update the current position of the axes
         function resetAxisListeners(gui)
             delete(gui.listeners.x);
             delete(gui.listeners.y);
@@ -673,13 +682,13 @@ classdef mcDataViewer < mcSavableClass
                     layer = cellfun(@(x)(x.Value), gui.params1D.chooseList);
 %                     disp(layer);
                     
-                    if sum(layer == 1) == 0
+                    if sum(layer == 1) == 0     % If X->num, switch back to X (we need at least one X).
                         changed = cellfun(@(x)(x == src), gui.params1D.chooseList);
                         
                         layer(changed) = 1;
                     end
                     
-                    if sum(layer == 1) > 1
+                    if sum(layer == 1) > 1      % If num->X, swich the previous X to the first num.
                         changed = cellfun(@(x)(x == src), gui.params1D.chooseList);
                         
                         layer(layer == 1 & ~changed) = 2;
@@ -687,7 +696,7 @@ classdef mcDataViewer < mcSavableClass
                     
                     for ii = 1:length(layer)
 %                         if layer(ii) ~= layerPrev(ii) || changed(ii)
-                            gui.params1D.chooseList{ii}.Value = layer(ii);
+                        gui.params1D.chooseList{ii}.Value = layer(ii);
 %                         end
                     end
                 case 2
@@ -695,28 +704,32 @@ classdef mcDataViewer < mcSavableClass
 %                     disp(layer);
                     changed = cellfun(@(x)(x == src), gui.params2D.chooseList);
                     
-                    if sum(layer == 1) == 0 && sum(layer == 2) == 2 && layer(changed) == 2
+                    if sum(layer == 1) == 0 && sum(layer == 2) == 2 && layer(changed) == 2      % If X->Y, switch Y->X.
                         layer(layer == 2 & ~changed) = 1;
                     end
-                    if sum(layer == 1) == 2 && sum(layer == 2) == 0 && layer(changed) == 1
+                    if sum(layer == 1) == 2 && sum(layer == 2) == 0 && layer(changed) == 1      % If Y->X, switch X->Y.
                         layer(layer == 1 & ~changed) = 2;
                     end
                     
-                    if sum(layer == 1) == 0
+                    if sum(layer == 1) == 0     % If X->num, switch back to X.
                         layer(changed) = 1;
                     end
-                    if sum(layer == 2) == 0
+                    if sum(layer == 2) == 0     % If Y->num, switch back to Y.
                         layer(changed) = 2;
                     end
-                    if sum(layer == 1) > 1
+                    if sum(layer == 1) > 1      % If num->X, switch X to first num
                         layer(layer == 1 & ~changed) = 3;
                     end
-                    if sum(layer == 2) > 1
+                    if sum(layer == 2) > 1      % If num->Y, switch Y to first num
                         layer(layer == 2 & ~changed) = 3;
                     end
                     
+                    if gui.data.data.layerIndex(changed) < 3    % If an input axis was changed to X or Y,
+                        
+                    end
+                    
                     for ii = 1:length(layer)
-                        if layer(ii) ~= layerPrev(ii)
+                        if layer(ii) ~= layerPrev(ii) || changed(ii)
                             gui.params2D.chooseList{ii}.Value = layer(ii);
                         end
                     end

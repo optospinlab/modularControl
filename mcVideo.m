@@ -61,19 +61,10 @@ classdef mcVideo < mcInput
 %             f.ToolBar =     'none';
             % Future: make resize fnc
             % Future: make close fnc
-
-            % Read an image
-            [icon, map] = imread(fullfile('icons','feedback.png'));
-%             icon = ind2rgb(img, map);        % Convert image from indexed to truecolor
             
             hToolbar = findall(vid.f, 'tag', 'FigureToolBar');
             % Create a uipushtool in the toolbar
-            p = uitoggletool(hToolbar, 'TooltipString', 'Image Feedback',...
-                                            'ClickedCallback',...
-                                            @vid.toggleFeedback_Callback);
-
-            % Set the button icon
-            p.CData = icon;
+            uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @vid.toggleFeedback_Callback, 'CData', imread(fullfile('icons','feedback.png')));
 
             vid.a = axes('Position', [0 0 1 1], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
 %             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');

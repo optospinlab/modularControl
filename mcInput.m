@@ -187,6 +187,7 @@ classdef mcInput < mcSavableClass
                 
                 if I.inEmulation
                     % Do something?
+                    tf = true
                 else
                     try
                         I.Open();
@@ -205,6 +206,7 @@ classdef mcInput < mcSavableClass
                 
                 if I.inEmulation
                     % Should something be done?
+                    tf = true
                 else
                     switch lower(I.config.kind.kind)
                         case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
@@ -229,7 +231,7 @@ classdef mcInput < mcSavableClass
                     data = I.Measure(integrationTime);
                 end
                 
-                if len(size(data)) ~= I.config.kind.sizeInput
+                if length(size(data)) ~= length(I.config.kind.sizeInput)
                     data = NaN(I.config.kind.sizeInput);
                     warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
                     return;
@@ -242,6 +244,19 @@ classdef mcInput < mcSavableClass
             else
                 data = NaN(I.config.kind.sizeInput);
                 warning(['mcInput - ' I.config.name ': could not open input...']);
+            end
+        end
+        
+        function axes_ = getInputAxes(I)
+            if all(I.config.kind.sizeInput == 1)
+                axes_ = [];
+            else
+                nonsingular = I.config.kind.sizeInput(I.config.kind.sizeInput ~= 1);
+                axes_ = cell(1,length(nonsingular));
+                
+                for ii = 1:length(nonsingular)
+                    axes_{ii} = 1:nonsingular(ii);
+                end
             end
         end
     end

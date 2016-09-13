@@ -43,10 +43,12 @@ classdef mcData < mcSavableClass
 %
 %            - data.README                 string            % Instructions about how to use the data.
 %
-%            - data.plotMode               integer
-%            - data.layer                  numeric array
+%            - data.plotMode               integer           % e.g. 1 = '1D', 2 = '2D', ...
+%            - data.layer                  numeric array     % Current layer that any connected mcProcessedDatas should process.
+%            - data.layerType              numeric array     % 0 = axis, positive nums imply the num'th axis of an input
+%            - data.layerIndex             numeric array     % 0 = axis, positive nums imply the num'th input.
 %
-%            - data.isInitialized          boolean
+%            - data.isInitialized          boolean           % Is created once 
 %            - data.scanMode               boolean
 %
 %            - data.shouldOptimize
@@ -59,28 +61,34 @@ classdef mcData < mcSavableClass
     
     methods (Static)
         function data = defaultConfiguration()
-            configPiezoX = mcAxis.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
-            configPiezoY = mcAxis.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
-            configPiezoZ = mcAxis.piezoConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
+            configPiezoY = mcaDAQ.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
+            configPiezoZ = mcaDAQ.piezoConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            configCounter = mcInput.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr0';
+            configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr0';
             
-            data.axes =     {mcAxis(configPiezoX), mcAxis(configPiezoY), mcAxis(configPiezoZ)};                 % Fill the...   ...axes...
+            data.axes =     {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};                 % Fill the...   ...axes...
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
-            data.inputs =   {mcInput(configCounter)};                                                           %               ...inputs.
+            data.inputs =   {mciDAQ(configCounter)};                                                           %               ...inputs.
             data.integrationTime = .05;
         end
-        function data = optimizeConfiguration(axis, input, range, pixels, seconds)
-            center = axis.getX();
+        function data = optimizeConfiguration(axis_, input, range, pixels, seconds)
+            center = axis_.getX();
             
             scan = linspace(center - range/2, center + range/2, pixels);
-            scan = scan(scan <= max(axis.config.kind.extRange) & scan >= min(axis.config.kind.extRange));  % Truncate the scan.
+            scan = scan(scan <= max(axis_.config.kind.extRange) & scan >= min(axis_.config.kind.extRange));  % Truncate the scan.
             
-            data.axes =     {axis};                     % Fill the...   ...axis...
+            data.axes =     {axis_};                    % Fill the...   ...axis...
             data.scans =    {scan};                     %               ...scan...
             data.inputs =   {input};                    %               ...input.
             data.integrationTime = seconds/pixels;
             data.shouldOptimize = true;
+        end
+        function data = counterConfiguration(input, integrationTime, length)
+            data.axes =     {mcAxis()};                 % This is the time axis.
+            data.scans =    1:length;                   % 'scans ago'.
+            data.inputs =   {input};                    % input.
+            data.integrationTime = integrationTime;
         end
         function str = README()
             str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
@@ -152,9 +160,16 @@ classdef mcData < mcSavableClass
                 
                 d.data.inputNames =         cell(1, d.data.numInputs);
                 d.data.inputNamesUnits =    cell(1, d.data.numInputs);
+                
+                d.data.numInputAxes = 0;
+                d.data.layerType =  [];
+                d.data.layerIndex = [];
 
                 for ii = 1:d.data.numInputs                                 % Now fill the empty lists
                     d.data.inputDimension(ii) =    sum(d.data.inputs{ii}.config.kind.sizeInput > 1);
+                    d.data.numInputAxes = d.data.numInputAxes + d.data.inputDimension(ii);
+                    d.data.layerType =  [d.data.layerType  1:d.data.inputDimension(ii)];
+                    d.data.layerIndex = [d.data.layerIndex ones(d.data.inputDimension(ii))*ii];
 
                     d.data.isInputNIDAQ(ii) =       strcmpi('nidaq', d.data.inputs{ii}.config.kind.kind(1:5));
                     
@@ -193,12 +208,18 @@ classdef mcData < mcSavableClass
                 d.data.numAxes =   length(d.data.axes);
                 
                 if ~isfield(d.data, 'plotMode')
-                    d.data.plotMode = min(2, d.data.numAxes);
-                    d.data.layer = ones(1, d.data.numAxes)*(1 + d.data.plotMode);
+                    d.data.plotMode = min(2, d.data.numAxes + d.data.numInputAxes);
+                end
+                
+                if ~isfield(d.data, 'layer')
+                    d.data.layer = ones(1, d.data.numAxes + d.data.numInputAxes)*(1 + d.data.plotMode);
                     d.data.layer(1:min(d.data.plotMode, d.data.numAxes)) = 1:min(d.data.plotMode, d.data.numAxes);
                     
                     d.data.input = 1;
                 end
+                
+                d.data.layerType = [zeros(d.data.numAxes) d.data.layerType];  % Appropraitly pad the arrays...
+                d.data.layerIndex = [ones(d.data.numAxes)  d.data.layerIndex];
 
                 d.data.lengths =        zeros(1, d.data.numAxes);   % The length of 
                 d.data.indexWeight =    ones(1,  d.data.numAxes);   % Index weight is best described by an example:
@@ -396,7 +417,7 @@ classdef mcData < mcSavableClass
 %                 disp('end opt');
             end
             
-            if false
+            if false    % Should the axes goto the original values after stopping the scan?
                 for ii = nums
                     d.data.axes{ii}.goto(d.data.axisPrev(ii));
                 end

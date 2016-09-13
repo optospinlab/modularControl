@@ -32,7 +32,7 @@ classdef (Sealed) mcaTemplate < mcAxis
     methods
         function a = mcaTemplate(varin)     % Insert mca[Custom] name here...
             if nargin == 0
-                a.construct(a.defaultConfig());
+                a.construct(mcaTemplate.defaultConfig());
             else
                 a.construct(varin);
             end
@@ -64,6 +64,14 @@ classdef (Sealed) mcaTemplate < mcAxis
         function Close(a)
             % Do whatever neccessary to deinitialize the axis.
             close(a.config.customVar1, a.config.customVar2);    % (fake line)
+        end
+        
+        % READ
+        function ReadEmulation(a)
+            a.x = a.xt;         % Sets the actual postition of the axis to the target position in the absence of an actual actual position.
+        end
+        function Read(a)
+            a.x = read(a.s);    % (fake line), reads the session to get the actual postition of the axis.
         end
         
         % GOTO

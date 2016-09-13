@@ -89,6 +89,7 @@ classdef mcProcessedData < handle
                     d = pd.parent.data.data{pd.parent.data.input};
 
                     if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
+                        pd.parent.data.layer
                         pd.data = d( getIndex(pd.parent.data.lengths, pd.parent.data.layer - 2, axisXindex, axisYindex) );
                     else                                        % Otherwise if d will be cell...
 %                             c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );

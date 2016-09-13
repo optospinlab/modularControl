@@ -38,6 +38,14 @@ classdef mciSpectrum < mcInput
             I = I@mcInput(varin);
             I.prevIntegrationTime = NaN;
         end
+        
+        function axes_ = getInputAxes(I)
+            if isfield(I.config, 'Ne')
+                axes_ = {interpretNeSpectrum(I.config.Ne)};
+            else
+                axes_ = {1:512};    % Make general?
+            end
+        end
     end
     
     % These methods overwrite the empty methods defined in mcInput. mcInput will use these. The capitalized methods are used in
@@ -119,7 +127,7 @@ classdef mciSpectrum < mcInput
                     i = i + 1;
                 end
             else                    % ...otherwise, return NaN.
-                data = NaN(1, 512);
+                data = NaN(I.config.kind.sizeInput);
             end
         end
     end
