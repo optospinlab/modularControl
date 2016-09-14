@@ -326,7 +326,7 @@ classdef mcData < mcSavableClass
                         d.data.end{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};     % ...numeric arrays of NaN corresponding to the input's dimension.
                     else
                         % Changed 9/13.
-                        d.data.data{ii} = NaN([d.data.lengths 1]);
+                        d.data.data{ii} = NaN([d.data.sizeInput d.data.lengths 1]);
                         
 %                         d.data.data{ii} = cell([d.data.lengths 1]);                             % Then the layer is a cell array containing...
 %                         d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
@@ -482,8 +482,36 @@ classdef mcData < mcSavableClass
                         kk = kk + 1;
                     end
                 end
-            elseif strcmpi(d.data.axes{1}, 'time')  % If time happens to be the first axis...
-                
+            elseif strcmpi(d.data.axes{end}, 'time')  % If time happens to be the last axis...
+                while d.data.aquiring
+                    % Shift the values.
+                    for ii = 1:d.data.numInputs         % ...for every input...
+                        if ~d.data.isInputBeginEnd(ii)
+                            if isnan(d.data.inputDimension(ii))
+                                d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            elseif d.data.inputDimension(ii) == 0
+                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            else
+                                base = (jj+kk)*d.data.inputLength(ii);
+                                d.data.data{ii}(base:base+d.data.inputLength(ii)-1) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            end
+                        end
+                    end
+                    
+                    % Aquire the data.
+                    for ii = 1:d.data.numInputs         % ...for every input...
+                        if ~d.data.isInputBeginEnd(ii)
+                            if isnan(d.data.inputDimension(ii))
+                                d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            elseif d.data.inputDimension(ii) == 0
+                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            else
+                                base = (jj+kk)*d.data.inputLength(ii);
+                                d.data.data{ii}(base:base+d.data.inputLength(ii)-1) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            end
+                        end
+                    end
+                end
             else
                 kk = 0;
 
