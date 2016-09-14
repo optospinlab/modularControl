@@ -60,7 +60,7 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % OPEN/CLOSE
         function Open(a)        % Consider putting error detection on this?
-            disp('Opening micrometer')
+            disp(['Opening micrometer on port ' a.config.port '...']);
             a.s = serial(a.config.port);
             set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
                 'FlowControl', 'software', 'Terminator', 'CR/LF');
@@ -77,7 +77,7 @@ classdef (Sealed) mcaMicro < mcAxis
 
             fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
             pause(.25);
-            disp('Finished opening micrometer')
+            disp(['...Finished opening micrometer'])
         end
         function Close(a)
             fprintf(a.s, [a.config.addr 'RS']);

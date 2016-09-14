@@ -1,18 +1,23 @@
 classdef (Sealed) mcaNFLaser < mcAxis
 % mcaTemplate aims to explain the essentials for making a custom mcAxis.
     
+    properties
+        key = 0;
+        keyChar = '0';
+    end
+
     methods (Static)
         % Neccessary extra vars:
-        %  - port
+        %  - isLambda
         
         function config = defaultConfig()
-            config = mcaTemplate.customConfig();
+            config = mcaNFLaser.lambdaConfig();
         end
-        function config = customConfig()
-            config.name = 'New Focus Tunable Red Laser';
+        function config = lambdaConfig()
+            config.name = 'NF Red';
 
             config.kind.kind =          'NFLaser';
-            config.kind.name =          'New Focus Laser';
+            config.kind.name =          'New Focus Tunable Red Laser';
             config.kind.intRange =      [636 639];
             config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
             config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
@@ -23,8 +28,25 @@ classdef (Sealed) mcaNFLaser < mcAxis
             config.keyStep =            .1;
             config.joyStep =            1;
             
-            config.port = 'COM1???';
+            config.details =            'Not Loaded';
         end
+%         function config = powerConfig()   % Eventually...
+%             config.name = 'NF Laser';
+% 
+%             config.kind.kind =          'NFLaser';
+%             config.kind.name =          'New Focus Tunable Red Laser';
+%             config.kind.intRange =      [636 639];
+%             config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+%             config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+%             config.kind.intUnits =      'nm';                   % 'Internal' units.
+%             config.kind.extUnits =      'nm';                   % 'External' units.
+%             config.kind.base =          636;
+%             
+%             config.keyStep =            .1;
+%             config.joyStep =            1;
+%             
+%             config.details =            'Not Loaded';
+%         end
     end
     
     methods
@@ -43,60 +65,63 @@ classdef (Sealed) mcaNFLaser < mcAxis
         % NAME
         function str = NameShort(a)
             % This is the reccommended a.nameShort().
-            str = [a.config.name ' (' a.config.port ')'];
+            str = [a.config.name ' (' a.config.details ')'];
         end
         function str = NameVerb(a)
-            str = [a.config.name ' (using port ' a.config.port ')'];
+            str = [a.config.name ' (' a.config.details ')'];
         end
         
         %EQ
-        function tf = Eq(a, b)          % Compares two mcaTemplates
-            tf = strcmpi(a.config.port,  b.config.port);
+        function tf = Eq(~, ~)          % Compares two mcaNFLasers
+            tf = true;
         end
         
         % OPEN/CLOSE
         function Open(a)            
             if (~libisloaded('npusb'))    
-                    loadlibrary('usbdll.lib', 'NewpDll.h', 'alias', 'npusb');   % UsbDllWrap.dll
+                    loadlibrary('usbdll.dll', 'NewpDll.h', 'alias', 'npusb');   % usbdll.lib
             else
-                    disp('Note: npusb was already loaded\n');
+                    disp('Note: npusb was already loaded');
             end
             
-            fail = calllib('npusb', 'newp_usb_init_product', 0);
+            calllib('npusb', 'newp_usb_init_product', 0);
             
-            if ~fail
-                str = calllib('npusb', 'newp_usb_event_get_key_from_handle');
+%             if fail == 0
+                [~, str] = calllib('npusb', 'newp_usb_get_device_info', blanks(256));
                 
-                disp(['Found devices: ' str]);
+%                 disp(['Found devices: ' str]);
                 
-                split = strsplit(str, ',');
+                split = strsplit(str, {',', ';'});
                 
-                key = int32(split{1});      % Get the key of the first device.
+                a.keyChar = split{1};                       % Get the key of the first device.
+                a.key =     int32(str2double(a.keyChar));
                 
-                
+                a.config.details = split{2}(1:end-2);       % Name of the laser (plus details) minus CR LF
                 
 %                 a.s = serial(a.config.port);        % Open the serial session.
 % 
 %                 fopen(a.s);
 
-                identificationStr = a.listen('*IDN?');                  % Spit out some vars.
-                usageTime =         a.listen('SYSTem:ENTIME?') 
-                modelNumber =       a.listen('SYSTem:LASer:MODEL?')
-                SerialNumber =      a.listen('SYSTem:LASer:SN?')
-                revisionNumber =    a.listen('SYSTem:LASer:REV?')
-                calibrationDate =   a.listen('SYSTem:LASer:CALDATE?')
+%                 identificationStr = a.listen('*IDN?');                  % Spit out some vars.
+%                 usageTime =         a.listen('SYSTem:ENTIME?') 
+%                 modelNumber =       a.listen('SYSTem:LASer:MODEL?')
+%                 SerialNumber =      a.listen('SYSTem:LASer:SN?')
+%                 revisionNumber =    a.listen('SYSTem:LASer:REV?')
+%                 calibrationDate =   a.listen('SYSTem:LASer:CALDATE?')
 
                 a.speak('SYSTem:MCONtrol REM');     % Disables user input to the controller panel.
                 a.speakWithVar('OUTPut:STATe', 1);  % Turn the laser on.
+                a.speakWithVar('OUTPut:TRACk', 1);  % Turn lambda track on
+                a.speakWithVar('HWCONFIG', 16);     % Set HWCONFIG to keep lambda track on even after the laser has reached the desired wavelength.
 
                 a.read();
-            end
+%             end
         end
         function Close(a)
             a.speak('SYSTem:MCONtrol LOC');     % Enables user input to the controller panel.
             a.speakWithVar('OUTPut:STATe', 0);  % Turn the laser off.
             
-            fclose(a.s);                        % Close the serial session.
+            calllib('npusb', 'newp_usb_uninit_system');  % Close the session.
         end
         
         % READ
@@ -104,7 +129,7 @@ classdef (Sealed) mcaNFLaser < mcAxis
             a.x = a.xt;
         end
         function Read(a)
-            a.x = a.listen('SENSe:WAVElength');
+            a.x = str2double(a.listen('SENSe:WAVElength'));
         end
         
         % GOTO
@@ -123,16 +148,30 @@ classdef (Sealed) mcaNFLaser < mcAxis
             reply = a.listen(str);  % There are some commands that do not reply... Not sure how these will behave without testing.
             
             if ~strcmp(reply, 'OK')
-                a.beep();
-                error(['mcaNFLaser: Laser returns error: ' reply]);
+                warning(['mcaNFLaser: Laser returns error: ' reply]);
+                a.beep();       % Infinite recursion?
             end
         end
         function speakWithVar(a, str, var)
             a.speak([str ' ' num2str(var)]); % Fix precision on num2str?
         end
         function reply = listen(a, str)
-            fprintf(a.s, [str 13 10]);
-            reply = fscanf(a.s);
+            disp('Sending message to laser...');
+            tic
+            fail =              calllib('npusb', 'newp_usb_send_ascii',   a.key, libpointer('cstring', str), length(str));
+            toc
+            
+            if fail == 0
+                disp('Waiting for reply...');
+                tic
+                [~, reply, ~] = calllib('npusb', 'newp_usb_get_ascii',    a.key, blanks(256), 256, libpointer('uint32Ptr'));    % Receiving reply takes 2 seconds!?!
+                toc
+
+                disp('Reply received.');
+                
+                split = strsplit(reply, ['' 13]);
+                reply = split{1};
+            end
         end
         
         function time = scan(a, xMin, xMax, vFor, vRet, nScans)
@@ -140,7 +179,7 @@ classdef (Sealed) mcaNFLaser < mcAxis
                 error('mcaNFLaser: Some operation is still ongoing.');
             end
             
-            vMax = a.listen('SOURce:WAVE:MAXVEL?');
+            vMax = str2double(a.listen('SOURce:WAVE:MAXVEL?'));
             
             if vFor <= 0
                 warning('mcaNFLaser: Forward velocity cannot be negative or zero. Setting to max velocity.');
@@ -190,21 +229,24 @@ classdef (Sealed) mcaNFLaser < mcAxis
             time = scan(a, xMin, xMax, vFor, vRet, 1);
         end
         
+        function setCurrent(a, current)
+            a.speakWithVar('SOURce:CURRent:DIODe', current);
+        end
         function setPower(a, power)
             a.speakWithVar('SOURce:POWer:DIODe', power);
         end
         
         function current = getCurrent(a)
-            current =   a.listen('SENSe:CURRent:DIODe');
+            current =   str2double(a.listen('SENSe:CURRent:DIODe'));
         end
         function power = getPower(a)
-            power =     a.listen('SENSe:POWer:DIODe');
+            power =     str2double(a.listen('SENSe:POWer:DIODe'));
         end
         function temp = getDiodeTemp(a)
-            temp =     a.listen('SENSe:TEMPerature:DIODe');
+            temp =     str2double(a.listen('SENSe:TEMPerature:DIODe'));
         end
         function temp = getCavityTemp(a)
-            temp =     a.listen('SENSe:TEMPerature:CAVity');
+            temp =     str2double(a.listen('SENSe:TEMPerature:CAVity'));
         end
         
         function beep(a)

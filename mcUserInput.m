@@ -45,9 +45,15 @@ classdef mcUserInput < mcSavableClass
             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
+            configGreen =  mcaDAQ.digitalConfig();   configGreen.name = 'Green';    configGreen.chn = 'Port0/Line1';
+            configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
+            
             config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
                                   {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'Galvometers',   mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) } };
+                                  {'Galvometers',   mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaNFLaser } };                 % Eventually put red power on here...
+                              
+            config.axesGroups{4}{4}.open();
                               
             config.numGroups = length(config.axesGroups);
             
@@ -421,11 +427,21 @@ classdef mcUserInput < mcSavableClass
                         if abs(val - a.getXt()) > abs(5*dVal)                           % If the axis is lagging too far behind...
                             obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0.9400 0], isKey);    % ...then flash green
                         else
-                            if val >  max(a.config.kind.extRange)                       % Make sure the axis doesn't go out of bounds
-                                val = max(a.config.kind.extRange);
-                            end
-                            if val <  min(a.config.kind.extRange)
-                                val = min(a.config.kind.extRange);
+                            if iscell(a.config.kind.extRange)
+                                switch val
+                                    case a.config.kind.extRange
+                                        % nothing
+                                    otherwise
+                                        l = [a.config.kind.extRange{:}] - val;
+                                        val = a.config.kind.extRange{find(l.*l == min(l.*l), 1)};     % Change?
+                                end
+                            else
+                                if val >  max(a.config.kind.extRange)                       % Make sure the axis doesn't go out of bounds
+                                    val = max(a.config.kind.extRange);
+                                end
+                                if val <  min(a.config.kind.extRange)
+                                    val = min(a.config.kind.extRange);
+                                end
                             end
 
                             if abs(val) < 1e-14
@@ -557,11 +573,21 @@ function limit_Callback(src, event, range)
     end
     
     % Now truncate value to the range...
-    if val > max(range)
-        val = max(range);
-    end
-    if val < min(range)
-        val = min(range);
+    if iscell(range)
+        switch val
+            case range
+                % nothing
+            otherwise
+                l = [range{:}] - val;
+                val = range{find(l.*l == min(l.*l), 1)};     % Change?
+        end
+    else
+        if val > max(range)
+            val = max(range);
+        end
+        if val < min(range)
+            val = min(range);
+        end
     end
     
     src.String = val;

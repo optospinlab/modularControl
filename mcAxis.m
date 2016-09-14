@@ -346,11 +346,11 @@ classdef mcAxis < mcSavableClass
             tf = false;     % or true?
         end
         
-        function str = NameShort(~)
-            str = '';
+        function str = NameShort(a)
+            str = a.config.name;
         end
-        function str = NameVerb(~)
-            str = '';
+        function str = NameVerb(a)
+            str = a.config.name;
         end
         
         function Open(~)

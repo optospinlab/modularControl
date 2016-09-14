@@ -206,7 +206,7 @@ classdef mcInstrumentHandler < handle
                 if isa(instrument{1}, 'mcAxis')                 % If an instrument is a axis...
                     axes_{ii} = instrument{1};                  % ...Then append its information.
                     names{ii} = instrument{1}.nameShort();
-                    states(ii) = instrument{1}.getX();
+                    states(ii) = instrument{1}.config.kind.int2extConv(instrument{1}.x);
                     ii = ii + 1;
                 end
             end
