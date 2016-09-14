@@ -45,7 +45,7 @@ classdef mcUserInput < mcSavableClass
             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
-            configGreen =  mcaDAQ.digitalConfig();   configGreen.name = 'Green';    configGreen.chn = 'Port0/Line1';
+            configGreen =  mcaDAQ.greenConfig();   % configGreen.name = 'Green';    configGreen.chn = 'Port0/Line1';
             configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
             
             config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.

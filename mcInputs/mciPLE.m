@@ -25,7 +25,7 @@ classdef mciPLE < mcInput
         %  - downSpeed
         
         function config = defaultConfig()
-            config = mciTemplate.PLEConfig(636, 637, 1000, 1, 4);
+            config = mciPLE.PLEConfig(636, 637, 1000, 1, 4);
         end
         function config = PLEConfig(xMin, xMax, upPixels, upSpeed, downSpeed)
             config.name = 'PLE ';
@@ -37,9 +37,13 @@ classdef mciPLE < mcInput
             
             config.axes.red =       mcaNFLaser();
             
-            greenConfig = mcaDAQ.digitalConfig(); 
-            greenConfig.dev =           'Dev1';
-            greenConfig.chn =           'Port0/Line0';
+%             greenConfig =           mcaDAQ.digitalConfig(); 
+%             greenConfig.dev =       'Dev1';
+%             greenConfig.chn =       'Port0/Line1';
+%             config.axes.green =     mcaDAQ(greenConfig);
+
+            greenConfig =           mcaDAQ.analogConfig(); 
+            greenConfig.chn =       'ao3';
             config.axes.green =     mcaDAQ(greenConfig);
             
             config.counter =        mciDAQ(mciDAQ.counterConfig());
@@ -56,7 +60,7 @@ classdef mciPLE < mcInput
             config.kind.sizeInput =    [1 upPixels + config.downPixels];
             
             config.output = [zeros(1, upPixels) ones(1, config.downPixels + 1)];    % One extra point for diff'ing.
-            config.xaxis =  [linspace(xMin, xMax, upPixels) linspace(xMax, xMax + (xMax - xMin)*downPixels/upPixels, downPixels)];
+            config.xaxis =  [linspace(xMin, xMax, upPixels) linspace(xMax, xMax + (xMax - xMin)*config.downPixels/upPixels, config.downPixels)];
         end
     end
     
@@ -112,11 +116,11 @@ classdef mciPLE < mcInput
             data = [3+rand(1, I.config.upPixels) 10+2*rand(1, I.config.downPixels)];
         end
         function data = Measure(I, ~)
-            I.s.queueOutputData(I.config.output);
-            I.config.axes.red.scanOnce(config.xMin, config.xMax, config.upSpeed, config.downSpeed)
+            I.s.queueOutputData(I.config.output');
+            I.config.axes.red.scanOnce(I.config.xMin, I.config.xMax, I.config.upSpeed, I.config.downSpeed)
             [d, t] = startForeground(I.s);  % Fix timing?
             
-            data = diff(d)./diff(t);
+            data = (diff(d)./diff(t))';
         end
     end
 end

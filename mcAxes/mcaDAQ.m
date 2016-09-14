@@ -13,6 +13,44 @@ classdef (Sealed) mcaDAQ < mcAxis
         function config = defaultConfig()
             config = mcaDAQ.piezoConfig();
         end
+        function config = analogConfig()
+            config.name =               'Analog Output';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'Analog Output';
+            config.kind.intRange =      [0 10];
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'V';                    % 'External' units.
+            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'ao0';
+            config.type =               'Voltage';
+            
+            config.keyStep =            .1;
+            config.joyStep =            .5;
+        end
+        function config = greenConfig()
+            config.name =               'Green';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'Laser Modulation';
+            config.kind.intRange =      {0 2};
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'V';                    % 'External' units.
+            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'ao3';
+            config.type =               'Voltage';
+            
+            config.keyStep =            2;
+            config.joyStep =            2;
+        end
         function config = piezoZConfig()
             config.name =               'Default Piezo Z';
 

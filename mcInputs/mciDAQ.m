@@ -21,7 +21,7 @@ classdef mciDAQ < mcInput
             config.kind.sizeInput =    [1 1];
             
             config.dev =                'Dev1';
-            config.chn =                'ctr0';
+            config.chn =                'ctr2';
             config.type =               'EdgeCount';
         end
         function config = voltageConfig()
@@ -54,9 +54,9 @@ classdef mciDAQ < mcInput
     methods
         function I = mciDAQ(varin)
             if nargin == 0
-                I = I.construct(I.defaultConfig());
+                I.construct(I.defaultConfig());
             else
-                I = I.construct(varin);
+                I.construct(varin);
             end
             I = mcInstrumentHandler.register(I);
         end
