@@ -30,7 +30,7 @@ classdef mciFunction < mcInput
             else
                 I.construct(varin);
             end
-            
+            I = mcInstrumentHandler.register(I);
             I.config.giveIntegration = nargin(config.fnc) ~= -1;    % Internal variable to decide whether the integration time in I.measure(integrationTime) should be passed to the mciFunction function as an input.
         end
     end

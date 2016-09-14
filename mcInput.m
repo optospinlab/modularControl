@@ -84,7 +84,7 @@ classdef mcInput < mcSavableClass
                 I.inEmulation = true;
             end
             
-            I = mcInstrumentHandler.register(I);
+%             I = mcInstrumentHandler.register(I);
         end
         
         function I = mcInput(varin)
@@ -187,7 +187,7 @@ classdef mcInput < mcSavableClass
                 
                 if I.inEmulation
                     % Do something?
-                    tf = true
+                    tf = true;
                 else
                     try
                         I.Open();
@@ -206,7 +206,6 @@ classdef mcInput < mcSavableClass
                 
                 if I.inEmulation
                     % Should something be done?
-                    tf = true
                 else
                     switch lower(I.config.kind.kind)
                         case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}

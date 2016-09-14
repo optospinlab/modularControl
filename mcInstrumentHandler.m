@@ -381,8 +381,8 @@ classdef mcInstrumentHandler < handle
             if strcmp(toolBarMode, 'saveopen')
                 t = uitoolbar(f, 'tag', 'FigureToolBar');
                 
-                class(imread(fullfile('icons','file_open_new.png')))
-                class(imread(fullfile('icons','file_open.png')))
+%                 class(imread(fullfile('icons','file_open_new.png')))
+%                 class(imread(fullfile('icons','file_open.png')))
                 
                 uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', imread(fullfile('icons','file_open_new.png')));
                 uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', imread(fullfile('icons','file_open.png')));

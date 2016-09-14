@@ -47,6 +47,10 @@ classdef mcData < mcSavableClass
 %            - data.layer                  numeric array     % Current layer that any connected mcProcessedDatas should process.
 %            - data.layerType              numeric array     % 0 = axis, positive nums imply the num'th axis of an input
 %            - data.layerIndex             numeric array     % 0 = axis, positive nums imply the num'th input.
+%            - d.data.inputLength
+%
+%            - data.lengths
+%            - data.indexWeight
 %
 %            - data.isInitialized          boolean           % Is created once 
 %            - data.scanMode               boolean
@@ -126,12 +130,12 @@ classdef mcData < mcSavableClass
                     d.data.inputs =             varin{3};
                     d.data.integrationTime =    varin{4};
                     d.data.inputTypes =         varin{5};
-                case 5
-                    d.data.axes =               varin{1};               % And if a 5th var is given, assume it is optimize
-                    d.data.scans =              varin{2};
-                    d.data.inputs =             varin{3};
-                    d.data.integrationTime =    varin{4};
-                    d.data.inputTypes =         varin{5};
+%                 case 6
+%                     d.data.axes =               varin{1};               % And if a 5th var is given, assume it is optimize
+%                     d.data.scans =              varin{2};
+%                     d.data.inputs =             varin{3};
+%                     d.data.integrationTime =    varin{4};
+%                     d.data.inputTypes =         varin{5};
             end
             
             d.initialize();
@@ -154,27 +158,41 @@ classdef mcData < mcSavableClass
                 d.data.numInputs = length(d.data.inputs);
                 
                 d.data.inputDimension =     zeros(1, d.data.numInputs);     % Make empty lists for future filling.
+                d.data.sizeInput =          cell( 1, d.data.numInputs);
+                d.data.inputLength =     	zeros(1, d.data.numInputs);
                 d.data.isInputNIDAQ =       false(1, d.data.numInputs);
                 d.data.isInputBeginEnd =    false(1, d.data.numInputs);
                 d.data.inEnmulation =       false(1, d.data.numInputs);
                 
-                d.data.inputNames =         cell(1, d.data.numInputs);
-                d.data.inputNamesUnits =    cell(1, d.data.numInputs);
+                d.data.inputNames =         cell( 1, d.data.numInputs);
+                d.data.inputNamesUnits =    cell( 1, d.data.numInputs);
                 
-                d.data.numInputAxes = 0;
-                d.data.layerType =  [];
-                d.data.layerIndex = [];
+                d.data.numInputAxes =   0;
+                d.data.layerType =      [];
+                d.data.layerIndex =     [];
+                d.data.lengths =        [];
+                d.data.indexWeight =    [];
 
                 for ii = 1:d.data.numInputs                                 % Now fill the empty lists
-                    d.data.inputDimension(ii) =    sum(d.data.inputs{ii}.config.kind.sizeInput > 1);
-                    d.data.numInputAxes = d.data.numInputAxes + d.data.inputDimension(ii);
-                    d.data.layerType =  [d.data.layerType  1:d.data.inputDimension(ii)];
-                    d.data.layerIndex = [d.data.layerIndex ones(d.data.inputDimension(ii))*ii];
+                    d.data.inputDimension(ii) =     sum(d.data.inputs{ii}.config.kind.sizeInput > 1);
+                    d.data.sizeInput{ii} =          d.data.inputs{ii}.config.kind.sizeInput(d.data.inputs{ii}.config.kind.sizeInput > 1);   % Poor naming.
+                    d.data.inputLength(ii) =        prod(d.data.inputDimension(ii));
+%                     d.data.numInputAxes = d.data.numInputAxes + d.data.inputDimension(ii);
+                    d.data.layerType =  [d.data.layerType   1:d.data.inputDimension(ii)];
+                    d.data.layerIndex = [d.data.layerIndex  ones(d.data.inputDimension(ii))*ii];
+                    
+%                     lengths = d.data.inputDimension(d.data.inputDimension > 1);
+%                     d.data.lengths =    [d.data.lengths     lengths];
+                    
+                    iwAdd = ones(1, d.data.inputDimension(ii));
+                    for jj = 2:length(iwAdd)
+                        iwAdd(jj:end) = iwAdd(jj:end)*lengths(jj-1);
+                    end
+                    
+                    d.data.indexWeight = [d.data.indexWeight iwAdd];
 
                     d.data.isInputNIDAQ(ii) =       strcmpi('nidaq', d.data.inputs{ii}.config.kind.kind(1:5));
-                    
                     d.data.inEmulation(ii) =       d.data.inputs{ii}.inEmulation;
-                    
                     d.data.inputConfigs{ii} =        d.data.inputs{ii}.config;
 
                     if isfield(d.data, 'inputTypes')                % If inputTypes is specified...
@@ -196,8 +214,10 @@ classdef mcData < mcSavableClass
                         d.data.inputNamesUnits{ii} =    d.data.inputs{ii}.nameUnits();  %                                            ...'name (units)' form
                     end
                 end
+                
+                d.data.numInputAxes = length(d.data.lengths);
 
-                if all(d.data.isInputBeginEnd)  % Pass an error if there isn't any input on everypoint mode (the user needs to rethink thier request).
+                if all(d.data.isInputBeginEnd)  % Pass an error if there isn't any input on everypoint mode (the user needs to rethink their request).
                     error('At least one input must not be BeginEnd');
                 end
 
@@ -218,18 +238,18 @@ classdef mcData < mcSavableClass
                     d.data.input = 1;
                 end
                 
-                d.data.layerType = [zeros(d.data.numAxes) d.data.layerType];  % Appropraitly pad the arrays...
+                d.data.layerType =  [zeros(d.data.numAxes) d.data.layerType];  % Appropraitely pad the arrays...
                 d.data.layerIndex = [ones(d.data.numAxes)  d.data.layerIndex];
 
-                d.data.lengths =        zeros(1, d.data.numAxes);   % The length of 
-                d.data.indexWeight =    ones(1,  d.data.numAxes);   % Index weight is best described by an example:
-                                                                    %   If one has a 5x4x3 matrix, then incrimenting the x axis
-                                                                    %   increases the linear index (the index if the matrix was
-                                                                    %   streached out) by one. Incrimenting the y axis increases
-                                                                    %   the linear index by 5. And incrimenting the z axis increases
-                                                                    %   the linear index by 20 = 5*4. So the index weight in this case
-                                                                    %   is [1 5 20].
-                
+                d.data.lengths =        zeros(1, d.data.numAxes); %d.data.lengths];
+                d.data.indexWeight =    [ones(1,  d.data.numAxes) d.data.indexWeight];  % Index weight is best described by an example:
+                                                                                        %   If one has a 5x4x3 matrix, then incrimenting the x axis
+                                                                                        %   increases the linear index (the index if the matrix was
+                                                                                        %   streached out) by one. Incrimenting the y axis increases
+                                                                                        %   the linear index by 5. And incrimenting the z axis increases
+                                                                                        %   the linear index by 20 = 5*4. So the index weight in this case
+                                                                                        %   is [1 5 20].
+
                 d.data.axisNames =         cell(1, d.data.numAxes);   % Same as input name generation above.
                 d.data.axisNamesUnits =    cell(1, d.data.numAxes);
                 d.data.axisPrev =          zeros(1, d.data.numAxes);
@@ -305,8 +325,11 @@ classdef mcData < mcSavableClass
                         d.data.end{ii} = cell([d.data.lengths(2:end) 1]);                       % Then the layer is a cell array containing...
                         d.data.end{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};     % ...numeric arrays of NaN corresponding to the input's dimension.
                     else
-                        d.data.data{ii} = cell([d.data.lengths 1]);                             % Then the layer is a cell array containing...
-                        d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
+                        % Changed 9/13.
+                        d.data.data{ii} = NaN([d.data.lengths 1]);
+                        
+%                         d.data.data{ii} = cell([d.data.lengths 1]);                             % Then the layer is a cell array containing...
+%                         d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
                     end
                 end
             end
@@ -356,8 +379,6 @@ classdef mcData < mcSavableClass
                     end
                 end 
             end
-            
-            jj = [];
 
             nums = 1:d.data.numAxes;
 
@@ -461,24 +482,31 @@ classdef mcData < mcSavableClass
                         kk = kk + 1;
                     end
                 end
+            elseif strcmpi(d.data.axes{1}, 'time')  % If time happens to be the first axis...
+                
             else
                 kk = 0;
 
                 for x = d.data.scans{1}                 % Now take the data.
-                    d.data.axes{1}.goto(x);             % Goto each point...
-                    d.data.axes{1}.wait();              % ...wait for the axis to arrive (for some types)...
+                    if d.data.aquiring
+                        d.data.axes{1}.goto(x);             % Goto each point...
+                        d.data.axes{1}.wait();              % ...wait for the axis to arrive (for some types)...
 
-                    for ii = 1:d.data.numInputs         % ...for every input...
-                        if ~d.data.isInputBeginEnd(ii)
-                            if d.data.inputDimension(ii) == 0
-                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
-                            else
-                                d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                        for ii = 1:d.data.numInputs         % ...for every input...
+                            if ~d.data.isInputBeginEnd(ii)
+                                if isnan(d.data.inputDimension(ii))
+                                    d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                                elseif d.data.inputDimension(ii) == 0
+                                    d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                                else
+                                    base = (jj+kk)*d.data.inputLength(ii);
+                                    d.data.data{ii}(base:base+d.data.inputLength(ii)-1) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                                end
                             end
                         end
-                    end
 
-                    kk = kk + 1;
+                        kk = kk + 1;
+                    end
                 end
             end
 

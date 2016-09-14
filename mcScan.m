@@ -144,6 +144,17 @@ classdef mcScan < mcSavableClass
                 gui.scanAxes{index}.instrumentName =    'Choose';
                 gui.scanAxes{index}.instrumentIndex =   1;
                 gui.scanAxes{index}.range =             [NaN NaN 50];
+                
+                if index > 1
+                    if gui.scanAxes{index-1}.choose.Value == 2
+                        gui.scanAxes{index-1}.instrumentIndex = 1;
+                        gui.scanAxes{index-1}.choose.Value =    1;
+                        gui.scanAxes{index-1}.range =           [NaN NaN 50];
+                        
+                        gui.scanAxes{index}.instrumentIndex = 2;
+                        gui.scanAxes{index}.range =             [0 10 50];
+                    end
+                end
             else
                 ii = 1;
                 gui.scanAxes{index}.choose.Value = 1;
@@ -314,9 +325,10 @@ classdef mcScan < mcSavableClass
             uicontrol(  gui.scanInputs{index}.panel,...
                         'Style', 'checkbox',...
                         'String', 'Only BeginEnd',...
-                        'Value', gui.scanInputs{index}.beginend,...
+                        'Value', 0,...  % gui.scanInputs{index}.beginend,...
                         'Position', [205,lh,150,gui.ph/2 - 4],...
-                        'Callback', @gui.setBeginEnd);
+                        'Callback', @gui.setBeginEnd,...
+                        'Enable', 'off');
                     
             uicontrol(  gui.scanInputs{index}.panel,...
                         'Style', 'text',...
@@ -419,13 +431,13 @@ classdef mcScan < mcSavableClass
                 gui.scanAxes{saIndex}.instrumentName = gui.scanAxes{saIndex}.choose.String{gui.scanAxes{saIndex}.choose.Value};
                 
                 if gui.scanAxes{saIndex}.choose.Value == 2  % If time was selected...
-                    if saIndex ~= 1
-                        gui.scanAxes{1}.choose.Value = 2;
-                        gui.chooseAxis(1);
+                    if saIndex ~= length(gui.scanAxes)
+                        gui.scanAxes{end}.choose.Value = 2;
+                        gui.chooseAxis(length(gui.scanAxes));
                         
                         gui.scanAxes{saIndex}.choose.Value = 1;
                         
-                        questdlg('Time can only be the first axis', 'Warning!', 'Okay', 'Okay');
+                        questdlg('Time can only be the last axis', 'Warning!', 'Okay', 'Okay');
                     end
                 else                                        % Otherwise, make sure that no other panel is using this axis...
                     for ii = 1:length(gui.scanAxes)

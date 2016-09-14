@@ -32,10 +32,16 @@ classdef mciSpectrum < mcInput
     methods
         function I = mciSpectrum(varin)
             if nargin == 0
-                varin = mciSpectrum.defaultConfig();
+                I.construct(I.defaultConfig());
+            else
+                I.construct(varin);
             end
-            
-            I = I@mcInput(varin);
+            I = mcInstrumentHandler.register(I);
+%             if nargin == 0
+%                 varin = mciSpectrum.defaultConfig();
+%             end
+%             
+%             I = I@mcInput(varin);
             I.prevIntegrationTime = NaN;
         end
         

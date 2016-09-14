@@ -55,21 +55,42 @@ classdef (Sealed) mcaNFLaser < mcAxis
         end
         
         % OPEN/CLOSE
-        function Open(a)
-            a.s = serial(a.config.port);        % Open the serial session.
+        function Open(a)            
+            if (~libisloaded('npusb'))    
+                    loadlibrary('usbdll.lib', 'NewpDll.h', 'alias', 'npusb');   % UsbDllWrap.dll
+            else
+                    disp('Note: npusb was already loaded\n');
+            end
             
+            fail = calllib('npusb', 'newp_usb_init_product', 0);
             
-            identificationStr = a.listen('*IDN?');                  % Spit out some vars.
-            usageTime =         a.listen('SYSTem:ENTIME?') 
-            modelNumber =       a.listen('SYSTem:LASer:MODEL?')
-            SerialNumber =      a.listen('SYSTem:LASer:SN?')
-            revisionNumber =    a.listen('SYSTem:LASer:REV?')
-            calibrationDate =   a.listen('SYSTem:LASer:CALDATE?')
-            
-            a.speak('SYSTem:MCONtrol REM');     % Disables user input to the controller panel.
-            a.speakWithVar('OUTPut:STATe', 1);  % Turn the laser on.
-            
-            a.read();
+            if ~fail
+                str = calllib('npusb', 'newp_usb_event_get_key_from_handle');
+                
+                disp(['Found devices: ' str]);
+                
+                split = strsplit(str, ',');
+                
+                key = int32(split{1});      % Get the key of the first device.
+                
+                
+                
+%                 a.s = serial(a.config.port);        % Open the serial session.
+% 
+%                 fopen(a.s);
+
+                identificationStr = a.listen('*IDN?');                  % Spit out some vars.
+                usageTime =         a.listen('SYSTem:ENTIME?') 
+                modelNumber =       a.listen('SYSTem:LASer:MODEL?')
+                SerialNumber =      a.listen('SYSTem:LASer:SN?')
+                revisionNumber =    a.listen('SYSTem:LASer:REV?')
+                calibrationDate =   a.listen('SYSTem:LASer:CALDATE?')
+
+                a.speak('SYSTem:MCONtrol REM');     % Disables user input to the controller panel.
+                a.speakWithVar('OUTPut:STATe', 1);  % Turn the laser on.
+
+                a.read();
+            end
         end
         function Close(a)
             a.speak('SYSTem:MCONtrol LOC');     % Enables user input to the controller panel.
@@ -167,6 +188,10 @@ classdef (Sealed) mcaNFLaser < mcAxis
         end
         function time = scanOnce(a, xMin, xMax, vFor, vRet)
             time = scan(a, xMin, xMax, vFor, vRet, 1);
+        end
+        
+        function setPower(a, power)
+            a.speakWithVar('SOURce:POWer:DIODe', power);
         end
         
         function current = getCurrent(a)

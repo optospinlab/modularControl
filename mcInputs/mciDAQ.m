@@ -54,10 +54,11 @@ classdef mciDAQ < mcInput
     methods
         function I = mciDAQ(varin)
             if nargin == 0
-                I.construct(I.defaultConfig());
+                I = I.construct(I.defaultConfig());
             else
-                I.construct(varin);
+                I = I.construct(varin);
             end
+            I = mcInstrumentHandler.register(I);
         end
     end
     

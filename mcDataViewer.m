@@ -386,7 +386,7 @@ classdef mcDataViewer < mcSavableClass
         function loadGUI_Callback(gui, ~, ~)
             
         end
-        function closeRequestFcn(gui, ~, ~)
+        function closeRequestFcnDF(gui, ~, ~)
             % gui.data.save();
             gui.data.data.aquiring = false;
             
@@ -402,6 +402,12 @@ classdef mcDataViewer < mcSavableClass
             delete(gui.data);
             
             delete(gui);
+        end
+        function closeRequestFcnCF(gui, ~, ~)
+            toggleCF_Callback(gui, ~, ~)
+        end
+        function toggleCF_Callback(gui, ~, ~)
+            
         end
         
         function scanButton_Callback(gui, ~, ~)
@@ -724,8 +730,22 @@ classdef mcDataViewer < mcSavableClass
                         layer(layer == 2 & ~changed) = 3;
                     end
                     
-                    if gui.data.data.layerIndex(changed) < 3    % If an input axis was changed to X or Y,
+                    if gui.data.data.layerIndex(changed) && gui.data.data.layer(changed) < 3    % If an input axis was changed to X or Y,
+                        % If the other axis (Y or X) is an input axis from a different input...
+                        otherAxis = ~changed & layer < 3;
                         
+                        if ~all(otherAxis)
+                            % Next check if the changed input axis is compatible with 2D
+                            if layerIndex(1) == 0
+                                layer(1) = layer(otherAxis);
+                                layer(otherAxis) = 3;
+                            elseif sum(layerIndex == layerIndex(changed)) > 1
+                                layer(find(layerIndex == layerIndex(changed) & ~changed, 1)) = layer(otherAxis);
+                                layer(otherAxis) = 3;
+                            else
+                                error('2D incompatible with this layer input. Fix not implemented.');
+                            end
+                        end
                     end
                     
                     for ii = 1:length(layer)
