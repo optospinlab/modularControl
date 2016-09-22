@@ -22,6 +22,7 @@ classdef mcDataViewer < mcSavableClass
         b = [];
         
         cf = [];            % Control figure.
+        cfToggle = [];      % uitoggletool that controls the visibility of cf...
         
         df = [];            % Data figure.
         a = [];             % Main axes in the data figure.
@@ -114,7 +115,7 @@ classdef mcDataViewer < mcSavableClass
             if shouldMakeManager
                 gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
                 gui.cf.Position = [100,100,300,500];
-                gui.cf.CloseRequestFcn = @gui.closeRequestFcn;
+                gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
                 
                 jj = 1;
                 kk = 1;
@@ -159,8 +160,6 @@ classdef mcDataViewer < mcSavableClass
                 gui.params1D.chooseList = cell(1, gui.data.data.numAxes); % This will be longer, but we choose not to calculate.
                 gui.params2D.chooseList = cell(1, gui.data.data.numAxes);
                 
-                ii = 0;
-                
                 for ii = 1:gui.data.data.numAxes
                     levellist = strcat(strread(num2str(gui.data.data.scans{ii}), '%s')', [' ' gui.data.data.axes{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
                     
@@ -197,10 +196,14 @@ classdef mcDataViewer < mcSavableClass
                 
                 inputLetters = 'XYZUVW';
                 
+                if isempty(ii)  % If there wasn't an axis loop, reset ii.
+                    ii = 0;
+                end
+                
                 for kk = 1:gui.data.data.numInputs
                     ii = ii + 1;    % Use the ii from the axis loop.
                     
-                    if gui.data.data.inputDimension(kk) - 1 > length(inputLetters)
+                    if gui.data.data.inputDimension(kk) <= length(inputLetters)
                         jj = 0;
                         
                         for sizeInput = gui.data.data.inputs{kk}.config.kind.sizeInput
@@ -235,12 +238,14 @@ classdef mcDataViewer < mcSavableClass
                                         gui.params2D.chooseList{ii} = choose;
                                     end
 
-                                    gui.data.data.layerType(ii) = 1;     % The layer is an input.
-                                    gui.data.data.layerIndex(ii) = kk;
-                                    gui.data.data.layerDim(ii) = 1;
+%                                     gui.data.data.layerType(ii) = 1;     % The layer is an input.
+%                                     gui.data.data.layerIndex(ii) = kk;
+%                                     gui.data.data.layerDim(ii) = 1;
                                 end
                             end
                         end
+                    else
+                        error('mcDataViewer: Input has too many dimensions... Too big for XYZUVW.');
                     end
                 end
                 
@@ -277,11 +282,14 @@ classdef mcDataViewer < mcSavableClass
             end
             
             gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
-            gui.df.CloseRequestFcn = @gui.closeRequestFcn;
+            hToolbar = findall(gui.df, 'tag', 'FigureToolBar');
+            gui.cfToggle = uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @gui.toggleCF_Callback, 'CData', iconRead(fullfile('icons','control_figure.png')), 'State', gui.cf.Visible);
+
+            gui.df.CloseRequestFcn = @gui.closeRequestFcnDF;
             menu = uicontextmenu;
 
             gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on', 'UIContextMenu', menu); %, 'Xgrid', 'on', 'Ygrid', 'on'
-            colormap(gui.a, gray(256));
+            colormap(gui.a, gray(256)); % Change when RGB is added...
             
             hold(gui.a, 'on');
             
@@ -328,6 +336,7 @@ classdef mcDataViewer < mcSavableClass
 %                 @panel.normalize_Callback
 %                 @gui.scale.gray.normalize_Callback
                 mnNorm= uimenu(mNorm, 'Label', 'Normalize', 'Callback',    @panel.normalize_Callback);
+                mnNorm= uimenu(mNorm, 'Label', 'Normalize', 'Callback',    @panel.normalize_Callback);
                 mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',    {@gui.minmax_Callback, 0});
                 mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',   {@gui.minmax_Callback, 1});
             
@@ -367,10 +376,20 @@ classdef mcDataViewer < mcSavableClass
                         % This case is covered below (saves in all cases).
                     case 2  % .png
                         if gui.data.data.plotMode == 1      % 1D
-                            imwrite(repmat(gui.p(1).YData, 3, 3),   [PathName FileName], 'Alpha', isnan(gui.p(1).YData));
+                            d = gui.p(1).YData;
+                            lim = gui.p(1).YLim;
                         else
-                            imwrite(repmat(gui.i.CData, 3, 3),      [PathName FileName], 'Alpha', gui.i.AlphaData);
+                            d = gui.i.CData;
+                            lim = gui.i.CLim;
                         end
+                        
+%                         d(isnan(d)) = min(lim);
+                        
+                        if diff(lim) ~= 0
+                            d = (d - min(lim))/diff(lim);
+                        end
+                        
+                        imwrite(repmat(d, 3, 3), [PathName FileName]);
                     case 3  % .png (axes)
                         imwrite(frame2im(getframe(gui.df)), [PathName FileName]);
                 end
@@ -404,10 +423,16 @@ classdef mcDataViewer < mcSavableClass
             delete(gui);
         end
         function closeRequestFcnCF(gui, ~, ~)
-            toggleCF_Callback(gui, ~, ~)
+            gui.toggleCF_Callback(0, 0)
         end
         function toggleCF_Callback(gui, ~, ~)
-            
+            if strcmpi(gui.cf.Visible, 'on')
+                gui.cf.Visible = 'off';
+                gui.cfToggle.State = 'off';
+            else
+                gui.cf.Visible = 'on';
+                gui.cfToggle.State = 'on';
+            end
         end
         
         function scanButton_Callback(gui, ~, ~)

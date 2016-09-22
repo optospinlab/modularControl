@@ -31,6 +31,7 @@ classdef mciSpectrum < mcInput
     
     methods
         function I = mciSpectrum(varin)
+            I.extra = {'triggerfile', 'datafile'};
             if nargin == 0
                 I.construct(I.defaultConfig());
             else

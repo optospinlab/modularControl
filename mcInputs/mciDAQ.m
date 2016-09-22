@@ -53,6 +53,7 @@ classdef mciDAQ < mcInput
     
     methods
         function I = mciDAQ(varin)
+            I.extra = {'dev', 'chn', 'type'};
             if nargin == 0
                 I.construct(I.defaultConfig());
             else

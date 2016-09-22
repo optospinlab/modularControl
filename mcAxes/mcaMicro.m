@@ -32,6 +32,7 @@ classdef (Sealed) mcaMicro < mcAxis
     
     methods
         function a = mcaMicro(varin)
+            a.extra = {'port', 'addr'};
             if nargin == 0
                 a.construct(a.defaultConfig());
             else

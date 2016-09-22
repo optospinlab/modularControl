@@ -74,11 +74,16 @@ classdef mcGrid < mcSavableClass
             grid.config.A = Y/X;    % Where 1/X is the inverse of X.
         end
 
-        function goto(grid)
+        function tf = goto(grid)
             gotoPos = grid.realPosition();
+            tf = true;
             for ii = 1:length(grid.realAxes)
-                if grid.realAxes{ii}.getX() ~= gotoPos(ii)
-                    grid.realAxes.goto(gotoPos(ii));            % Send each real axis to the point corresponding to the virtual position.
+                if grid.realAxes{ii}.inRange(gotoPos(ii))
+                    if grid.realAxes{ii}.getX() ~= gotoPos(ii)
+                        grid.realAxes{ii}.goto(gotoPos(ii));            % Send each real axis to the point corresponding to the virtual position.
+                    end
+                else
+                    tf = false;
                 end
             end
         end
@@ -113,7 +118,7 @@ classdef mcGrid < mcSavableClass
             
             grid.config.A = Y/X;    % Where 1/X is the inverse of X.
             
-            if isnan(grid.config.A) | isinf(grid.config.A)
+            if isnan(grid.config.A) || isinf(grid.config.A)
                 questdlg('The rows of grid coordinates must be (mostly) linearly independent.', 'Unable to Calculate Grid', 'Got it', 'Got it');
                 grid.config.A = [];
             end

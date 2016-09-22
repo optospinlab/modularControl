@@ -53,7 +53,7 @@ classdef mcUserInput < mcSavableClass
                                   {'Galvometers',   mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
                                   {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaNFLaser } };                 % Eventually put red power on here...
                               
-            config.axesGroups{4}{4}.open();
+            config.axesGroups{4}{4}.open(); 
                               
             config.numGroups = length(config.axesGroups);
             

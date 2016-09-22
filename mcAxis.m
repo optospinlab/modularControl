@@ -47,6 +47,10 @@ classdef mcAxis < mcSavableClass
         reservedBy = [];        % Boolean.    
     end
     
+    properties
+        extra = {};
+    end
+    
     properties (SetObservable)
         x = 0;                  % Current position.
         xt = 0;                 % Target position.
@@ -336,6 +340,19 @@ classdef mcAxis < mcSavableClass
                 while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
                     a.read();
                     pause(.1);
+                end
+            end
+        end
+        
+        function info = getInfo(a)
+%             {'Instrument', 'Position', 'Unit', 'isOpen',   'inUse',    'inEmulation'};
+            info = {a.name(), a.getX(), a.extUnits, a.isOpen, a.inUse, a.inEmulation, '', '', '', ''};
+            
+            ii = 7;
+            for var = a.extra
+                if ii <= 10
+                    info{ii} = get(a.config, var);
+                    ii = ii + 1;
                 end
             end
         end

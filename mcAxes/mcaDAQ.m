@@ -32,8 +32,27 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.keyStep =            .1;
             config.joyStep =            .5;
         end
+        function config = PIE616Config()
+            config.name =               'High Voltage Analog Output';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'PIE616 x10 Analog Output';
+            config.kind.intRange =      [0 10];
+            config.kind.int2extConv =   @(x)(x.*10);            % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x./10);            % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'V';                    % 'External' units.
+            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'cDAQ1Mod1';
+            config.chn =                'ao0';
+            config.type =               'Voltage';
+            
+            config.keyStep =            .1;
+            config.joyStep =            .5;
+        end
         function config = greenConfig()
-            config.name =               'Green';
+            config.name =               '532nm laser Modulation';
 
             config.kind.kind =          'NIDAQanalog';
             config.kind.name =          'Laser Modulation';
@@ -120,7 +139,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.extUnits =      'mV';                   % 'External' units.
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
 
-            config.dev =                'Dev1';
+            config.dev =                'cDAQ1Mod1';
             config.chn =                'ao0';
             config.type =               'Voltage';
             
@@ -131,6 +150,8 @@ classdef (Sealed) mcaDAQ < mcAxis
     
     methods
         function a = mcaDAQ(varin)
+            a.extra = {'dev', 'chn', 'type'};
+        
             if nargin == 0
                 a.construct(mcaDAQ.defaultConfig());
             else

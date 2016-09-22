@@ -50,11 +50,12 @@ classdef mcInstrumentHandler < handle
                 delete(instrfind)
 %                 clear all
 %                 close all
-                if ~ismac
+                if ~ismac       % Change eventually...
                     daqreset
                 end
                 
                 params.open =                       true;
+                
                 params.instruments =                {};
                 params.shouldEmulate =              false;
                 params.saveDirManual =              '';
@@ -62,6 +63,7 @@ classdef mcInstrumentHandler < handle
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
                 params.registeredInstruments =      [];
+                params.warningLight =               [];
                 
                 mcInstrumentHandler.params(params);                                 % Fill params with this so that we don't risk infinite recursion when we try to add the time axis.
                 
@@ -159,19 +161,19 @@ classdef mcInstrumentHandler < handle
             end
         end
         function str = timestamp(varin)
-            if ischar(varin)
+            if ischar(varin)                                % If varin is a string, folder = '<manualsavedir>\<string>\<yyyy_mm_dd>'
                 folder = [mcInstrumentHandler.getSaveFolder(0) varin filesep datestr(now,'yyyy_mm_dd')];
-            elseif isnumeric(varin) || islogical(varin)
+            elseif isnumeric(varin) || islogical(varin)     % If varin is a number or t/f, folder = '<manualsavedir>\<yyyy_mm_dd>' or '<backgroundsavedir>\<yyyy_mm_dd>' depending upon whether varin evaluates as true or false
                 folder = [mcInstrumentHandler.getSaveFolder(varin) datestr(now,'yyyy_mm_dd')];
             else
                 error('mcInstrumentHandler: timestamp varin not understood');
             end
             
-            if ~exist(folder, 'file')
+            if ~exist(folder, 'file')                       % Make this directory if it does not already exist.
                 mkdir(folder);
             end
             
-            str = [folder filesep datestr(now,'HH_MM_SS_FFF')];
+            str = [folder filesep datestr(now,'HH_MM_SS_FFF')];     % Then return the string '<folder>\HH_MM_SS_FFF' (i.e. the file is saved as the time inside the date folder)
         end
         
         
@@ -266,7 +268,7 @@ classdef mcInstrumentHandler < handle
         end 
         
         % UICONTROL REGISTRATION
-        function registerControl(control, controlledInstruments)
+        function registerControl(control, controlledInstruments)    % In: uicontrol and cell array of controlled instruments.
             mcInstrumentHandler.open();
             
             params = mcInstrumentHandler.params();
@@ -275,21 +277,48 @@ classdef mcInstrumentHandler < handle
                 error('mcInstrumentHandler.registerControl(control, controlledInstruments): Expected a UIControl as first input...');
             end
             
-            if isempty(params.registeredAxes)
+            if isempty(params.registeredInstruments)
                 params.registeredInstruments = containers.Map('UniformValues', false);
             end
             
             for instrument = controlledInstruments
-                str = instrument.name();
+                str = instrument{1}.name();
                 
                 if params.registeredInstruments.isKey(str)
-                    
+                    params.registeredInstruments(str) = [params.registeredInstruments(str) {control}];
                 else
-                    
+                    params.registeredInstruments(str) = {control};
                 end
             end
             
             mcInstrumentHandler.params(params);
+        end
+        function setRegisteredControls(instrument, state)
+            mcInstrumentHandler.open();
+            
+            params = mcInstrumentHandler.params();
+            
+            if ~ischar(state)
+                if state
+                    state = 'on'
+                else
+                    state = 'off'
+                end
+            end
+            
+            if isempty(params.registeredInstruments)
+                % No controls to disable...
+            else
+                str = instrument{1}.name();
+                
+                if params.registeredInstruments.isKey(str)
+                    for control = params.registeredInstruments(str)
+                        control{1}.Enable = state;
+                    end
+                else
+                    % No controls to disable...
+                end
+            end
         end
         
 %         function 
@@ -334,7 +363,6 @@ classdef mcInstrumentHandler < handle
         % FIGURE
         function f = createFigure(obj, toolBarMode)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for piezo control).
             mcInstrumentHandler.open();
-%             mcInstrumentHandler.removeDeadFigures();
             params = mcInstrumentHandler.params();
             
             
@@ -381,109 +409,13 @@ classdef mcInstrumentHandler < handle
             if strcmp(toolBarMode, 'saveopen')
                 t = uitoolbar(f, 'tag', 'FigureToolBar');
                 
-%                 class(imread(fullfile('icons','file_open_new.png')))
-%                 class(imread(fullfile('icons','file_open.png')))
+                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', iconRead(fullfile('icons','file_open_new.png')));
+                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile('icons','file_open.png')));
                 
-                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', imread(fullfile('icons','file_open_new.png')));
-                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', imread(fullfile('icons','file_open.png')));
-                
-                uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', imread(fullfile('icons','file_save_as.png')));
-                uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', imread(fullfile('icons','file_save.png')));
+                uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile('icons','file_save_as.png')));
+                uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', iconRead(fullfile('icons','file_save.png')));
             end
             
-%             toolbar = findall(gcf, 'tag', 'FigureToolBar')
-% %             
-% %             tools = findall(toolbar)
-%             set(toolbar.Children,'Visible','off');
-
-%             disableList = { 'Plottools.PlottoolsOn',...
-%                             'Plottools.PlottoolsOff',...
-%                             'Annotation.InsertLegend',...
-%                             'Annotation.InsertColorbar',...
-%                             'DataManager.Linking',...
-%                             'Exploration.Brushing',...
-%                             'Exploration.DataCursor',...
-%                             'Exploration.Rotate',...
-%                             'Exploration.Pan',...
-%                             'Exploration.ZoomOut',...
-%                             'Exploration.ZoomIn',...
-%                             'Standard.EditPlot',...
-%                             'Standard.PrintFigure',...
-%                             'Standard.SaveFigure',...
-%                             'Standard.FileOpen',...
-%                             'Standard.NewFigure'}
-%                         
-%             for str = disableList
-%                 toolbarObj = findall(gcf, 'tag', str)
-%                 if ~isempty(toolbarObj)
-%                     str
-%                     toolbarObj.Visible = 'off';
-%                 end
-%             end
-
-%             graphObjs = findall(gcf);
-%             
-%             graphObjs(3)
-% 
-%             graphObjs(3).Visible = 'off';
-
-            
-
-%             graphObjs = findall(gcf);
-%             
-%             set(graphObjs(3:end), 'Visible', 'off');
-% 
-% %             for graphObj = graphObjs(3:end)
-% %                 graphObj
-% %                 graphObj(1)
-% %                 graphObj(1).Visible = 'off';
-% %             end
-%             
-%             switch toolBarMode
-%                 case 'saveopen'
-% %                     display('here');
-% %                     toolbar2 = findall(toolbar, 'tag', 'FigureToolBar')
-% %                     toolbar2.Visible = 'on';
-%                     
-% 
-%                     saveButton = findall(gcf, 'tag', 'Standard.SaveFigure');
-%                     saveButton.TooltipString = ['Save ' class(obj)];
-%                     saveButton.ClickedCallback = @obj.saveGUI_Callback;
-%                     saveButton.Visible = 'on';
-% 
-%                     loadButton = findall(gcf, 'tag', 'Standard.FileOpen');
-%                     loadButton.TooltipString = ['Open ' class(obj)];
-%                     loadButton.ClickedCallback = @obj.loadGUI_Callback;
-%                     loadButton.Visible = 'on';
-%                 case 'none'
-%                     % Nothing.
-%             end
-            
-%             toolbar = findall(tools, 'tag', 'FigureToolBar');
-%             set(toolbar,'Visible','on');
-%             
-%             hToolbar = findall(gcf,'tag','FigureToolBar');
-%             hPrintButton = findall(hToolbar,'tag','Standard.PrintFigure');
-%             set(hPrintButton, 'ClickedCallback','printpreview(gcbf)', 'TooltipString','Print Preview');
-  
-%     'FigureToolBar'
-%     'Plottools.PlottoolsOn'
-%     'Plottools.PlottoolsOff'
-%     'Annotation.InsertLegend'
-%     'Annotation.InsertColorbar'
-%     'DataManager.Linking'
-%     'Exploration.Brushing'
-%     'Exploration.DataCursor'
-%     'Exploration.Rotate'
-%     'Exploration.Pan'
-%     'Exploration.ZoomOut'
-%     'Exploration.ZoomIn'
-%     'Standard.EditPlot'
-%     'Standard.PrintFigure'
-%     'Standard.SaveFigure'
-%     'Standard.FileOpen'
-%     'Standard.NewFigure'
-
             if ~isempty(params.globalWindowKeyPressFcn)
                 f.WindowKeyPressFcn = params.globalWindowKeyPressFcn;
             end

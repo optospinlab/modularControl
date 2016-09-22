@@ -1,5 +1,5 @@
 classdef (Sealed) mcaNFLaser < mcAxis
-% mcaTemplate aims to explain the essentials for making a custom mcAxis.
+% mcaNFLaser is currently undocumented
     
     properties
         key = 0;
@@ -8,7 +8,7 @@ classdef (Sealed) mcaNFLaser < mcAxis
 
     methods (Static)
         % Neccessary extra vars:
-        %  - isLambda
+        %  - isLambda (uneccessary for now...)
         
         function config = defaultConfig()
             config = mcaNFLaser.lambdaConfig();

@@ -88,13 +88,17 @@ classdef mcProcessedData < handle
 
                     d = pd.parent.data.data{pd.parent.data.input};
                     
-                    layer = pd.parent.data.layer(pd.parent.data.layerIndex == 0 | pd.parent.data.layerIndex == 0)
+%                     layer = pd.parent.data.layer(pd.parent.data.layerIndex == 0 | pd.parent.data.layerIndex == 0);
 
                     if pd.parent.data.inputDimension(pd.parent.data.input) == 0     % If d will be numeric...
                         pd.data = d( getIndex(pd.parent.data.lengths, pd.parent.data.layer - 2, axisXindex, axisYindex) );
                     else                                        % Otherwise if d will be cell...
+                        pd.parent.data.lengths
+                        pd.parent.data.layer
+                        
+                        pd.data = d( getIndex(pd.parent.data.lengths, pd.parent.data.layer - 2, axisXindex, axisYindex) );
 %                             c = cell2mat( cellfun(ifInputNotSingularFnc, d{ getIndex(paramsND.lengths, axisXindex, axisYindex, layer) }) );
-                        error('NotImplemented');
+%                         error('NotImplemented');
                     end
                 case {3, '3D'}
                     error('3D NotImplemented');

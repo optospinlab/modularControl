@@ -2,17 +2,6 @@ classdef mciPLE < mcInput
 % mciDAQ is the subclass of mcInput that manages all NIDAQ devices. This includes:
 %  - generic digital, analog, and counter outputs.
 
-%     properties
-%         xMin = 636;
-%         xMax = 637;
-% 
-%         upSpeed =    1;
-%         downSpeed =  4;
-% 
-%         upPixels =   1000;
-%         downPixels = 250;
-%     end
-
     methods (Static)
         % Neccessary extra vars:
         %  - axes.red
@@ -66,6 +55,7 @@ classdef mciPLE < mcInput
     
     methods
         function I = mciPLE(varin)
+            I.extra = {'xMin', 'xMax', 'upPixels', 'upSpeed'};
             if nargin == 0
                 I.construct(I.defaultConfig());
             else

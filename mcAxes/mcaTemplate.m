@@ -31,6 +31,7 @@ classdef (Sealed) mcaTemplate < mcAxis
     
     methods
         function a = mcaTemplate(varin)     % Insert mca[Custom] name here...
+            a.extra = {'customVar1', 'customVar2'};
             if nargin == 0
                 a.construct(mcaTemplate.defaultConfig());
             else

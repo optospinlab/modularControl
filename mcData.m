@@ -65,15 +65,18 @@ classdef mcData < mcSavableClass
     
     methods (Static)
         function data = defaultConfiguration()
+            data = mcData.testConfiguration();
+        end
+        function data = xyzConfiguration()
             configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
             configPiezoY = mcaDAQ.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
-            configPiezoZ = mcaDAQ.piezoConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            configPiezoZ = mcaDAQ.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr0';
+            configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
             
             data.axes =     {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};                 % Fill the...   ...axes...
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
-            data.inputs =   {mciDAQ(configCounter)};                                                           %               ...inputs.
+            data.inputs =   {mciDAQ(configCounter)};                                                            %               ...inputs.
             data.integrationTime = .05;
         end
         function data = optimizeConfiguration(axis_, input, range, pixels, seconds)
@@ -93,6 +96,12 @@ classdef mcData < mcSavableClass
             data.scans =    1:length;                   % 'scans ago'.
             data.inputs =   {input};                    % input.
             data.integrationTime = integrationTime;
+        end
+        function data = testConfiguration()
+            data.axes =     {};
+            data.scans =    {};
+            data.inputs =   {mciFunction(mciFunction.testConfig())};
+            data.integrationTime = 1;
         end
         function str = README()
             str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
@@ -138,7 +147,13 @@ classdef mcData < mcSavableClass
 %                     d.data.inputTypes =         varin{5};
             end
             
-            d.initialize();
+            % Need more checks!
+            
+            if isempty(d.data.inputs)
+                error('mcData: Cannot do a scan without inputs...');
+            else
+                d.initialize();
+            end
         end
         
 %         function save(d, fname)
@@ -179,21 +194,21 @@ classdef mcData < mcSavableClass
                     d.data.inputLength(ii) =        prod(d.data.inputDimension(ii));
 %                     d.data.numInputAxes = d.data.numInputAxes + d.data.inputDimension(ii);
                     d.data.layerType =  [d.data.layerType   1:d.data.inputDimension(ii)];
-                    d.data.layerIndex = [d.data.layerIndex  ones(d.data.inputDimension(ii))*ii];
+                    d.data.layerIndex = [d.data.layerIndex  ones(1, d.data.inputDimension(ii))*ii];
                     
-%                     lengths = d.data.inputDimension(d.data.inputDimension > 1);
-%                     d.data.lengths =    [d.data.lengths     lengths];
+                    lengths = d.data.sizeInput{ii};
+                    d.data.lengths =    [d.data.lengths     lengths];
                     
-                    iwAdd = ones(1, d.data.inputDimension(ii));
+                    iwAdd = ones(1, d.data.inputDimension(ii)); % Temporary variable: 'indexWeightAdd' because it will be added to d.data.indexWeight.
                     for jj = 2:length(iwAdd)
-                        iwAdd(jj:end) = iwAdd(jj:end)*lengths(jj-1);
+                        iwAdd(jj:end) = iwAdd(jj:end)*d.data.sizeInput{ii}(jj-1);
                     end
                     
                     d.data.indexWeight = [d.data.indexWeight iwAdd];
 
                     d.data.isInputNIDAQ(ii) =       strcmpi('nidaq', d.data.inputs{ii}.config.kind.kind(1:5));
-                    d.data.inEmulation(ii) =       d.data.inputs{ii}.inEmulation;
-                    d.data.inputConfigs{ii} =        d.data.inputs{ii}.config;
+                    d.data.inEmulation(ii) =        d.data.inputs{ii}.inEmulation;
+                    d.data.inputConfigs{ii} =       d.data.inputs{ii}.config;
 
                     if isfield(d.data, 'inputTypes')                % If inputTypes is specified...
                         switch lower(d.data.inputTypes{ii})
@@ -214,8 +229,8 @@ classdef mcData < mcSavableClass
                         d.data.inputNamesUnits{ii} =    d.data.inputs{ii}.nameUnits();  %                                            ...'name (units)' form
                     end
                 end
-                
-                d.data.numInputAxes = length(d.data.lengths);
+                    
+                d.data.numInputAxes = sum(d.data.inputDimension(ii));
 
                 if all(d.data.isInputBeginEnd)  % Pass an error if there isn't any input on everypoint mode (the user needs to rethink their request).
                     error('At least one input must not be BeginEnd');
@@ -228,7 +243,7 @@ classdef mcData < mcSavableClass
                 d.data.numAxes =   length(d.data.axes);
                 
                 if ~isfield(d.data, 'plotMode')
-                    d.data.plotMode = min(2, d.data.numAxes + d.data.numInputAxes);
+                    d.data.plotMode = max(min(2, d.data.numAxes + d.data.numInputAxes),1);
                 end
                 
                 if ~isfield(d.data, 'layer')
@@ -241,7 +256,7 @@ classdef mcData < mcSavableClass
                 d.data.layerType =  [zeros(d.data.numAxes) d.data.layerType];  % Appropraitely pad the arrays...
                 d.data.layerIndex = [ones(d.data.numAxes)  d.data.layerIndex];
 
-                d.data.lengths =        zeros(1, d.data.numAxes); %d.data.lengths];
+                d.data.lengths =        [zeros(1, d.data.numAxes) d.data.lengths];
                 d.data.indexWeight =    [ones(1,  d.data.numAxes) d.data.indexWeight];  % Index weight is best described by an example:
                                                                                         %   If one has a 5x4x3 matrix, then incrimenting the x axis
                                                                                         %   increases the linear index (the index if the matrix was
@@ -272,13 +287,17 @@ classdef mcData < mcSavableClass
                     d.data.name = [d.data.name d.data.inputs{ii}.config.name ', '];
                 end
                 
-                d.data.name = [d.data.name d.data.inputs{d.data.numInputs}.config.name ' vs '];
-                
-                for ii = 1:(d.data.numAxes-1)
-                    d.data.name = [d.data.name d.data.axes{ii}.config.name ', '];
+                d.data.name = [d.data.name d.data.inputs{d.data.numInputs}.config.name];
+                    
+                if ~isempty(d.data.axes)
+                    d.data.name = [d.data.name ' vs '];
+
+                    for ii = 1:(d.data.numAxes-1)
+                        d.data.name = [d.data.name d.data.axes{ii}.config.name ', '];
+                    end
+
+                    d.data.name = [d.data.name d.data.axes{d.data.numAxes}.config.name];
                 end
-                
-                d.data.name = [d.data.name d.data.axes{d.data.numAxes}.config.name];
 
 %                 if d.data.numAxes > 2
 %                     for ii = 2:d.data.numAxes-1
@@ -297,8 +316,13 @@ classdef mcData < mcSavableClass
                 end
 
                 allInputsFast = all(d.data.isInputBeginEnd | (d.data.isInputNIDAQ & ~d.data.inEmulation));       % Are all 'everypoint'-mode inputs NIDAQ?
-                d.data.canScanFast = strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:5)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
-               
+                if ~isempty(d.data.axes)
+                    d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:5)) || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
+                else
+                    d.data.canScanFast = true;
+                end
+                    
+                    
                 d.resetData();
                 d.data.isInitialized = true;
             end
@@ -326,7 +350,11 @@ classdef mcData < mcSavableClass
                         d.data.end{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};     % ...numeric arrays of NaN corresponding to the input's dimension.
                     else
                         % Changed 9/13.
-                        d.data.data{ii} = NaN([d.data.sizeInput d.data.lengths 1]);
+                        d.data.lengths
+                        d.data.layerIndex
+                        relevantLengths = d.data.lengths(d.data.layerIndex == 0 | d.data.layerIndex == ii);
+                        
+                        d.data.data{ii} = NaN([relevantLengths 1]);
                         
 %                         d.data.data{ii} = cell([d.data.lengths 1]);                             % Then the layer is a cell array containing...
 %                         d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
@@ -336,7 +364,9 @@ classdef mcData < mcSavableClass
 
             d.data.index =          ones(1, d.data.numAxes);
             d.data.currentIndex =   2;
-            d.data.index(1) =       d.data.lengths(1);
+            if ~isempty(d.data.index)
+                d.data.index(1) =       d.data.lengths(1);
+            end
             
             d.data.fnameManual =        mcInstrumentHandler.timestamp(0);
             d.data.fnameBackground =    mcInstrumentHandler.timestamp(1);

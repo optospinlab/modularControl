@@ -1,6 +1,8 @@
 classdef mciAutomation < mcInput
 % mciAutomation is the subclass of mcInput that controls what an automation routine should do at each point of a grid.
 
+% (currently under construction; don't use)
+
     properties
         autoVars = [];  % To store variables that the automation function will use each tick.
         f = [];         % Figure for automation menu.
@@ -13,7 +15,7 @@ classdef mciAutomation < mcInput
             config = mciAutomation.diamondConfig();
         end
         function config = diamondConfig()
-            config.name =               'Default Function Input';
+            config.name =               'Automation Function';
 
             config.kind.kind =          'function';
             config.kind.name =          'Default Function Input';
@@ -32,11 +34,11 @@ classdef mciAutomation < mcInput
             end
             I.config.giveIntegration = nargin(config.fnc) ~= -1;
             
-            vid.f = mcInstrumentHandler.createFigure(I, 'none');
+            I.f = mcInstrumentHandler.createFigure(I, 'none');
 
-            vid.f.Resize =      'off';
-            vid.f.Position =    [100, 100, 300, 100];
-            vid.f.Visible =     'on';
+            I.f.Resize =      'off';
+            I.f.Position =    [100, 100, 300, 100];
+            I.f.Visible =     'on';
         end
     end
     

@@ -34,6 +34,7 @@ classdef mcInput < mcSavableClass
 % own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
 % switch statements that are currently in the code.
 % UPDATE: Decided to change this eventually, but keep it the same for now.
+% UPDATE2: Did the above; it's much better now.
     
     properties
 %         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
@@ -43,6 +44,11 @@ classdef mcInput < mcSavableClass
         isOpen = false;         % Boolean.
         inUse = false;          % Boolean.
         inEmulation = false;    % Boolean.
+        isMeasuring = false;
+    end
+
+    properties
+        extra = {};
     end
     
     methods
@@ -224,25 +230,38 @@ classdef mcInput < mcSavableClass
         
         function data = measure(I, integrationTime)
             if I.open()
-                if I.inEmulation
-                    data = I.MeasureEmulation(integrationTime);
+                if ~I.isMeasuring
+                    I.isMeasuring = true;
+
+                    try
+                        if I.inEmulation
+                            data = I.MeasureEmulation(integrationTime);
+                        else
+                            data = I.Measure(integrationTime);
+                        end
+                    catch err
+                        warning(['mcInput - ' I.config.name ': ' err]);
+                    end
+
+                    I.isMeasuring = false;
+
+                    if length(size(data)) ~= length(I.config.kind.sizeInput)
+                        data = NaN(I.config.kind.sizeInput);
+                        warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
+                        return;
+                    end
+
+    %                 size(data) == I.config.kind.sizeInput(end:-1:1)
+    %                 size(data)
+    %                 I.config.kind.sizeInput
+
+                    if ~all(size(data) == I.config.kind.sizeInput) && ~all(size(data) == I.config.kind.sizeInput(end:-1:1)) % Check for flipping...
+                        data = NaN(I.config.kind.sizeInput);
+                        warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
+                    end
                 else
-                    data = I.Measure(integrationTime);
-                end
-                
-                if length(size(data)) ~= length(I.config.kind.sizeInput)
                     data = NaN(I.config.kind.sizeInput);
-                    warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
-                    return;
-                end
-                
-%                 size(data) == I.config.kind.sizeInput(end:-1:1)
-%                 size(data)
-%                 I.config.kind.sizeInput
-                
-                if ~all(size(data) == I.config.kind.sizeInput) && ~all(size(data) == I.config.kind.sizeInput(end:-1:1)) % Check for flipping...
-                    data = NaN(I.config.kind.sizeInput);
-                    warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
+                    warning(['mcInput - ' I.config.name ': could not measure, already measuring']);
                 end
             else
                 data = NaN(I.config.kind.sizeInput);
@@ -259,6 +278,19 @@ classdef mcInput < mcSavableClass
                 
                 for ii = 1:length(nonsingular)
                     axes_{ii} = 1:nonsingular(ii);
+                end
+            end
+        end
+        
+        function info = getInfo(I)
+%             {'Instrument', 'Position', 'Unit', 'isOpen',   'inUse',    'inEmulation'};
+            info = {I.name(), '---', I.extUnits, I.isOpen, I.inUse, I.inEmulation, '', '', '', ''};
+            
+            ii = 7;
+            for var = I.extra
+                if ii <= 10
+                    info{ii} = get(I.config, var);
+                    ii = ii + 1;
                 end
             end
         end

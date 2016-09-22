@@ -64,7 +64,7 @@ classdef mcVideo < mcInput
             
             hToolbar = findall(vid.f, 'tag', 'FigureToolBar');
             % Create a uipushtool in the toolbar
-            uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @vid.toggleFeedback_Callback, 'CData', imread(fullfile('icons','feedback.png')));
+            uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @vid.toggleFeedback_Callback, 'CData', iconRead(fullfile('icons','feedback.png')));
 
             vid.a = axes('Position', [0 0 1 1], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
 %             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');

@@ -1,6 +1,5 @@
 classdef mciTemplate < mcInput
-% mciDAQ is the subclass of mcInput that manages all NIDAQ devices. This includes:
-%  - generic digital, analog, and counter outputs.
+% mciTemplate aims to explain the essentials for making a custom mcInput.
 
     methods (Static)
         % Neccessary extra vars:
@@ -26,6 +25,7 @@ classdef mciTemplate < mcInput
     
     methods
         function I = mciTemplate(varin)
+            I.extra = {'customVar1', 'customVar2'};
             if nargin == 0
                 I.construct(I.defaultConfig());
             else

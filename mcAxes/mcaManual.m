@@ -32,6 +32,7 @@ classdef (Sealed) mcaManual < mcAxis
     
     methods
         function a = mcaManual(varin)
+            a.extra = {'message', 'verb'};
             if nargin == 0
                 a.construct(a.defaultConfig());
             else
