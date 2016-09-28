@@ -66,7 +66,10 @@ classdef mcProcessedData < handle
 
                     axisXindex = nums(pd.parent.data.layer == 1);
                     
-                    if pd.parent.data.data.layerType(axisXindex) == 0   % If the selected layer is an axis...
+%                     pd.parent.data.data
+%                     pd.parent.data.data.layerType
+                    
+                    if pd.parent.data.layerType(axisXindex) == 0   % If the selected layer is an axis...
 
                         d = pd.parent.data.data{pd.parent.data.input};
 

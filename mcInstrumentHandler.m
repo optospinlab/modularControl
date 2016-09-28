@@ -253,7 +253,7 @@ classdef mcInstrumentHandler < handle
                 if (isa(instrument{1}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(instrument{1}, 'mcInput') && isa(obj, 'mcInput'))
                     if instrument{1} == obj
                         obj2 = instrument{1};
-                        warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
+%                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
                         return;
                     end
                 end
@@ -412,7 +412,7 @@ classdef mcInstrumentHandler < handle
                 uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', iconRead(fullfile('icons','file_open_new.png')));
                 uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile('icons','file_open.png')));
                 
-                uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile('icons','file_save_as.png')));
+%                 uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile('icons','file_save_as.png')));
                 uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', iconRead(fullfile('icons','file_save.png')));
             end
             

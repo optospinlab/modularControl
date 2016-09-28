@@ -218,6 +218,7 @@ classdef mcAxis < mcSavableClass
                 
                 if a.inEmulation
                     % Should something be done?
+                    tf = true;
                 else
                     try
                         a.Open();
@@ -236,6 +237,7 @@ classdef mcAxis < mcSavableClass
                 
                 if a.inEmulation
                     % Should something be done?
+                    tf = true;
                 else
                     try
                         a.Close();
@@ -264,14 +266,18 @@ classdef mcAxis < mcSavableClass
         
         function tf = read(a)       % Reads the value of a.x internally; Returns success.
             tf = true;
+%             display('reading.');
             
-            if a.isOpen
+            if a.open();
                 if a.inEmulation
+%                     display('inEmulation');
                     a.ReadEmulation();
                 else
+%                     display('not inEmulation');
                     a.Read();
                 end
             else
+%                 display('not open!?');
                 tf = false;
             end
         end
@@ -293,15 +299,14 @@ classdef mcAxis < mcSavableClass
             tf = true;
             
             if a.inRange(x)
-                if a.inEmulation
-                    a.GotoEmulation(x);
-                else
-                    if a.open();                % If the axis is not already open, open it...
-                        a.Goto(x);
-    %                     drawnow limitrate;
+                if a.open()
+                    if a.inEmulation
+                        a.GotoEmulation(x);
                     else
-                        tf = false;
+                        a.Goto(x);
                     end
+                else
+                    tf = false;
                 end
             else
                 tf = false;

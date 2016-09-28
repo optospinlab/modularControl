@@ -46,52 +46,64 @@ classdef mcVideo < mcInput
     
     methods
         function vid = mcVideo(varin)
+            vid.extra = {'adaptor', 'format', 'fbAxes'};
             if nargin == 0
-                varin = mcVideo.defaultConfig();
+                vid.construct(vid.defaultConfig());
+            else
+                vid.construct(varin);
             end
+            vid = mcInstrumentHandler.register(vid);
             
-            vid = vid@mcInput(varin);
             
-            vid.f = mcInstrumentHandler.createFigure(vid, 'saveopen');
+            if ~vid.inEmulation
+%                 if nargin == 0
+%                     varin = mcVideo.defaultConfig();
+%                 end
+% 
+%                 vid = vid@mcInput(varin);   % Change this?
+                vid.construct(varin);
 
-            vid.f.Resize =      'off';
-            vid.f.Position =    [50, 50, 1280, 960];
-            vid.f.Visible =     'on';
-%             f.MenuBar =     'none';
-%             f.ToolBar =     'none';
-            % Future: make resize fnc
-            % Future: make close fnc
-            
-            hToolbar = findall(vid.f, 'tag', 'FigureToolBar');
-            % Create a uipushtool in the toolbar
-            uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @vid.toggleFeedback_Callback, 'CData', iconRead(fullfile('icons','feedback.png')));
+                vid.f = mcInstrumentHandler.createFigure(vid, 'saveopen');
 
-            vid.a = axes('Position', [0 0 1 1], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
-%             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
-            
-%             hold(vid.a, 'on')
+                vid.f.Resize =      'off';
+                vid.f.Position =    [50, 50, 1280, 960];
+                vid.f.Visible =     'on';
+    %             f.MenuBar =     'none';
+    %             f.ToolBar =     'none';
+                % Future: make resize fnc
+                % Future: make close fnc
 
-            vid.v = videoinput(vid.config.adaptor, 1, vid.config.format);
+                hToolbar = findall(vid.f, 'tag', 'FigureToolBar');
+                % Create a uipushtool in the toolbar
+                uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @vid.toggleFeedback_Callback, 'CData', iconRead(fullfile('icons','feedback.png')));
 
-            vid.v.FramesPerTrigger = 1;
-            vidRes = vid.v.VideoResolution;
-            nBands = vid.v.NumberOfBands;
-            vid.i = image(zeros(vidRes(2), vidRes(1), nBands), 'YData', [vidRes(2) 1]);
-            preview(vid.v, vid.i);     % this appears on the axes we made.
-            
-            hold(vid.a, 'on')
-            
-            vid.p = plot([1 1 vidRes(1) vidRes(1) 1], [1 vidRes(2) vidRes(2) 1 1]);
-            vid.p.Color = [0 1 0];      
-            vid.p.LineWidth = .01;
-            
-            vid.config.kind.sizeInput = vidRes;
-            
-            vid.config.fbAxes{1}.name()
-            vid.config.fbAxes{2}.name()
-            vid.config.fbAxes{3}.name()
-            
-            vid.pidArray = {mcPID(vid.config.fbAxes{1}), mcPID(vid.config.fbAxes{2}), mcPID(vid.config.fbAxes{3})};
+                vid.a = axes('Position', [0 0 1 1], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
+    %             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
+
+    %             hold(vid.a, 'on')
+
+                vid.v = videoinput(vid.config.adaptor, 1, vid.config.format);
+
+                vid.v.FramesPerTrigger = 1;
+                vidRes = vid.v.VideoResolution;
+                nBands = vid.v.NumberOfBands;
+                vid.i = image(zeros(vidRes(2), vidRes(1), nBands), 'YData', [vidRes(2) 1]);
+                preview(vid.v, vid.i);     % this appears on the axes we made.
+
+                hold(vid.a, 'on')
+
+                vid.p = plot([1 1 vidRes(1) vidRes(1) 1], [1 vidRes(2) vidRes(2) 1 1]);
+                vid.p.Color = [0 1 0];      
+                vid.p.LineWidth = .01;
+
+                vid.config.kind.sizeInput = vidRes;
+
+                vid.config.fbAxes{1}.name()
+                vid.config.fbAxes{2}.name()
+                vid.config.fbAxes{3}.name()
+
+                vid.pidArray = {mcPID(vid.config.fbAxes{1}), mcPID(vid.config.fbAxes{2}), mcPID(vid.config.fbAxes{3})};
+            end
         end
         
         function image = getImage(vid)

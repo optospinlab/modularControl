@@ -79,7 +79,101 @@ classdef mcData < mcSavableClass
             data.inputs =   {mciDAQ(configCounter)};                                                            %               ...inputs.
             data.integrationTime = .05;
         end
+        function data = squareScanConfiguration(axisX, axisY, input, range, speedX, pixels)
+            data = mcData.scanConfiguration(axisX, axisY, input, range, range, speedX, pixels, pixels);
+        end
+        function data = scanConfiguration(axisX, axisY, input, rangeX, rangeY, speedX, pixelsX, pixelsY)
+            if length(rangeX) == 1
+                center = axisX.getX();
+                rangeX = [center - rangeX/2 center + rangeX/2];
+            elseif length(rangeX) ~= 2
+                error('mcData.scanConfiguration(): Not sure how to use rangeX');
+            end
+            if length(rangeY) == 1
+                center = axisY.getX();
+                rangeY = [center - rangeY/2 center + rangeY/2];
+            elseif length(rangeY) ~= 2
+                error('mcData.scanConfiguration(): Not sure how to use rangeY');
+            end
+            
+            if diff(rangeX) == 0
+                error('mcData.scanConfiguration(): rangeX(1) should not equal rangeX(2)');
+            end
+            if diff(rangeY) == 0
+                error('mcData.scanConfiguration(): rangeY(1) should not equal rangeY(2)');
+            end
+            
+            if abs(diff(rangeX)) > abs(diff(axisX.config.kind.extRange))
+                warning('mcData.scanConfiguration(): rangeX is too wide, setting to maximum');
+                rangeX = axisX.config.kind.extRange;
+            end
+            if abs(diff(rangeY)) > abs(diff(axisY.config.kind.extRange))
+                warning('mcData.scanConfiguration(): rangeY is too wide, setting to maximum');
+                rangeY = axisY.config.kind.extRange;
+            end
+            
+            if min(rangeX) < min(axisX.config.kind.extRange)
+                warning('mcData.scanConfiguration(): rangeX is below range, shifting up');
+                rangeX
+                rangeX = rangeX + (min(axisX.config.kind.extRange) - min(rangeX))
+            end
+            if min(rangeY) < min(axisY.config.kind.extRange)
+                warning('mcData.scanConfiguration(): rangeY is below range, shifting up');
+                rangeY
+                rangeY = rangeY + (min(axisY.config.kind.extRange) - min(rangeY))
+            end
+            
+            if max(rangeX) > max(axisX.config.kind.extRange)
+                warning('mcData.scanConfiguration(): rangeX is above range, shifting down');
+                rangeX
+                rangeX = rangeX + (max(axisX.config.kind.extRange) - max(rangeX))
+            end
+            if max(rangeY) > max(axisY.config.kind.extRange)
+                warning('mcData.scanConfiguration(): rangeY is above range, shifting down');
+                rangeY
+                rangeY = rangeY + (max(axisY.config.kind.extRange) - max(rangeY))
+            end
+            
+            
+            if speedX < 0
+                speedX = -speedX;
+            elseif speedX == 0
+                error('mcData.scanConfiguration(): It will take quite a long time to finish the scan if speedX == 0...');
+            end
+            
+            
+            if pixelsX ~= round(pixelsX)
+                warning(['mcData.scanConfiguration(): pixelsX (' num2str(pixelsX) ') was not an integer, rounding to ' num2str(round(pixelsX)) '...']);
+                pixelsX = round(pixelsX);
+            end
+            if pixelsX < 0
+                pixelsX = -pixelsX;
+            elseif pixelsX == 0
+                error('mcData.scanConfiguration(): pixelsX should not equal zero...');
+            end
+            
+            if pixelsY ~= round(pixelsY)
+                warning(['mcData.scanConfiguration(): pixelsY (' num2str(pixelsY) ') was not an integer, rounding to ' num2str(round(pixelsY)) '...']);
+                pixelsY = round(pixelsY);
+            end
+            if pixelsY < 0
+                pixelsY = -pixelsY;
+            elseif pixelsY == 0
+                error('mcData.scanConfiguration(): pixelsY should not equal zero...');
+            end
+            
+            
+            data.axes =     {axisX, axisY};                                                                     % Fill the...   ...axes...
+            data.scans =    {linspace(rangeX(1), rangeX(2), pixelsX), linspace(rangeY(1), rangeY(2), pixelsY)}; %               ...scans...
+            data.inputs =   {input};                                                                            %               ...inputs.
+            data.integrationTime = 1/speedX;
+        end
         function data = optimizeConfiguration(axis_, input, range, pixels, seconds)
+%             axis_
+%             input
+%             range
+%             pixels
+%             seconds
             center = axis_.getX();
             
             scan = linspace(center - range/2, center + range/2, pixels);
@@ -149,10 +243,21 @@ classdef mcData < mcSavableClass
             
             % Need more checks!
             
-            if isempty(d.data.inputs)
-                error('mcData: Cannot do a scan without inputs...');
+%             d.data.scans
+            
+            isScanEmpty = false;        % Do this in a MATLAB way...
+            for scan = d.data.scans
+                isScanEmpty = isScanEmpty || isempty(scan{1});
+            end
+            
+            if ~isScanEmpty
+                if isempty(d.data.inputs)
+                    error('mcData: Cannot do a scan without inputs...');
+                else
+                    d.initialize();
+                end
             else
-                d.initialize();
+                error('mcData: At lease one of the proposed scans is empty...');
             end
         end
         
@@ -195,6 +300,10 @@ classdef mcData < mcSavableClass
 %                     d.data.numInputAxes = d.data.numInputAxes + d.data.inputDimension(ii);
                     d.data.layerType =  [d.data.layerType   1:d.data.inputDimension(ii)];
                     d.data.layerIndex = [d.data.layerIndex  ones(1, d.data.inputDimension(ii))*ii];
+                    
+                    for s = d.data.sizeInput{ii}
+                        d.data.scans = [d.data.scans {1:s}];
+                    end
                     
                     lengths = d.data.sizeInput{ii};
                     d.data.lengths =    [d.data.lengths     lengths];
@@ -276,6 +385,8 @@ classdef mcData < mcSavableClass
                     d.data.axisNamesUnits{ii} =     d.data.axes{ii}.nameUnits();
                     d.data.axisConfigs{ii} =        d.data.axes{ii}.config;
                 end
+                
+                
             
                 if ~isfield(d.data, 'shouldOptimize')
                     d.data.shouldOptimize = false;
@@ -474,7 +585,7 @@ classdef mcData < mcSavableClass
                 end
             end
             
-            %%% DESTROY THE SESSION, IF NECCESSARY %%%
+            % Destroy the session, if neccessary.
             if d.data.canScanFast
                 release(d.data.s);
                 delete(d.data.s);

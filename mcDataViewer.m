@@ -54,10 +54,12 @@ classdef mcDataViewer < mcSavableClass
         
         scaleMin = [0 0 0]; % Unused?
         scaleMax = [1 1 1];
+        
+        shouldPlot = true;  % Variable to tell the gui not to plot (e.g. when plotSetup changes are happening)
     end
     
     methods
-        function gui = mcDataViewer(varin)
+        function gui = mcDataViewer(varargin)
             shouldAquire = true;
             shouldMakeManager = true;
             
@@ -69,50 +71,60 @@ classdef mcDataViewer < mcSavableClass
                     gui.g = mcProcessedData(gui.data);
                     gui.b = mcProcessedData(gui.data);
                 case 1
-                    if islogical(varin)
-                        gui = mcDataViewer();
-                        if ~varin
+                    if islogical(varargin)
+                        if ~varargin
                             shouldMakeManager = false;
                         end
+%                         gui = mcDataViewer();
+                        gui.data = mcData();
+                        gui.data.dataViewer = gui;
+                        gui.r = mcProcessedData(gui.data);
+                        gui.g = mcProcessedData(gui.data);
+                        gui.b = mcProcessedData(gui.data);
                     else
-                        gui.data = varin;
+                        gui.data = varargin{1};
                         gui.data.dataViewer = gui;
                         gui.r = mcProcessedData(gui.data);
                         gui.g = mcProcessedData(gui.data);
                         gui.b = mcProcessedData(gui.data);
                     end
                 case 2
-                    if islogical(varin{2})
-                        gui = mcDataViewer(varin{1});
-                        if ~varin{2}
+                    if islogical(varargin{2})
+                        if ~varargin{2}
                             shouldMakeManager = false;
                         end
-                    else
-                        gui.data = varin{1};
+%                         gui = mcDataViewer(varargin{1});
+                        gui.data = varargin{1};
                         gui.data.dataViewer = gui;
-                        gui.r = mcProcessedData(gui.data, varin{2});
+                        gui.r = mcProcessedData(gui.data);
+                        gui.g = mcProcessedData(gui.data);
+                        gui.b = mcProcessedData(gui.data);
+                    else
+                        gui.data = varargin{1};
+                        gui.data.dataViewer = gui;
+                        gui.r = mcProcessedData(gui.data, varargin{2});
                         gui.g = mcProcessedData(gui.data);
                         gui.b = mcProcessedData(gui.data);
                     end
                 case 3
-                    gui.data = varin{1};
+                    gui.data = varargin{1};
                     gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data, varin{2});
-                    gui.g = mcProcessedData(gui.data, varin{3});
+                    gui.r = mcProcessedData(gui.data, varargin{2});
+                    gui.g = mcProcessedData(gui.data, varargin{3});
                     gui.b = mcProcessedData(gui.data);
                 case 4
-                    gui.data = varin{1};
+                    gui.data = varargin{1};
                     gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data, varin{2});
-                    gui.g = mcProcessedData(gui.data, varin{3});
-                    gui.b = mcProcessedData(gui.data, varin{4});
+                    gui.r = mcProcessedData(gui.data, varargin{2});
+                    gui.g = mcProcessedData(gui.data, varargin{3});
+                    gui.b = mcProcessedData(gui.data, varargin{4});
             end
             
             if gui.data.data.scanMode == 2 || gui.data.data.scanMode == -1
                 shouldAquire = false;
             end
             
-            if shouldMakeManager
+            if true
                 gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
                 gui.cf.Position = [100,100,300,500];
                 gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
@@ -200,16 +212,17 @@ classdef mcDataViewer < mcSavableClass
                     ii = 0;
                 end
                 
+                display('adding inputs');
+                
                 for kk = 1:gui.data.data.numInputs
-                    ii = ii + 1;    % Use the ii from the axis loop.
-                    
                     if gui.data.data.inputDimension(kk) <= length(inputLetters)
                         jj = 0;
                         
                         for sizeInput = gui.data.data.inputs{kk}.config.kind.sizeInput
                             if sizeInput ~= 1       % A vector, according to matlab, has size [1 N]. We don't want to count the 1.
                                 jj = jj + 1;
-                                
+                                ii = ii + 1;        % Use the ii from the axis loop.
+                    
                                 levellist = strcat('pixel ', strread(num2str(1:sizeInput), '%s')');  % Returns the pixels in 'pixel ##' form.
 
                                 for tab = [gui.tabs.t1d gui.tabs.t2d]
@@ -281,6 +294,12 @@ classdef mcDataViewer < mcSavableClass
                 end
             end
             
+            if shouldMakeManager
+                gui.cf.Visible = 'on';
+            else
+                gui.cf.Visible = 'off';
+            end
+            
             gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
             hToolbar = findall(gui.df, 'tag', 'FigureToolBar');
             gui.cfToggle = uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @gui.toggleCF_Callback, 'CData', iconRead(fullfile('icons','control_figure.png')), 'State', gui.cf.Visible);
@@ -328,18 +347,28 @@ classdef mcDataViewer < mcSavableClass
             gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value: ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             gui.menus.posMenu = uimenu(menu, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
-                mGoto = uimenu(menu, 'Label', 'Goto');
-                mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0});
-                mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1});
-                mNorm = uimenu(menu, 'Label', 'Normalization'); %, 'Enable', 'off');
-                panel = gui.scale.gray;
-%                 @panel.normalize_Callback
-%                 @gui.scale.gray.normalize_Callback
-                mnNorm= uimenu(mNorm, 'Label', 'Normalize', 'Callback',    @panel.normalize_Callback);
-                mnNorm= uimenu(mNorm, 'Label', 'Normalize', 'Callback',    @panel.normalize_Callback);
+            
+            mGoto = uimenu(menu, 'Label', 'Goto');
+                mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0, 0});
+                mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1, 0});
+                mgPixL= uimenu(mGoto, 'Label', 'Selected Pixel And Layer',    'Callback', {@gui.gotoPostion_Callback, 0, 1});
+                mgPosL= uimenu(mGoto, 'Label', 'Selected Position And Layer', 'Callback', {@gui.gotoPostion_Callback, 1, 1});
+                
+            mNorm = uimenu(menu, 'Label', 'Normalization'); %, 'Enable', 'off');
                 mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',    {@gui.minmax_Callback, 0});
                 mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',   {@gui.minmax_Callback, 1});
-            
+                panel = gui.scale.gray;
+                mnNorm= uimenu(mNorm, 'Label', 'Normalize All Layers', 'Callback',    @panel.normalize_Callback);
+                mnNormT=uimenu(mNorm, 'Label', 'Normalize This Layer', 'Callback',    @gui.normalizeThis_Callback);
+                
+            mCount = uimenu(menu, 'Label', 'Counter'); %, 'Enable', 'off');
+                mcOpen =    uimenu(mCount, 'Label', 'Open', 'Callback',    {@gui.minmax_Callback, 0});
+                mcOpenAt =  uimenu(mCount, 'Label', 'Open at...');
+                    mcoaPix = uimenu(mcOpenAt, 'Label', 'Selected Pixel',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 0});
+                    mcoaPos = uimenu(mcOpenAt, 'Label', 'Selected Position', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 0});
+                    mcoaPixL= uimenu(mcOpenAt, 'Label', 'Selected Pixel And Layer',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 1});
+                    mcoaPosL= uimenu(mcOpenAt, 'Label', 'Selected Position And Layer', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 1});
+
 %             params.a.XLim = [min(x), max(x)]; 
 %             params.a.YLim = [min(y), max(y)];
             
@@ -409,16 +438,18 @@ classdef mcDataViewer < mcSavableClass
             % gui.data.save();
             gui.data.data.aquiring = false;
             
-            delete(gui.listeners.x);
-            delete(gui.listeners.y);
-            delete(gui.listeners.r);
-            delete(gui.listeners.g);
-            delete(gui.listeners.b);
+            if ~isempty(gui.listeners)
+                delete(gui.listeners.x);
+                delete(gui.listeners.y);
+                delete(gui.listeners.r);
+                delete(gui.listeners.g);
+                delete(gui.listeners.b);
+            end
             
             delete(gui.cf);
             delete(gui.df);
             
-            delete(gui.data);
+            delete(gui.data);   % This should be done gracefully.
             
             delete(gui);
         end
@@ -454,7 +485,7 @@ classdef mcDataViewer < mcSavableClass
         end
         
         % Right-click menu callbacks
-        function gotoPostion_Callback(gui, ~, ~, isSel)
+        function gotoPostion_Callback(gui, ~, ~, isSel, shouldGotoLayer)
             if gui.data.data.plotMode == 1
                 axisX = gui.data.data.axes{gui.data.data.layer == 1};
                 
@@ -476,6 +507,18 @@ classdef mcDataViewer < mcSavableClass
                     axisY.goto(gui.pos.pix.YData(1));
                 end
             end
+            
+            if shouldGotoLayer  % If the use wants to goto the current layer also...
+                for ii = 1:length(gui.data.data.axes)
+                    if      gui.data.data.plotMode == 1 && gui.data.data.layer{ii} ~= 1
+                        scan = gui.data.data.scans{ii};
+                        gui.data.data.axes{ii}.goto(scan(gui.data.data.layer{ii} - 1));
+                    elseif  gui.data.data.plotMode == 1 && gui.data.data.layer{ii} ~= 1 && gui.data.data.layer{ii} ~= 2
+                        scan = gui.data.data.scans{ii};
+                        gui.data.data.axes{ii}.goto(scan(gui.data.data.layer{ii} - 2));
+                    end
+                end
+            end
         end
         function minmax_Callback(gui, ~, ~, isMax)
             gui.scale.gray.gui.normAuto.Value = 0;
@@ -487,11 +530,23 @@ classdef mcDataViewer < mcSavableClass
                 gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
             end
         end
-        function openCounter_Callback(gui, ~, ~)
-            mcDataViewer(mcData('counter'), false);
+        function normalizeThis_Callback(gui, ~, ~)
+            gui.scale.gray.gui.normAuto.Value = 0;
+
+            gui.scale.gray.gui.maxEdit.String = gui.r.max();
+            gui.scale.gray.edit_Callback(gui.scale.gray.gui.maxEdit, 0);
+
+            gui.scale.gray.gui.minEdit.String = gui.r.min();
+            gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
         end
-        function openCounterAtPoint_Callback(gui, ~, ~, isSel)
-            gui.gotoPostion_Callback(0, 0, isSel);
+        function openCounter_Callback(gui, ~, ~)
+            mcDataViewer(mcData(mcData.counterConfiguration(gui.data.data.inputs{gui.data.data.input},...   % input to open up (currently select gray input),
+                                                            100,...                                         % length of counter scan (HARDCODED!? CHANGE!),
+                                                            .25)),...                                       % exposureTime in seconds  (HARDCODED!? CHANGE!).
+                         false);    % And don't show the control window when opening...
+        end
+        function openCounterAtPoint_Callback(gui, ~, ~, isSel, shouldGotoLayer)
+            gui.gotoPostion_Callback(0, 0, isSel, shouldGotoLayer);
             gui.openCounter_Callback(0, 0);
         end
         
@@ -537,6 +592,7 @@ classdef mcDataViewer < mcSavableClass
                     gui.p(2).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.p(3).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.a.XLim = [min(gui.p(1).XData) max(gui.p(1).XData)];         % Check to see if range is zero!
+                    
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
 %                     disp('there1');
@@ -546,11 +602,15 @@ classdef mcDataViewer < mcSavableClass
 %                     [min(gui.i.XData) max(gui.i.XData)]
                     gui.a.XLim = [min(gui.i.XData) max(gui.i.XData)];         % Check to see if range is zero!
                     gui.a.YLim = [min(gui.i.YData) max(gui.i.YData)];         % Check to see if range is zero!
+                    
+                    
+                    
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.axes{gui.data.data.layer == 2}.nameUnits();
             end
             
             gui.resetAxisListeners();
+            gui.shouldPlot = true;
         end
         function plotData_Callback(gui,~,~)
 %             disp('here');
@@ -559,26 +619,32 @@ classdef mcDataViewer < mcSavableClass
                 gui.scanButton.String = 'Rescan (Will Overwrite Data)';
             end
 
-            switch gui.data.data.plotMode
-                case 1
-                    if gui.isRGB
-                        
-                    else
-                        gui.a.DataAspectRatioMode = 'auto';
-                        data = gui.r.data
-                        gui.p(1).YData = gui.r.data;
-                        gui.scale.gray.dataChanged_Callback(0,0);
+            if gui.shouldPlot
+                dims = sum(size(gui.r.data) > 1);
+
+                if dims == gui.data.data.plotMode
+                    switch gui.data.data.plotMode
+                        case 1
+                            if gui.isRGB
+
+                            else
+                                gui.a.DataAspectRatioMode = 'auto';
+        %                         data = gui.r.data
+                                gui.p(1).YData = gui.r.data;
+                                gui.scale.gray.dataChanged_Callback(0,0);
+                            end
+                        case 2
+                            if gui.isRGB
+                            else
+                                gui.a.DataAspectRatioMode = 'manual';
+                                gui.a.DataAspectRatio = [1 1 1];
+        %                         data = gui.r.data
+                                gui.i.CData =       gui.r.data;
+                                gui.i.AlphaData =   ~isnan(gui.r.data);
+                                gui.scale.gray.dataChanged_Callback(0,0);
+                            end
                     end
-                case 2
-                    if gui.isRGB
-                    else
-                        gui.a.DataAspectRatioMode = 'manual';
-                        gui.a.DataAspectRatio = [1 1 1];
-%                         data = gui.r.data
-                        gui.i.CData =       gui.r.data;
-                        gui.i.AlphaData =   ~isnan(gui.r.data);
-                        gui.scale.gray.dataChanged_Callback(0,0);
-                    end
+                end
             end
         end
 
@@ -673,6 +739,7 @@ classdef mcDataViewer < mcSavableClass
             end
         end
         function listenToAxes_Callback(gui, ~, ~)
+            display('listening...')
             if isvalid(gui)
                 axisX = gui.data.data.axes{gui.data.data.layer == 1};
 %                 bx = axisX.name()
@@ -755,7 +822,7 @@ classdef mcDataViewer < mcSavableClass
                         layer(layer == 2 & ~changed) = 3;
                     end
                     
-                    if gui.data.data.layerIndex(changed) && gui.data.data.layer(changed) < 3    % If an input axis was changed to X or Y,
+                    if sum(changed == 1) && gui.data.data.layerIndex(changed) && gui.data.data.layer(changed) < 3    % If an input axis was changed to X or Y,
                         % If the other axis (Y or X) is an input axis from a different input...
                         otherAxis = ~changed & layer < 3;
                         
@@ -785,6 +852,7 @@ classdef mcDataViewer < mcSavableClass
             gui.data.data.layer = layer;
             
             if ~all(layer == layerPrev)
+                gui.shouldPlot = false;
                 gui.plotSetup();
             end
         end

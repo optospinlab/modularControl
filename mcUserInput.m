@@ -42,16 +42,24 @@ classdef mcUserInput < mcSavableClass
             configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
             configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
             
-            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
-            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+%             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+%             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+
+            configV1 = mcaDAQ.PIE616Config();       configV1.name = 'H Voltage 1';  configV1.chn = 'ao0';
+            configV2 = mcaDAQ.PIE616Config();       configV2.name = 'H Voltage 2';  configV2.chn = 'ao1';
+            configV3 = mcaDAQ.PIE616Config();       configV3.name = 'H Voltage 3';  configV3.chn = 'ao2';
+
+             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
-            configGreen =  mcaDAQ.greenConfig();   % configGreen.name = 'Green';    configGreen.chn = 'Port0/Line1';
             configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
+            configGreen =  mcaDAQ.greenConfig();
+            configRed =    mcaDAQ.redConfig();
             
             config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
                                   {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'Galvometers',   mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaNFLaser } };                 % Eventually put red power on here...
+                                  {'Galvometers',   mcaDAQ(configV1),       mcaDAQ(configV2),       mcaDAQ(configV3) }, ...
+                                  {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaDAQ(configRed) } };                 % Eventually put red power on here...
                               
             config.axesGroups{4}{4}.open(); 
                               

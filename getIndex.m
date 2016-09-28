@@ -68,7 +68,7 @@ function index = getIndex(varargin)
             lx = lengths(x);
             ly = lengths(y);
 
-            indexSize = lx*ly;          % The number of elemetns in the matrix that we will return.
+            indexSize = lx*ly;          % The number of elements in the matrix that we will return.
 
             repWeight = indexWeight(x) - indexWeight(y)*ly;
 

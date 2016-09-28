@@ -51,9 +51,9 @@ classdef mcSavableClass < handle
 % %             end
 %         end
         function saveGUI_Callback(obj, ~, ~)        % Customize this if neccessary in the daughter class (e.g. saving a .png or a folder of data)
-            questdlg('Config saving not fully implemented... Sorry.', 'Config Saving Not Implemented', 'Okay', 'Okay');
+%             questdlg('Config saving not fully implemented... Sorry.', 'Config Saving Not Implemented', 'Okay', 'Okay');
 
-            if false
+            if true
                 obj.makeClassFolder();
                 [FileName, PathName] = uiputfile('*.mat', 'Save Config As', [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat']);
                 if FileName ~= 0

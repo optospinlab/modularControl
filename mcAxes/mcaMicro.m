@@ -62,6 +62,7 @@ classdef (Sealed) mcaMicro < mcAxis
         % OPEN/CLOSE
         function Open(a)        % Consider putting error detection on this?
             disp(['Opening micrometer on port ' a.config.port '...']);
+            
             a.s = serial(a.config.port);
             set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
                 'FlowControl', 'software', 'Terminator', 'CR/LF');
@@ -78,7 +79,8 @@ classdef (Sealed) mcaMicro < mcAxis
 
             fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
             pause(.25);
-            disp(['...Finished opening micrometer'])
+            
+            disp(['...Finished opening micrometer on port ' a.config.port]);
         end
         function Close(a)
             fprintf(a.s, [a.config.addr 'RS']);
@@ -89,6 +91,7 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % READ
         function ReadEmulation(a)
+%             display('ReadEmulation');
             if abs(a.x - a.xt) > 1e-4           % Simple equation that attracts a.x to the target value of a.xt.
                 a.x = a.x + (a.xt - a.x)/100;
             else
@@ -103,7 +106,9 @@ classdef (Sealed) mcaMicro < mcAxis
         end
         
         % GOTO
-        function GotoEmulation(a, ~)
+        function GotoEmulation(a, x)
+            a.xt = a.config.kind.ext2intConv(x);
+            
             % The micrometers are not immediate, so...
             if isempty(a.t)         % ...if the timer to update the position of the micrometers is not currently running...
                 a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 5fps
@@ -112,7 +117,7 @@ classdef (Sealed) mcaMicro < mcAxis
         end
         function Goto(a, x)
             fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);
-            fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.chn... Srivatsa?
+            fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.addr... Srivatsa?
 
             a.xt = a.config.kind.ext2intConv(x);
             
@@ -130,6 +135,7 @@ classdef (Sealed) mcaMicro < mcAxis
     methods
         % EXTRA
         function timerUpdateFcn(a, ~, ~)
+%             display('timerUpdate');
             a.read();
 %             x = a.x
 %             xt = a.xt

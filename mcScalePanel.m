@@ -176,10 +176,10 @@ classdef mcScalePanel < handle
             m = panel.data.min();
             M = panel.data.max();
             
-            if isnan(m)
+            if all(isnan(m)) || isempty(m)
                 m = 0;
             end
-            if isnan(M)
+            if all(isnan(M)) || isempty(M)
                 M = 1;
             end
             

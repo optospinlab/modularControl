@@ -18,7 +18,7 @@ classdef mciSpectrum < mcInput
         function config = pyWinSpecConfig()
             config.name =               'Default Spectrometer Input';
 
-            config.kind.kind =          'function';
+            config.kind.kind =          'pyWinSpectrum';
             config.kind.name =          'Default Spectrum Input';
             config.kind.extUnits =      'cts';                  % 'External' units.
             config.kind.normalize =     false;                  % Should we normalize?

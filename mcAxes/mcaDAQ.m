@@ -52,7 +52,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = greenConfig()
-            config.name =               '532nm laser Modulation';
+            config.name =               'Green Laser';
 
             config.kind.kind =          'NIDAQanalog';
             config.kind.name =          'Laser Modulation';
@@ -70,20 +70,20 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.keyStep =            2;
             config.joyStep =            2;
         end
-        function config = piezoZConfig()
-            config.name =               'Default Piezo Z';
+        function config = redConfig()
+            config.name =               'Red Freq';
 
             config.kind.kind =          'NIDAQanalog';
-            config.kind.name =          'MadCity Piezo';
-            config.kind.intRange =      [0 10];
-            config.kind.int2extConv =   @(x)(5.*(x - 5));       % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)((x + 25)./5);      % Conversion from 'external' units to 'internal'.
+            config.kind.name =          'New Focus Laser Freq Modulation';
+            config.kind.intRange =      [-3 3];
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
-            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.extUnits =      'V';                    % 'External' units.
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
 
-            config.dev =                'Dev1';
-            config.chn =                'ao2';
+            config.dev =                'cDAQ1Mod1';
+            config.chn =                'ao3';
             config.type =               'Voltage';
             
             config.keyStep =            .1;
@@ -103,6 +103,25 @@ classdef (Sealed) mcaDAQ < mcAxis
 
             config.dev =                'Dev1';
             config.chn =                'ao0';
+            config.type =               'Voltage';
+            
+            config.keyStep =            .1;
+            config.joyStep =            .5;
+        end
+        function config = piezoZConfig()
+            config.name =               'Piezo Z';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'MadCity Piezo';
+            config.kind.intRange =      [0 10];
+            config.kind.int2extConv =   @(x)(5.*(x - 5));       % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)((x + 25)./5);      % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'ao2';
             config.type =               'Voltage';
             
             config.keyStep =            .1;
