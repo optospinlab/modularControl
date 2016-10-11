@@ -497,6 +497,13 @@ classdef mcData < mcSavableClass
 
             d.data.aquiring = true;
             d.data.scanMode = 1;
+
+            nums = 1:d.data.numAxes;
+
+            for ii = nums
+                d.data.axisPrev(ii) = d.data.axes{ii}.getX();
+                d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
+            end
             
             if d.data.aquiring % shouldContinue
                 %%% CREATE THE SESSION, IF NECCESSARY %%%
@@ -504,7 +511,8 @@ classdef mcData < mcSavableClass
                     
 %                     disp('Creating Session')
                     d.data.s = daq.createSession('ni');
-
+                    
+                    d.data.axes{1}.close();
                     d.data.axes{1}.addToSession(d.data.s);            % First add the axis,
 
 %                     inputsNIDAQ = d.data.inputs(d.data.isInputNIDAQ);
@@ -519,13 +527,6 @@ classdef mcData < mcSavableClass
                         end
                     end
                 end 
-            end
-
-            nums = 1:d.data.numAxes;
-
-            for ii = nums
-                d.data.axisPrev(ii) = d.data.axes{ii}.getX();
-                d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
             end
             
             while d.data.aquiring
@@ -551,11 +552,20 @@ classdef mcData < mcSavableClass
 
                 d.data.index = d.data.index + toIncriment;  % Incriment all the indices that were after a maximized index and not maximized.
                 d.data.index(toReset) = 1;                  % Reset all the indices that were maxed (except the first) to one.
-
-                for ii = [1 nums(toIncriment | toReset)]
+                
+                nums(toIncriment | toReset)
+                
+                for ii = nums(toIncriment | toReset)
                     d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
                 end
             end
+            
+            % Destroy the session, if neccessary.
+            if d.data.canScanFast
+                release(d.data.s);
+                delete(d.data.s);
+                d.data.s = [];
+            end 
             
             if d.data.shouldOptimize
 %                 disp('begin opt');
@@ -584,13 +594,6 @@ classdef mcData < mcSavableClass
                     d.data.axes{ii}.goto(d.data.axisPrev(ii));
                 end
             end
-            
-            % Destroy the session, if neccessary.
-            if d.data.canScanFast
-                release(d.data.s);
-                delete(d.data.s);
-                d.data.s = [];
-            end 
         end
         function aquire1D(d, jj)
             if d.data.numBeginEnd > 0                       % If there are some inputs on 'beginend'-mode...
@@ -605,7 +608,10 @@ classdef mcData < mcSavableClass
                 d.data.s.Rate = 1/max(d.data.integrationTime);   % Whoops; integration time has to be the same for all inputs... Taking the max for now...
 
                 d.data.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel.
-
+                
+                d.data.s
+                d.data.axes{1}
+                
                 [data_, times] = d.data.s.startForeground();                % Should I startBackground() and use a listener?
 
                 kk = 1;
