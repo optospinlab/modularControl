@@ -61,7 +61,7 @@ classdef mcVideo < mcInput
 %                 end
 % 
 %                 vid = vid@mcInput(varin);   % Change this?
-                vid.construct(varin);
+%                 vid.construct(varin);
 
                 vid.f = mcInstrumentHandler.createFigure(vid, 'saveopen');
 

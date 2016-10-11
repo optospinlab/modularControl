@@ -54,9 +54,9 @@ classdef (Sealed) mcaDAQ < mcAxis
         function config = greenConfig()
             config.name =               'Green Laser';
 
-            config.kind.kind =          'NIDAQanalog';
+            config.kind.kind =          'NIDAQdigital';
             config.kind.name =          'Laser Modulation';
-            config.kind.intRange =      {0 2};
+            config.kind.intRange =      {0 1};
             config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
             config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
@@ -64,8 +64,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
-            config.chn =                'ao3';
-            config.type =               'Voltage';
+            config.chn =                'Port0/Line0';
+            config.type =               'Output';
             
             config.keyStep =            2;
             config.joyStep =            2;

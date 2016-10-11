@@ -98,8 +98,10 @@ classdef mciSpectrum < mcInput
             fclose(fh);
 
             i = 0;
+            
+            exposure = NaN;
 
-            while i < integrationTime + 20 && all(data == -1)   % Is 20 sec wiggle room enough?
+            while i < integrationTime + 60 && all(data == -1)   % Is 60 sec wiggle room enough?
                 try
 %                     disp(['Waiting ' num2str(i)]);
                     d = dir(I.config.datafile);
@@ -115,9 +117,14 @@ classdef mciSpectrum < mcInput
                 i = i + 1;
             end
             
+            if isnan(exposure)
+                questdlg(['Request for spectrum timed out; sorry. Is the exposure time greater than the expetected ' num2str(integrationTime) ' seconds?'], 'Done', 'Done');
+                return;
+            end
+            
             if integrationTime ~= exposure && I.prevIntegrationTime ~= integrationTime
-                questdlg([a.config.message ' Is the ' a.config.name ' at ' num2str(a.config.kind.int2extConv(a.x)) '? '...
-                          'If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
+                questdlg(['Expected exposure of ' num2str(integrationTime) ' seconds, but received ' num2str(exposure) ' second exposure. Is this correct?'], ['Unexpected Exposure'], 'Done', 'Done');
+                return;
             end
 
             if ~all(data == -1)     % If we found the spectrum....
@@ -125,10 +132,10 @@ classdef mciSpectrum < mcInput
                 
                 while i < 20
                     try             % ...try to move it to our save directory.
-                        movefile(I.config.datafile, [mcInstrumentHandler.timestamp() '.SPE']);
+                        movefile(I.config.datafile, ['C:\Users\Tomasz\Desktop\Stark\spec' datestr(now,'HH_MM_SS_FFF') '.SPE']);
                         break;
-                    catch
-                        
+                    catch err
+                        disp(err.message)
                     end
                     
                     i = i + 1;

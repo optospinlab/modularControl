@@ -149,7 +149,7 @@ switch dataType
 end
 fclose(fd);
 
-image = double(image)
+image = double(image);
 
 %% 
 % getData() reads one piece of data at a specific location

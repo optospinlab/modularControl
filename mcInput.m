@@ -188,9 +188,6 @@ classdef mcInput < mcSavableClass
                 warning([I.name() ' is already in use...']);
                 tf = false;
             else
-                I.isOpen = true;
-                I.inUse = true;
-                
                 if I.inEmulation
                     % Do something?
                     tf = true;
@@ -199,26 +196,32 @@ classdef mcInput < mcSavableClass
                         I.Open();
                         tf = true;     % Return true because axis has been opened.
                     catch err
-                        disp(['mcInput.open() - ' I.config.name ': ' err]);
+                        disp(['mcInput.open() - ' I.config.name ': ' err.message]);
                         tf = false;
                     end
                 end
+                
+                I.isOpen = true;
+                I.inUse = true;
             end
         end
         function tf = close(I)          % Closes the session of the axis; returns whether closed or not.
             if I.isOpen
-                I.isOpen = false;
-                I.inUse = false;
-                
                 if I.inEmulation
                     % Should something be done?
+                    tf = true; 
                 else
-                    switch lower(I.config.kind.kind)
-                        case {'nidaqanalog', 'nidaqdigital', 'nidaqcounter'}
-                            release(I.s);
+                    try
+                        I.Close();
+                        tf = true;     % Return true because axis has been opened.
+                    catch err
+                        disp(['mcInput.open() - ' I.config.name ': ' err.message]);
+                        tf = false;
                     end
                 end
-                tf = true;     % Return true because input was open and is now closed.
+                
+                I.isOpen = false;
+                I.inUse = false;
             elseif I.inUse
                 warning([I.name() ' is in use elsewhere and cannot be used...']);
                 tf = false;     % Return false because input is in use by something else.
@@ -229,9 +232,16 @@ classdef mcInput < mcSavableClass
         end
         
         function data = measure(I, integrationTime)
+            I.isMeasuring = false;
             if I.open()
                 if ~I.isMeasuring
+                    if nargin == 1
+                        integrationTime = 1;
+                    end
+                    
                     I.isMeasuring = true;
+                    
+                    data = NaN(I.config.kind.sizeInput);
 
                     try
                         if I.inEmulation
@@ -240,7 +250,7 @@ classdef mcInput < mcSavableClass
                             data = I.Measure(integrationTime);
                         end
                     catch err
-                        warning(['mcInput - ' I.config.name ': ' err]);
+                        warning(['mcInput - ' I.config.name ': ' err.message]);
                     end
 
                     I.isMeasuring = false;
