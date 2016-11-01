@@ -90,7 +90,7 @@ classdef mcAxis < mcSavableClass
     methods
         function a = mcAxis(varin)
             if nargin == 0
-                a.config = a.defaultConfig();
+                a.construct(a.defaultConfig());
             else
                 a.construct(varin);
             end

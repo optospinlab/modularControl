@@ -114,24 +114,24 @@ classdef mcData < mcSavableClass
             
             if min(rangeX) < min(axisX.config.kind.extRange)
                 warning('mcData.scanConfiguration(): rangeX is below range, shifting up');
-                rangeX
-                rangeX = rangeX + (min(axisX.config.kind.extRange) - min(rangeX))
+%                 rangeX
+                rangeX = rangeX + (min(axisX.config.kind.extRange) - min(rangeX));
             end
             if min(rangeY) < min(axisY.config.kind.extRange)
                 warning('mcData.scanConfiguration(): rangeY is below range, shifting up');
-                rangeY
-                rangeY = rangeY + (min(axisY.config.kind.extRange) - min(rangeY))
+%                 rangeY
+                rangeY = rangeY + (min(axisY.config.kind.extRange) - min(rangeY));
             end
             
             if max(rangeX) > max(axisX.config.kind.extRange)
                 warning('mcData.scanConfiguration(): rangeX is above range, shifting down');
-                rangeX
-                rangeX = rangeX + (max(axisX.config.kind.extRange) - max(rangeX))
+%                 rangeX
+                rangeX = rangeX + (max(axisX.config.kind.extRange) - max(rangeX));
             end
             if max(rangeY) > max(axisY.config.kind.extRange)
                 warning('mcData.scanConfiguration(): rangeY is above range, shifting down');
-                rangeY
-                rangeY = rangeY + (max(axisY.config.kind.extRange) - max(rangeY))
+%                 rangeY
+                rangeY = rangeY + (max(axisY.config.kind.extRange) - max(rangeY));
             end
             
             
@@ -185,9 +185,9 @@ classdef mcData < mcSavableClass
             data.integrationTime = seconds/pixels;
             data.shouldOptimize = true;
         end
-        function data = counterConfiguration(input, integrationTime, length)
+        function data = counterConfiguration(input, length, integrationTime)
             data.axes =     {mcAxis()};                 % This is the time axis.
-            data.scans =    1:length;                   % 'scans ago'.
+            data.scans =    {1:abs(round(length))};                   % 'scans ago'.
             data.inputs =   {input};                    % input.
             data.integrationTime = integrationTime;
         end
@@ -198,12 +198,13 @@ classdef mcData < mcSavableClass
             data.integrationTime = 1;
         end
         function str = README()
+            % This is outdated.
             str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
                    'struct.data is a cell array with a cell for each input. Inside each cell is the result of '...
                    'the measurement of that input for each point of the ND grid formed by the scans of the axes. '...
                    'If the measurement is singular (i.e. just a number like a voltage measurement), then the '...
                    'contents of the input cell is a numeric array with dimensions corresponding to the lengths of '...
-                   'struct.scans. If the measurement is more complex (e.g. a vector like a spectra), then the'...
+                   'struct.scans. If the measurement is more complex (e.g. a vector like a spectra), then the '...
                    'contents of the input cell is a cell array with dimensions corresponding to the lengths of '...
                    'struct.scans. There also is the option to have an input only aquire data at the beginning and '...
                    'end of each 1D scan.'];
@@ -428,10 +429,13 @@ classdef mcData < mcSavableClass
 
                 allInputsFast = all(d.data.isInputBeginEnd | (d.data.isInputNIDAQ & ~d.data.inEmulation));       % Are all 'everypoint'-mode inputs NIDAQ?
                 if ~isempty(d.data.axes)
-                    d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:5)) || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
+                    d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:min(5,end))) || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
+                    d.data.timeIsAxis = strcmpi('time', d.data.axes{end}.config.kind.kind));
                 else
-                    d.data.canScanFast = true;
+                    d.data.canScanFast = true;  % or false?
+                    d.data.timeIsAxis = false;
                 end
+                
                     
                     
                 d.resetData();
@@ -558,6 +562,10 @@ classdef mcData < mcSavableClass
                 for ii = nums(toIncriment | toReset)
                     d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
                 end
+                
+                if d.data.timeIsAxis && toIncriment(end)
+                    
+                end
             end
             
             % Destroy the session, if neccessary.
@@ -587,9 +595,7 @@ classdef mcData < mcSavableClass
                         d.data.axes{2}.goto(y);
                 end 
 %                 disp('end opt');
-            end
-            
-            if false    % Should the axes goto the original values after stopping the scan?
+            elseif d.data.scanMode == 2     % Should the axes goto the original values after the scan finishes?
                 for ii = nums
                     d.data.axes{ii}.goto(d.data.axisPrev(ii));
                 end

@@ -362,7 +362,7 @@ classdef mcDataViewer < mcSavableClass
                 mnNormT=uimenu(mNorm, 'Label', 'Normalize This Layer', 'Callback',    @gui.normalizeThis_Callback);
                 
             mCount = uimenu(menu, 'Label', 'Counter'); %, 'Enable', 'off');
-                mcOpen =    uimenu(mCount, 'Label', 'Open', 'Callback',    {@gui.minmax_Callback, 0});
+                mcOpen =    uimenu(mCount, 'Label', 'Open', 'Callback',     @gui.openCounter_Callback);
                 mcOpenAt =  uimenu(mCount, 'Label', 'Open at...');
                     mcoaPix = uimenu(mcOpenAt, 'Label', 'Selected Pixel',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 0});
                     mcoaPos = uimenu(mcOpenAt, 'Label', 'Selected Position', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 0});
@@ -382,8 +382,8 @@ classdef mcDataViewer < mcSavableClass
             
             prop = findprop(mcProcessedData, 'data');
             gui.listeners.r = event.proplistener(gui.r, prop, 'PostSet', @gui.plotData_Callback);
-            gui.listeners.g = event.proplistener(gui.g, prop, 'PostSet', @gui.plotData_Callback);
-            gui.listeners.b = event.proplistener(gui.b, prop, 'PostSet', @gui.plotData_Callback);
+%             gui.listeners.g = event.proplistener(gui.g, prop, 'PostSet', @gui.plotData_Callback);
+%             gui.listeners.b = event.proplistener(gui.b, prop, 'PostSet', @gui.plotData_Callback);
             
             gui.plotData_Callback(0,0);
             gui.plotSetup();
@@ -442,8 +442,8 @@ classdef mcDataViewer < mcSavableClass
                 delete(gui.listeners.x);
                 delete(gui.listeners.y);
                 delete(gui.listeners.r);
-                delete(gui.listeners.g);
-                delete(gui.listeners.b);
+%                 delete(gui.listeners.g);
+%                 delete(gui.listeners.b);
             end
             
             delete(gui.cf);
@@ -540,10 +540,12 @@ classdef mcDataViewer < mcSavableClass
             gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
         end
         function openCounter_Callback(gui, ~, ~)
-            mcDataViewer(mcData(mcData.counterConfiguration(gui.data.data.inputs{gui.data.data.input},...   % input to open up (currently select gray input),
-                                                            100,...                                         % length of counter scan (HARDCODED!? CHANGE!),
-                                                            .25)),...                                       % exposureTime in seconds  (HARDCODED!? CHANGE!).
-                         false);    % And don't show the control window when opening...
+            display('1')
+            data2 = mcData(mcData.counterConfiguration(gui.data.data.inputs{gui.data.data.input}, 100, .25))
+            display('2')
+            % input to open up (currently select gray input), length of counter scan (HARDCODED!? CHANGE!), exposureTime in seconds  (HARDCODED!? CHANGE!).
+            mcDataViewer(data2, false)    % And don't show the control window when opening...
+            display('3')
         end
         function openCounterAtPoint_Callback(gui, ~, ~, isSel, shouldGotoLayer)
             gui.gotoPostion_Callback(0, 0, isSel, shouldGotoLayer);
@@ -739,7 +741,7 @@ classdef mcDataViewer < mcSavableClass
             end
         end
         function listenToAxes_Callback(gui, ~, ~)
-            display('listening...')
+%             display('listening...')
             if isvalid(gui)
                 axisX = gui.data.data.axes{gui.data.data.layer == 1};
 %                 bx = axisX.name()
@@ -828,11 +830,11 @@ classdef mcDataViewer < mcSavableClass
                         
                         if ~all(otherAxis)
                             % Next check if the changed input axis is compatible with 2D
-                            if layerIndex(1) == 0
+                            if gui.data.data.layerIndex(1) == 0
                                 layer(1) = layer(otherAxis);
                                 layer(otherAxis) = 3;
-                            elseif sum(layerIndex == layerIndex(changed)) > 1
-                                layer(find(layerIndex == layerIndex(changed) & ~changed, 1)) = layer(otherAxis);
+                            elseif sum(gui.data.data.layerIndex == gui.data.data.layerIndex(changed)) > 1
+                                layer(find(gui.data.data.layerIndex == gui.data.data.layerIndex(changed) & ~changed, 1)) = layer(otherAxis);
                                 layer(otherAxis) = 3;
                             else
                                 error('2D incompatible with this layer input. Fix not implemented.');
