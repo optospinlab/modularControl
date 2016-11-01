@@ -98,10 +98,7 @@ classdef mcGrid < mcSavableClass
         end
         
         function makeGridFromEdit(grid, realAxes)
-%             array = grid.editArray
-%             matrix = cellfun(@(x)(x), grid.editArray)
-%             matrix = cellfun(@(x)(x{1}), grid.editArray)
-            matrix = cellfun(@(x)(str2double(x.String)), grid.editArray);
+            matrix = cellfun(@(x)(str2double(x.String)), grid.editArray);   % Retrieve the numbers from the 
             
             grid.realAxes = realAxes;
             
@@ -109,22 +106,16 @@ classdef mcGrid < mcSavableClass
             
             X = matrix(:, num+1:end);
             X(:, end+1) = 1;
-%             X = X'
+            X = X';
 %             
             Y = matrix(:, 1:num)';
             
-%             A = Y/X    
-%             A = Y/X
-            
             grid.config.A = Y/X;    % Where 1/X is the inverse of X.
             
-            if isnan(grid.config.A) || isinf(grid.config.A)
+            if any(any(isnan(grid.config.A))) || any(any(isinf(grid.config.A)))
                 questdlg('The rows of grid coordinates must be (mostly) linearly independent.', 'Unable to Calculate Grid', 'Got it', 'Got it');
                 grid.config.A = [];
             end
-            
-%             A * X(:,1)
-%             A * X(:,2)
         end
 
 %         function y = mtimes(grid, x)

@@ -212,7 +212,7 @@ classdef mcWaypoints < mcSavableClass
                 
             rh = 3*bh;
             
-            if isempty(wp.gf)
+            if isempty(wp.gf) || ~isvalid(wp.gf)
                 wp.grid = mcGrid();
                 wp.gf = mcInstrumentHandler.createFigure(wp.grid, 'saveopen');
                 

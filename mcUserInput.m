@@ -56,10 +56,14 @@ classdef mcUserInput < mcSavableClass
             configGreen =  mcaDAQ.greenConfig();
             configRed =    mcaDAQ.redConfig();
             
+            flipConfig =        mcaDAQ.digitalConfig();
+            flipConfig.chn = 	'Port0/Line1';
+            flipConfig.name = 	'Flip Mirror';
+            
             config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
                                   {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'High Voltage',   mcaDAQ(configV1),       mcaDAQ(configV2),       mcaDAQ(configV3) }, ...
-                                  {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaDAQ(configRed) } };                 % Eventually put red power on here...
+                                  {'High Voltage',  mcaDAQ(configV1),       mcaDAQ(configV2),       mcaDAQ(configV3) }, ...
+                                  {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaDAQ(flipConfig) } };                 % Eventually put red power on here...
                               
             config.axesGroups{4}{4}.open(); 
                               

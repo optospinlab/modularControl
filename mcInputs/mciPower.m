@@ -17,6 +17,7 @@ classdef mciPower < mcInput
             
             flipConfig =        mcaDAQ.digitalConfig();
             flipConfig.chn = 	'Port0/Line1';
+            flipConfig.name = 	'Flip Mirror';
             config.flip =       mcaDAQ(flipConfig);
 
             config.kind.kind =          'mciPower';

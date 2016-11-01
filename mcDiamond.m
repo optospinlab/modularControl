@@ -192,9 +192,9 @@ classdef mcDiamond
             
             spec = mciSpectrum();
             
-            V = -100:20:100;
+            V = -100:10:100;
             
-            data = zeros(512, length(V));
+            data = NaN(512, length(V));
             ii = 1;
             
             f = figure;
@@ -202,22 +202,24 @@ classdef mcDiamond
             hold on
             
             for v = V
-                disp(v)
-                
-                if v < 0
-                    v0.goto(-v);
-                    v1.goto(0);
-                else
-                    v0.goto(0);
-                    v1.goto(v);
+                if isvalid(f)
+                    disp(v)
+
+                    if v < 0
+                        v0.goto(-v);
+                        v1.goto(0);
+                    else
+                        v0.goto(0);
+                        v1.goto(v);
+                    end
+
+                    pause(1);
+
+                    data(:, ii) = spec.measure(120);
+                    plot(a, data(:, ii));
+
+                    ii = ii + 1;
                 end
-                
-                pause(1);
-                
-                data(:, ii) = spec.measure(60);
-                plot(a, data(:, ii));
-                
-                ii = ii + 1;
             end
             
             hold off

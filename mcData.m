@@ -535,7 +535,7 @@ classdef mcData < mcSavableClass
             
             while d.data.aquiring
                 d.aquire1D(d.data.indexWeight * (d.data.index -1)' - d.data.index(1) + 2);
-                drawnow limitrate;
+%                 drawnow limitrate;
                 
                 if all(d.data.index == d.data.lengths)
                     d.data.scanMode = 2;
@@ -556,8 +556,6 @@ classdef mcData < mcSavableClass
 
                 d.data.index = d.data.index + toIncriment;  % Incriment all the indices that were after a maximized index and not maximized.
                 d.data.index(toReset) = 1;                  % Reset all the indices that were maxed (except the first) to one.
-                
-                nums(toIncriment | toReset)
                 
                 for ii = nums(toIncriment | toReset)
                     d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
@@ -615,8 +613,8 @@ classdef mcData < mcSavableClass
 
                 d.data.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel.
                 
-                d.data.s
-                d.data.axes{1}
+%                 d.data.s
+%                 d.data.axes{1}
                 
                 [data_, times] = d.data.s.startForeground();                % Should I startBackground() and use a listener?
 
@@ -701,6 +699,14 @@ classdef mcData < mcSavableClass
                 end
             end
         end
+%         
+%         function incriment()
+%             
+%         end
+%         
+%         function aquire1DListener()
+%             
+%         end
     end
 end
 
