@@ -88,15 +88,19 @@ classdef mcInstrumentHandler < handle
                 
                 mcInstrumentHandler.params(params);
                 
-                folder = mcInstrumentHandler.getConfigFolder()
+                folder = mcInstrumentHandler.getConfigFolder();
                 if ~exist(folder, 'file')
                     mkdir(folder);
                 end
                 
                 mcInstrumentHandler.loadParams();
-            
-                mkdir(params.saveDirManual);
-                mkdir(params.saveDirBackground);
+                
+                if ~isempty(params.saveDirManual)
+                    mkdir(params.saveDirManual);
+                end
+                if ~isempty(params.saveDirBackground)
+                    mkdir(params.saveDirBackground);
+                end
             end
         end
         function tf = isOpen()
