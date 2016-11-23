@@ -222,6 +222,7 @@ classdef (Sealed) mcaDAQ < mcAxis
         end
         function Close(a)
             a.s.release();
+            delete(a.s)
         end
         
         % GOTO
@@ -238,7 +239,7 @@ classdef (Sealed) mcaDAQ < mcAxis
     methods
         % EXTRA
         function addToSession(a, s)
-            if a.close();  % If the axis is not already closed, close it...
+            if a.close()   % If the axis is not already closed, close it...
                 switch lower(a.config.kind.kind)
                     case 'nidaqanalog'
                         addAnalogOutputChannel( s, a.config.dev, a.config.chn, a.config.type);

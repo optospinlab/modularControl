@@ -397,6 +397,7 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function saveGUI_Callback(gui, ~, ~)
+            gui.data.data.fnameManual
             [FileName,PathName,FilterIndex] = uiputfile({'*.mat', 'Full Data File (*.mat)'; '*.png', 'Current Image (*.png)'; '*.png', 'Current Image With Axes (*.png)'}, 'Save As', gui.data.data.fnameManual);
             
             if all(FileName ~= 0)

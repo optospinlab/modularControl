@@ -1,16 +1,12 @@
 classdef mcUserInput < mcSavableClass
 % mcUserInputGUI returns the uitabgroup reference that contains three tabs:
-%   - Goto:     Buttons and edit fields to control the axes.
-%   - Keyboard: which contains fields that customize wasdqe/udlr-+ keyboard input.
-%   - Joystick: which contains fields that customize a single joystick (sorry, multiple joysticks are unsupported).
+%   - Goto:         buttons and edit fields to control the axes.
+%   - User Input:   click buttons that take the place of arrows on a keyboard and field to customize
+%                   how the joystick and keyboard move the axes.
 %
 %   obj = mcUserInput()                 % 
 %   obj = mcUserInput(config)           % 
 %   obj = mcUserInput('config.mat')     % 
-%
-%   tabgroup = obj.mcUserInputGUI()
-%   tabgroup = obj.mcUserInputGUI(f)
-%   tabgroup = obj.mcUserInputGUI(f)
 %
 % Status: Finished; Mostly commented.
     
@@ -29,9 +25,8 @@ classdef mcUserInput < mcSavableClass
             config = mcUserInput.diamondConfig();
         end
         function config = diamondConfig()
-            % Default configuration for the diamond microscope, in which
-            % the piezos, the galvos, and the micrometers are the axes
-            % groups (with z being piezo z for all of them).
+            % High Voltage configuration for the diamond microscope, in which
+            % the piezos, the micrometers, the galvos, and the lasers are the axes
             
             config.name =               'Default User Input';
             
@@ -49,8 +44,50 @@ classdef mcUserInput < mcSavableClass
             configV2 = mcaDAQ.PIE616Config();       configV2.name = 'H Voltage 2';  configV2.chn = 'ao1';
             configV3 = mcaDAQ.PIE616Config();       configV3.name = 'H Voltage 3';  configV3.chn = 'ao2';
 
-             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
-             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            
+            configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
+            configGreen =  mcaDAQ.greenConfig();
+            configRed =    mcaDAQ.redConfig();
+            
+            flipConfig =        mcaDAQ.digitalConfig();
+            flipConfig.chn = 	'Port0/Line1';
+            flipConfig.name = 	'Flip Mirror';
+            
+            config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'High Voltage',  mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaDAQ(flipConfig) } };
+                              
+            config.numGroups = length(config.axesGroups);
+            
+            config.joyEnabled = false;
+            
+            config.axesGroups{4}{4}.open(); % Open the flip mirror (why?)
+        end
+        function config = diamondConfigHV()
+            % High Voltage configuration for the diamond microscope, in which
+            % the piezos, the micrometers, the high voltage outputs, and the lasers are the axes
+            
+            config.name =               'Default (+HV) User Input';
+            
+            configPiezoX = mcaDAQ.piezoConfig();    configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
+            configPiezoY = mcaDAQ.piezoConfig();    configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
+            configPiezoZ = mcaDAQ.piezoZConfig();   configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            
+            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
+            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
+            
+%             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+%             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+
+            configV1 = mcaDAQ.PIE616Config();       configV1.name = 'H Voltage 1';  configV1.chn = 'ao0';
+            configV2 = mcaDAQ.PIE616Config();       configV2.name = 'H Voltage 2';  configV2.chn = 'ao1';
+            configV3 = mcaDAQ.PIE616Config();       configV3.name = 'H Voltage 3';  configV3.chn = 'ao2';
+
+            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
             configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
             configGreen =  mcaDAQ.greenConfig();
@@ -83,7 +120,7 @@ classdef mcUserInput < mcSavableClass
                 case 0
                     obj.config = mcUserInput.defaultConfig();   % If no config is given, assume default config.
                 case 1
-                    obj.interpretConfig(varin);                 % Otherwise, use the given config (inherited from mcSavableClass).
+                    obj.interpretConfig(varin);                 % Otherwise, use the given config (struct or file), where .interpretConfig() is inherited from mcSavableClass.
                 otherwise
                     error('NotImplemented');
             end
@@ -136,7 +173,7 @@ classdef mcUserInput < mcSavableClass
 %             obj.gui.tabJoystick =   uitab('Parent', obj.gui.tabgroup, 'Title', 'Joystick', 'Units', 'pixels');
             
             
-            %%%%%%%%%% GOTO %%%%%%%%%%
+            %%%%%%%%%% GOTO TAB %%%%%%%%%%
             obj.gui.gotoPanels = {};
             
             pause(.01);
@@ -185,7 +222,7 @@ classdef mcUserInput < mcSavableClass
             obj.refreshUserInputMode();
             
             
-            %%%%%%%%%% USER INPUTS %%%%%%%%%%
+            %%%%%%%%%% USER INPUTS TAB %%%%%%%%%%
             tabHeight = obj.gui.tabInputs.Position(4) - 5*bh;
             
             bbh = (pw+10)/7; % Big button height

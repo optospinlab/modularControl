@@ -241,6 +241,7 @@ classdef mcAxis < mcSavableClass
                 else
                     try
                         a.Close();
+                        disp('mcAxis was closed');
                         tf = true;     % Return true because axis was open and is now closed.
                     catch err
                         disp(['mcAxis.close() - ' a.config.name ': ' err.message]);

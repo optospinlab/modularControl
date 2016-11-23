@@ -10,7 +10,7 @@ classdef mcData < mcSavableClass
 %   d = mcData(axes_, scans, inputs, integrationTime, inputTypes)                   % In addition, inputTypes is a cell array defining whether each corresponding input should only be sampled at the begining and end of each scan or not. e.g. [1 0 1 0 0] means that all inputs except for the first and center will only be sampled at the beginning and end of each scan.
 %   d = mcData(axes_, scans, inputs, integrationTime, inputTypes, shouldOptimize)   % In addition to the previous, shouldOptimize tells the mcData to optimize after finishing or not (only works for 1D and 2D scans with singular data) 
 %
-% Status: Mosly finished and commented. Loading needs finished.
+% Status: Mosly finished and commented. Loading needs to be finished.
 
     properties (SetObservable)
         data = [];                  % Our generic data structure.
@@ -166,7 +166,7 @@ classdef mcData < mcSavableClass
             data.axes =     {axisX, axisY};                                                                     % Fill the...   ...axes...
             data.scans =    {linspace(rangeX(1), rangeX(2), pixelsX), linspace(rangeY(1), rangeY(2), pixelsY)}; %               ...scans...
             data.inputs =   {input};                                                                            %               ...inputs.
-            data.integrationTime = 1/speedX;
+            data.integrationTime = (diff(rangeX)/speedX)/pixelsX;
         end
         function data = optimizeConfiguration(axis_, input, range, pixels, seconds)
 %             axis_
@@ -430,13 +430,13 @@ classdef mcData < mcSavableClass
                 allInputsFast = all(d.data.isInputBeginEnd | (d.data.isInputNIDAQ & ~d.data.inEmulation));       % Are all 'everypoint'-mode inputs NIDAQ?
                 if ~isempty(d.data.axes)
                     d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:min(5,end))) || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
-                    d.data.timeIsAxis = strcmpi('time', d.data.axes{end}.config.kind.kind));
+                    d.data.timeIsAxis = strcmpi('time', d.data.axes{end}.config.kind.kind);
                 else
                     d.data.canScanFast = true;  % or false?
                     d.data.timeIsAxis = false;
                 end
                 
-                    
+                d.data.canScanFast = false
                     
                 d.resetData();
                 d.data.isInitialized = true;
@@ -513,11 +513,13 @@ classdef mcData < mcSavableClass
                 %%% CREATE THE SESSION, IF NECCESSARY %%%
                 if d.data.canScanFast && (~isfield(d.data, 's') || isempty(d.data.s))     % If so, then make a NIDAQ session if it has not already been created.
                     
-%                     disp('Creating Session')
+                    disp('Creating Session')
                     d.data.s = daq.createSession('ni');
                     
+                    d.data.axes{1}
                     d.data.axes{1}.close();
                     d.data.axes{1}.addToSession(d.data.s);            % First add the axis,
+                    d.data.axes{1}
 
 %                     inputsNIDAQ = d.data.inputs(d.data.isInputNIDAQ);
 
@@ -530,6 +532,8 @@ classdef mcData < mcSavableClass
                             d.data.inputs{ii}.addToSession(d.data.s);     % Then add the non-beginend inputs.
                         end
                     end
+                    
+                    d.data.s
                 end 
             end
             
@@ -611,11 +615,15 @@ classdef mcData < mcSavableClass
             if d.data.canScanFast
                 d.data.s.Rate = 1/max(d.data.integrationTime);   % Whoops; integration time has to be the same for all inputs... Taking the max for now...
 
-                d.data.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel.
+%                 [d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]'
+                
+                d.data.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
                 
 %                 d.data.s
 %                 d.data.axes{1}
                 
+                d.data.s
+
                 [data_, times] = d.data.s.startForeground();                % Should I startBackground() and use a listener?
 
                 kk = 1;
