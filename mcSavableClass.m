@@ -10,15 +10,15 @@ classdef mcSavableClass < handle
     end
     
     methods
-        function makeClassFolder(obj)
+        function makeClassFolder(obj)   % Makes the folder 
             folder = [mcInstrumentHandler.getConfigFolder() class(obj)];
             if ~exist(folder, 'file')
-                mkdir([mcInstrumentHandler.getConfigFolder() class(obj)]);
+                mkdir(folder);
             end
         end
         
-        function save(varin)
-            switch nargin
+        function save(varin)            % Saves the config which defines the idenity of any mcSavableClass subclass.
+            switch nargin   % Figure out where to save.
                 case 1
                     obj = varin;
                     if isfield(obj.config, 'src')
@@ -33,6 +33,10 @@ classdef mcSavableClass < handle
                 case 2
                     obj = varin{1};
                     fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep varin{2}];
+            end
+            
+            if isfield(obj, 'f') && isfield(obj.config, 'Position') % If this savable class has a figure and cares about position,
+                obj.config.Position = obj.f.Position;
             end
 
             config = obj.config;
@@ -72,13 +76,16 @@ classdef mcSavableClass < handle
         end
         
         function load(obj, fname)
-            fname2 = [mcInstrumentHandler.getConfigFolder() class(obj) filesep fname];
-            if exist(fname2, 'file')
-                config2 = load(fname2);
+            if ~exist(fname, 'file')   % If the file initially doesn't exist, try looking in the class's path.
+                fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep fname];
+            end
+            
+            if exist(fname, 'file')
+                config2 = load(fname);
                 obj.config = config2.config;
-                obj.config.src = fname2;
+                obj.config.src = fname;
             else
-                warning([class(obj) ': The file given to load does not exist.']);
+                warning([class(obj) '.load(fname): The file "' fname '" given to load does not exist.']);
             end
         end
         function loadGUI_Callback(obj, ~, ~)
@@ -86,11 +93,12 @@ classdef mcSavableClass < handle
             if true
                 obj.makeClassFolder();
                 [FileName, PathName] = uigetfile('*.mat', 'Load Config', [mcInstrumentHandler.getConfigFolder() class(obj)]);
-                if FileName ~= 0
-                    config2 = load([PathName FileName]);
-                    obj.config = config2.config;
-                    obj.config.src = [PathName FileName];
-                end
+                obj.load([PathName FileName]);
+%                 if FileName ~= 0
+%                     config2 = load([PathName FileName]);
+%                     obj.config = config2.config;
+%                     obj.config.src = [PathName FileName];
+%                 end
             end
         end
         function loadNewGUI_Callback(obj, ~, ~)

@@ -57,7 +57,7 @@ classdef mcUserInput < mcSavableClass
             
             config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
                                   {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'High Voltage',  mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'Galvos',        mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
                                   {'Lasers',        mcaDAQ(configDoor),     mcaDAQ(configGreen),    mcaDAQ(flipConfig) } };
                               
             config.numGroups = length(config.axesGroups);
@@ -261,7 +261,7 @@ classdef mcUserInput < mcSavableClass
             obj.gui.joyState = -1;
             obj.gui.axisState = [0 0 0];
             
-            obj.openListener();
+            obj.openListener();     % Not sure if this should be enabled by default.
             obj.openWaypoints();
             
             f.Visible = 'on';
@@ -314,21 +314,16 @@ classdef mcUserInput < mcSavableClass
                     
                 end
             else
-                % Do something to stop the joystick.
+                % Do something to stop the joystick?
             end
         end
-        function shouldContinue = joyActionFunction(obj, ~, event)
+        function shouldContinue = joyActionFunction(obj, ~, event)  % Interprets messages sent by the joystick.
             shouldContinue = 1;
             
-%             event
-            
-            if isvalid(obj)
-%                 check = obj.gui.joyEnabled.Value
-                
-                if obj.gui.joyEnabled.Value
+            if isvalid(obj)                     % If the UserInput window/class hasn't closed...
+                if obj.gui.joyEnabled.Value     % If the checkbox is still checked...
                     switch event.type
                         case 0      % Debug
-%                             src
                             obj.gui.joyState = event.axis;      % -1:off, 0:can't find id, 1:running
                         case 1      % Button
                             if event.value == 1
@@ -371,7 +366,6 @@ classdef mcUserInput < mcSavableClass
                             end
                         case 2      % POV
                             if event.value < 360
-%                                 event.value
                                 x = sind(event.value);
                                 y = cosd(event.value);
                                 
@@ -379,10 +373,7 @@ classdef mcUserInput < mcSavableClass
                                 obj.userAction(2, y, 1);
                             end
                         case 3      % Axis
-%                             event
-                            
                             obj.gui.axisState(event.axis) = event.value;
-%                             state = obj.gui.axisState
                             
                             if event.axis ~= 3 || sum(obj.gui.axisState(1:2).*obj.gui.axisState(1:2)) < .25     % If XY is displaced by more than .25, block Z.
                                 userAction(obj, event.axis, event.value*event.value*event.value, 0)     % Note the cube...
@@ -391,37 +382,36 @@ classdef mcUserInput < mcSavableClass
                             obj.gui.joy.throttle = event.value;
                     end
                 else
-                    shouldContinue = 0;
+                    shouldContinue = 0;     % Returns 0 (stop to the joystick).
                 end
             else
-                % Do something to stop the joystick.
-                shouldContinue = 0;
+                shouldContinue = 0;         % Returns 0 (stop to the joystick).
             end
         end
-        function keyPressFunction(obj, src, event)
-%             obj
-%             isvalid(obj)
-%             event
-            if isvalid(obj)
-                if  obj.gui.keyEnabled.Value
-                    focus = gco; %(obj.gui.f);
+        function keyPressFunction(obj, ~, event)                    % Interprets messages sent by the keyboard.
+            if isvalid(obj)                     % If the UserInput window/class hasn't closed...
+                if obj.gui.joyEnabled.Value     % If the checkbox is still checked...
+                    
+                    % First, decide whether it is appropriate to accept keyboard input in this context.
+                    focus = gco;
 
                     if isprop(focus, 'Style')
+                        % Inappropriate contexts include, e.g. edit boxes, etc.
                         proceed = (~strcmpi(focus.Style, 'edit') && ~strcmpi(focus.Style, 'choose')) || ~strcmpi(focus.Enable, 'on');    % Don't continue if we are currently changing the value of a edit uicontrol...
                     else
                         proceed = true;
                     end
 
-                    if proceed
+                    if proceed                                  % If it is appropriate, then proceed.
                         multiplier = 1;
-                        if ismember(event.Modifier, 'shift')
+                        if ismember(event.Modifier, 'shift')    % The shift key speeds all movement by a factor of 10.
                             multiplier = multiplier*10;
                         end
-                        if ismember(event.Modifier, 'alt')
+                        if ismember(event.Modifier, 'alt')      % The alt key slows all movement by a factor of 10.
                             multiplier = multiplier/10;
                         end
 
-                        switch event.Key
+                        switch event.Key                        % Now figure out which way we should move...
                             case {'rightarrow', 'd'}
                                 obj.userAction(1,  multiplier, 1);
                             case {'leftarrow', 'a'}
@@ -434,7 +424,7 @@ classdef mcUserInput < mcSavableClass
                                 obj.userAction(3,  multiplier, 1);
                             case {'hyphen', 'subtract', 'q'}
                                 obj.userAction(3, -multiplier, 1);
-                            case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+                            case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}  % The number keys switch the selected axis group.
                                 num = str2double(event.Key);
 
                                 if num <= obj.config.numGroups
@@ -444,79 +434,88 @@ classdef mcUserInput < mcSavableClass
                                 end
 
                                 obj.refreshUserInputMode();
-                            case {'backquote', '0'}
+                            case {'backquote', '0'}     % Backquote or zero deselects all axis groups.
                                 obj.mode = 0;
                                 obj.refreshUserInputMode();
                         end
                     end
                 end
-            else
+            else                                % If the UserInput has closed, then make sure that this function is no longer referenced (cut ties).
                 mcInstrumentHandler.setGlobalWindowKeyPressFcn('');
             end
         end
         
-        function userAction(obj, axis_, value, isKey)
-            if value ~= 0
-                if obj.mode > 0 && obj.mode <= obj.config.numGroups
-                    a = obj.config.axesGroups{obj.mode}{axis_+1};
+        function userAction(obj, axis_, value, isKey)   % Function to simplify all inputs (keyboard or joystick).
+            % 1 < = axis_ <= 3 (one of the three possible axes).
+            % value is multiplier (negative implies other direction).
+            % isKey implies use keyboard speeds.
+            % isKey implies use joystick speeds.
+            
+            if axis_ < 1 || axis_ > 3
+                warning(['mcUserInput.userAction(): axis_ must be 1, 2, or 3, not ' num2str(axis_)]);
+            else
+                if value ~= 0
+                    if obj.mode > 0 && obj.mode <= obj.config.numGroups
+                        a = obj.config.axesGroups{obj.mode}{axis_+1};
 
-                    if strcmpi(a.config.kind.kind, 'nidaqdigital')
-                        dVal = sign(value);
-                    else
-                        if isKey
-                            dVal = value*a.config.keyStep;
+                        if strcmpi(a.config.kind.kind, 'nidaqdigital')
+                            dVal = sign(value);
                         else
-                            dVal = value*a.config.joyStep*obj.gui.joy.throttle;
-                        end
-                    end
-
-                    if dVal ~= 0                                                        % If there was a change...
-                        val = a.getX() + dVal;                                          % ...calculate the result.
-
-                        if abs(val - a.getXt()) > abs(5*dVal)                           % If the axis is lagging too far behind...
-                            obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0.9400 0], isKey);    % ...then flash green
-                        else
-                            if iscell(a.config.kind.extRange)
-                                switch val
-                                    case a.config.kind.extRange
-                                        % nothing
-                                    otherwise
-                                        l = [a.config.kind.extRange{:}] - val;
-                                        val = a.config.kind.extRange{find(l.*l == min(l.*l), 1)};     % Change?
-                                end
+                            if isKey
+                                dVal = value*a.config.keyStep;
                             else
-                                if val >  max(a.config.kind.extRange)                       % Make sure the axis doesn't go out of bounds
-                                    val = max(a.config.kind.extRange);
-                                end
-                                if val <  min(a.config.kind.extRange)
-                                    val = min(a.config.kind.extRange);
-                                end
+                                dVal = value*a.config.joyStep*obj.gui.joy.throttle;
                             end
-
-                            if abs(val) < 1e-14
-                                val = 0;                                                % Account for arithmatic error.
-                            end
-
-                            a.goto(val);                                                % Finally, go to the new position.
-
-                            obj.flashKey(2*axis_ + (sign(value)-1)/2, [0.9400 0 0], isKey);    % ...then flash red
                         end
-                    else                                                                % If there wasn't a change...
-                        obj.flashKey(2*axis_ + (sign(value)-1)/2, [0.9400 0.9400 0], isKey);   % ...then flash yellow
+
+                        if dVal ~= 0                                                        % If there was a change...
+                            val = a.getX() + dVal;                                          % ...calculate the result.
+
+                            if abs(val - a.getXt()) > abs(5*dVal)                           % If the axis is lagging too far behind...
+                                obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0.9400 0], isKey);    % ...then flash green
+                            else
+                                if iscell(a.config.kind.extRange)
+                                    switch val
+                                        case a.config.kind.extRange
+                                            % nothing
+                                        otherwise
+                                            l = [a.config.kind.extRange{:}] - val;
+                                            val = a.config.kind.extRange{find(l.*l == min(l.*l), 1)};     % Change?
+                                    end
+                                else
+                                    if val >  max(a.config.kind.extRange)                       % Make sure the axis doesn't go out of bounds
+                                        val = max(a.config.kind.extRange);
+                                    end
+                                    if val <  min(a.config.kind.extRange)
+                                        val = min(a.config.kind.extRange);
+                                    end
+                                end
+
+                                if abs(val) < 1e-14
+                                    val = 0;                                                % Account for arithmatic error.
+                                end
+
+                                a.goto(val);                                                % Finally, go to the new position.
+
+                                obj.flashKey(2*axis_ + (sign(value)-1)/2, [0.9400 0 0], isKey);    % ...then flash red
+                            end
+                        else                                                                % If there wasn't a change...
+                            obj.flashKey(2*axis_ + (sign(value)-1)/2, [0.9400 0.9400 0], isKey);   % ...then flash yellow
+                        end
+                    else
+                        obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0 0.9400], isKey);            % ...then flash blue
                     end
-                else
-                    obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0 0.9400], isKey);            % ...then flash blue
                 end
             end
         end
-        function flashKey(obj, key, color, isKey)
+        function flashKey(obj, key, color, isKey)       % Flash a color on the UI arrow keys.
             if isKey
                 obj.gui.keylist(key).BackgroundColor = color;
                 pause(.016);
                 obj.gui.keylist(key).BackgroundColor = [0.9400    0.9400    0.9400];
             end
         end
-        function userAction_Callback(obj, src, ~, axis_, direction)
+        function userAction_Callback(obj, src, ~, axis_, direction)     % Function the UI arrow keys call to move the axes.
             src.Enable = 'off';
 %             drawnow;
             src.Enable = 'on';  % This is to remove focus on whatever object may be focused.
@@ -575,6 +574,8 @@ classdef mcUserInput < mcSavableClass
             % If this mcUserInput's keyPressFunction is used as the globalWindowKeyPressFcn...
             if mcInstrumentHandler.isOpen() && isequal(@obj.keyPressFunction, mcInstrumentHandler.globalWindowKeyPressFcn())
                 mcInstrumentHandler.setGlobalWindowKeyPressFcn([]);     % Then remove this from every figure.
+                    
+                % And ask whether the axis info (joystep, etc) should be saved.
             end
             
             pause(1);               % Give the joystick a chance to keep up...

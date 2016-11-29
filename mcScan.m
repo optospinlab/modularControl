@@ -247,13 +247,6 @@ classdef mcScan < mcSavableClass
                         'Position', [350,lh,50,gui.ph/2 - 4],...
                         'Callback', @gui.obeyRange_Callback);
 %                         'Position', [2,lh,100,gui.ph/2 - 4]);
-                    
-                    
-%             uicontrol(  gui.scanAxes{l+1},...
-%                         'Style', 'checkbox',...
-%                         'String', 'Only BeginEnd',...
-%                         'Position', [205,lh,150,gui.ph/2 - 4]);
-%                         'Position', [205,uh,150,gui.ph/2 - 4]);
 
             uicontrol(  gui.scanAxes{index}.panel,...
                         'Style', 'push',...
@@ -273,7 +266,6 @@ classdef mcScan < mcSavableClass
                 gui.scanInputs{index}.instrument =        0;
                 gui.scanInputs{index}.instrumentName =    'Choose';
                 gui.scanInputs{index}.instrumentIndex =   1;
-                gui.scanInputs{index}.beginend =          0;
                 gui.scanInputs{index}.integrationTime =   1;
             else
                 ii = 1;
@@ -295,7 +287,6 @@ classdef mcScan < mcSavableClass
                 end
                 
                 if gui.scanInputs{index}.instrumentIndex == 1;
-                    gui.scanInputs{index}.beginend =            0;
                     gui.scanInputs{index}.integrationTime =     1;
                 end
             end
@@ -319,16 +310,6 @@ classdef mcScan < mcSavableClass
                         'Position', [2,(lh + uh)/2,200,gui.ph/2 - 1],...
                         'Callback', @gui.chooseInstrument_Callback);
 %                         'Position', [2,lh,100,gui.ph/2 - 4]);
-                    
-                    
-            gui.scanInputs{index}.checkBeginend = ...
-            uicontrol(  gui.scanInputs{index}.panel,...
-                        'Style', 'checkbox',...
-                        'String', 'Only BeginEnd',...
-                        'Value', 0,...  % gui.scanInputs{index}.beginend,...
-                        'Position', [205,lh,150,gui.ph/2 - 4],...
-                        'Callback', @gui.setBeginEnd,...
-                        'Enable', 'off');
                     
             uicontrol(  gui.scanInputs{index}.panel,...
                         'Style', 'text',...
@@ -578,17 +559,6 @@ classdef mcScan < mcSavableClass
             gui.scanAxes{index}.editDown.String =   gui.scanAxes{index}.range(2);
             gui.scanAxes{index}.editStep.String =   gui.scanAxes{index}.range(3);
         end
-        function setBeginEnd(gui, src, ~)
-            panel = src.Parent;
-            
-            saI = cellfun(@(x)(x.panel == panel), gui.scanInputs);
-            index = (1:length(gui.scanInputs))*(saI');
-            if sum(saI) > 1
-                error('There seem to be two of the same panel!?');
-            end
-            
-            gui.scanInputs{index}.beginend = src.Value;
-        end
         function setIntegration(gui, src, ~)
             panel = src.Parent;
             
@@ -639,7 +609,6 @@ classdef mcScan < mcSavableClass
             end
             
             params.integrationTime =    cellfun(@(x)(double(x.integrationTime)), gui.scanInputs);
-            params.inputTypes =         cellfun(@(x)({x.beginend}), gui.scanInputs);
             
             params
             

@@ -312,6 +312,8 @@ classdef mcDataViewer < mcSavableClass
             
             hold(gui.a, 'on');
             
+            gui.r
+            
             gui.r.process();
             if gui.isRGB
                 gui.g.process();
@@ -398,7 +400,7 @@ classdef mcDataViewer < mcSavableClass
         
         function saveGUI_Callback(gui, ~, ~)
             gui.data.data.fnameManual
-            [FileName,PathName,FilterIndex] = uiputfile({'*.mat', 'Full Data File (*.mat)'; '*.png', 'Current Image (*.png)'; '*.png', 'Current Image With Axes (*.png)'}, 'Save As', gui.data.data.fnameManual);
+            [FileName, PathName, FilterIndex] = uiputfile({'*.mat', 'Full Data File (*.mat)'; '*.png', 'Current Image (*.png)'; '*.png', 'Current Image With Axes (*.png)'}, 'Save As', gui.data.data.fnameManual);
             
             if all(FileName ~= 0)
                 switch FilterIndex
@@ -410,7 +412,7 @@ classdef mcDataViewer < mcSavableClass
                             lim = gui.p(1).YLim;
                         else
                             d = gui.i.CData;
-                            lim = gui.i.CLim;
+                            lim = gui.a.CLim;
                         end
                         
 %                         d(isnan(d)) = min(lim);
@@ -419,15 +421,15 @@ classdef mcDataViewer < mcSavableClass
                             d = (d - min(lim))/diff(lim);
                         end
                         
-                        imwrite(repmat(d, 3, 3), [PathName FileName]);
+                        imwrite(d, [PathName FileName]);
                     case 3  % .png (axes)
                         imwrite(frame2im(getframe(gui.df)), [PathName FileName]);
                 end
                 
                 pause(.05);                         % Pause to give time for the file to save.
                 
-                data = gui.data.data;               % Always save the .mat file, even if the user doen't want to... (change?)
-                save([PathName FileName], 'data');
+                data = gui.data.data;               % Always save the .mat file, even if the user doesn't specify... (change?)
+                save([PathName FileName(1:end-3) 'mat'], 'data');
             else
                 disp('No file given...');
             end
