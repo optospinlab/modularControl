@@ -121,6 +121,8 @@ classdef mcScan < mcSavableClass
             gui.makeInput(0);
                     
             gui.alignPanels();
+            
+            pause(.1);
         end
         
 %         function sizeChangedFcn(gui,~,~)

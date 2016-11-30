@@ -400,7 +400,8 @@ classdef mcData < mcSavableClass
 
                 allInputsFast = all(d.data.isInputNIDAQ & ~d.data.inEmulation);       % Are all 'everypoint'-mode inputs NIDAQ?
                 if ~isempty(d.data.axes)
-                    d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:min(5,end))) || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
+                    % Temporarily disabling fast (in time) aquisition.
+                    d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:min(5,end)))) && allInputsFast; % || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
                     d.data.timeIsAxis = strcmpi('time', d.data.axes{end}.config.kind.kind);
                 else
                     d.data.canScanFast = true;  % or false?
@@ -477,8 +478,6 @@ classdef mcData < mcSavableClass
                     for ii = 1:d.data.numInputs
                         d.data.inputs{ii}.addToSession(d.data.s);     % Then add the inputs
                     end
-                    
-                    d.data.s
                 end 
             end
             
@@ -502,7 +501,11 @@ classdef mcData < mcSavableClass
                     break;
                 end
                 
+                toIncriment
+                
                 if d.data.timeIsAxis && toIncriment(end)    % If the last axis is time and we have run out of bounds,...
+                    disp('Time is axis and overrun!');
+                    
                     for ii = 1:d.data.numInputs         % ...for every input, circshift the data forward one.
                         if isnan(d.data.inputDimension(ii)) || d.data.inputDimension(ii) == 0   % If the data is contained in the cell or contained in one index of a numeric array,
                             circshift(d.data.data{ii}, [0, d.data.indexWeight(end)]);  	
@@ -545,7 +548,7 @@ classdef mcData < mcSavableClass
                         d.data.axes{1}.goto(x);                     % ...goto the peak.
                         d.data.axes{2}.goto(y);
                     otherwise
-                        display('optimization on more than 2 axes not currently supported...');
+                        disp('optimization on more than 2 axes not currently supported...');
                 end 
             elseif d.data.scanMode == 2     % Should the axes goto the original values after the scan finishes?
                 for ii = nums
@@ -580,20 +583,24 @@ classdef mcData < mcSavableClass
 
                     kk = kk + 1;
                 end
-            elseif strcmpi(d.data.axes{end}, 'time')  % If time happens to be the last axis...
-                while d.data.aquiring
+            elseif strcmpi(d.data.axes{1}, 'time')  % If time happens to be the current axis...
+                disp('Time is 1D axis')
+%                 while d.data.aquiring
                     % Aquire the data.
                     for ii = 1:d.data.numInputs         % ...for every input...
                         if isnan(d.data.inputDimension(ii))
+                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)]);  
                             d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                         elseif d.data.inputDimension(ii) == 0
+                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)]);  
                             d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                         else
+                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)*d.data.inputLength(ii)]);
                             base = (jj+kk)*d.data.inputLength(ii);
                             d.data.data{ii}(base:base+d.data.inputLength(ii)-1) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                         end
                     end
-                end
+%                 end
             else
                 kk = 0;
 

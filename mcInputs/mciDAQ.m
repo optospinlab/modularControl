@@ -128,7 +128,7 @@ classdef mciDAQ < mcInput
                     pause(integrationTime);             % Inexact way. Should make this asyncronous also...
                     [d2,t2] = I.s.inputSingleScan();
 
-                    data = (d2 - d1)/(t2 - t1);
+                    data = (d2 - d1)/((t2 - t1)*24*60*60);
             end
         end
     end
