@@ -41,7 +41,7 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function ver = version()
-            ver = [0 33];
+            ver = [0 35];
         end
         function tf = open()
             tf = true;
@@ -72,7 +72,7 @@ classdef mcInstrumentHandler < handle
                 
                 tf = false;                                                         % Return whether the mcInstrumentHandler was open...
                 
-                [~, params.hostname] =              system('hostname');
+                [~, params.hostname] = system('hostname');
                 
                 params.hostname = params.hostname(1:end-1);
                 
@@ -268,6 +268,7 @@ classdef mcInstrumentHandler < handle
             
             params.instruments{length(params.instruments) + 1} = obj2;
             if isa(obj2, 'mcAxis') && ~strcmpi(obj2.config.kind.kind, 'manual')
+                obj2.read();
                 obj2.goto(obj2.getX());
             end
             

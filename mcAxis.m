@@ -1,5 +1,5 @@
 classdef mcAxis < mcSavableClass
-% Abstract class for instruments with linear motion.
+% Abstract class for instruments with 1D motion.
 %
 % Syntax:
 %   a = mcAxis()                                % Open with default configuration.
@@ -8,7 +8,7 @@ classdef mcAxis < mcSavableClass
 %   a = mcAxis(config, emulate)                 % Same as above, except with the option (tf) to start axis in emulation mode.
 %   a = mcAxis('config_file.mat', emulate)     
 %
-%   config = mcAxis.[INSERT_TYPE]Config         % Returns the default config struture for that type
+%   config = mcAxis.[INSERT_TYPE]Config         % Returns a static config struture for that type
 %   
 %   str =   a.name()                            % Returns the default name. This is currently nameShort().
 %   str =   a.nameUnits()                       % Returns info about this axis in 'name (units)' form.
@@ -25,14 +25,7 @@ classdef mcAxis < mcSavableClass
 %   x =     a.getX(x)                           % Returns the position of the axis (a.x) in external units.
 %   x =     a.getXt(x)                          % Returns the target position of the axis (a.xt) in external units.
 %
-% Status: Finished and mostly commented. Very messy, however. Future plans below.
-%
-% IMPORTANT: Not sure whether a better architecture decision would be to
-% have kinds (such as piezos and galvos) extend the mcAxis class in their
-% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
-% switch statements that are currently in the code.
-% UPDATE: Decided to change this eventually, but keep it the same for now.
-% UPDATE: Currently in progress.
+% Status: Finished and mostly commented.
 
     properties
 %         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
@@ -241,7 +234,7 @@ classdef mcAxis < mcSavableClass
                 else
                     try
                         a.Close();
-                        disp('mcAxis was closed');
+%                         disp('mcAxis was closed');
                         tf = true;     % Return true because axis was open and is now closed.
                     catch err
                         disp(['mcAxis.close() - ' a.config.name ': ' err.message]);
@@ -329,7 +322,7 @@ classdef mcAxis < mcSavableClass
                 a.reservedBy = [];
             end
         end
-        function str = reservedByStr(a)         % Returns the name of th reserving object.
+        function str = reservedByStr(a)         % Returns the name of the reserving object.
             if isempty(a.reservedBy)
                 str = 'Axis is not currently reserved.';
             else
@@ -350,7 +343,7 @@ classdef mcAxis < mcSavableClass
             end
         end
         
-        function info = getInfo(a)
+        function info = getInfo(a)  % (Currently unused)
 %             {'Instrument', 'Position', 'Unit', 'isOpen',   'inUse',    'inEmulation'};
             info = {a.name(), a.getX(), a.extUnits, a.isOpen, a.inUse, a.inEmulation, '', '', '', ''};
             
@@ -364,7 +357,7 @@ classdef mcAxis < mcSavableClass
         end
     end
     
-    methods
+    methods     % To be defined by the daughter mca<Name>.
         function tf = Eq(~, ~)
             tf = false;     % or true?
         end
