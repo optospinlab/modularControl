@@ -4,64 +4,101 @@ classdef mcData < mcSavableClass
 %
 % Syntax:
 %   d = mcData()
-%   d = mcData(params)                                                  % Load old data (or just params if uninitialized) into this class
+%   d = mcData(params)                                                  % Load old data (or just the d structure if uninitialized) into this class
 %   d = mcData('params.mat')                                            % Load old data (from a .mat) into this class
 %   d = mcData(axes_, scans, inputs, integrationTime)                   % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
 %   d = mcData(axes_, scans, inputs, integrationTime, shouldOptimize)   % In addition to the previous, shouldOptimize tells the mcData to optimize after finishing or not (only works for 1D and 2D scans with singular data) 
 %
 % Status: Mosly finished and commented. Loading needs to be finished.
 % Update: Going through process to make it work for input of any sizeInput. Parts are not functional.]
-% Future: Organize .mat file. Remeber positions of other axes. Fix loading.
+% Future: Organize .mat file. Remember positions of other axes. Fix loading.
 
     properties (SetObservable)
-        data = [];                  % Our generic data structure.
+        d = [];     % Our generic data structure. d for data. It is this structure that is saved in the .mat file.
+        
+        % d contains:
+        %
+        % - d.name                  string              % Name of this mcData scan. If left empty or uninitiated, it is auto-generated.
+        % - d.kind.name             string              % Always equals 'mcData' allows other parts of the program to distinguish it from other configs. (Change?)
+        %
+        % - d.axes                  cell array          % The configs for the axes. For n axes, this is 1xn.
+        % - d.inputs                cell array          % The configs for the inputs. For m inputs, this is 1xm.
+        % - d.scans                 cell array          % The points that each axis scans across. The ith entry in the cell array corresponds to the ith axis. Note that these are in external units.
+        % - d.intTimes              numeric array       % Contains the integration time for each input. Thus this is 1xm. For NIDAQ devices which 'can scan fast' by scanning altogether, the maximum intTime is used.
+        % - d.flags.shouldOptimize  boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
+        %
+        % - d.data                  cell array          % This is the 'meat' of this structure. Data is a 1xm cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
+        %
+        % - d.info.timestamp        string              % 
+        % - d.info.fname            string              % Where the data should be saved. By default, this is in a folder 
+        % - d.info.version          numeric array       % The version of modularControl that this data was taken with.
+        % - d.info.other.axes       cell array          % Status of all the axes when the scan is started.
+        % - d.info.other.status     numeric array       % 
+        %
+        % - d.index                 numeric array       % Current 'position' of the axes in the scan.
+        %
+        % - d.layer                 numeric array       % Not added. Future?
+        %
+        % - d.flags.circTime        boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
+        
+        % Also note that config (due to inheretence from mcSavableClass) is also a member. (change this?)
     end
 
     properties
-        dataViewer = [];            % 'Pointer' to the current data viewer.
-%         isInitialized = false;      % Whether or not the computer-generated fields have been calculated.
+        dataViewer = [];        % 'Pointer' to the current data viewer.
+        r = [];                 % Struct for runtime-generated info. r for runtime.
         
-%           These generated fields include:
-%            - data.inputDimension         numeric array     % contains the number of dimensions that the data from each input has. e.g. a number would be 0, a vector 1, and an image 2.
-%            - data.isInputNIDAQ           boolean array     % Self-explainitory
-%            - data.inEmulation            boolean array     %         "
-%            - data.canScanFast            boolean           % If all of the inputs and the axis are NIDAQ, then one can use daq methods to scan faster.
-%
-%            - data.numAxes                integer           % Number of axes overall.
-%            - data.numInputs              integer           % Number of inputs overall.
-%
-%            - data.axisNames              char cell array   % Names of inputs and axes
-%            - data.axisNamesUnits         char cell array
-%            - data.inputNames             char cell array
-%            - data.inputNamesUnits        char cell array
-%
-%            - data.scansInternalUnits     cell array        % Contains the info in data.scans, except in internal units.
-%
-%            - data.posStart               numeric array     % Contains the positions of all of the axes before the scan begins. This allows for returning to the same place.
-%
-%            - data.allConfigs
-%            - data.allConfigs
-%
-%            - data.README                 string            % Instructions about how to use the data.
-%
-%            - data.plotMode               integer           % e.g. 1 = '1D', 2 = '2D', ...
-%            - data.layer                  numeric array     % Current layer that any connected mcProcessedDatas should process.
-%            - data.layerType              numeric array     % 0 = axis, positive nums imply the num'th axis of an input
-%            - data.layerIndex             numeric array     % 0 = axis, positive nums imply the num'th input.
-%            - d.data.inputLength
-%
-%            - data.lengths
-%            - data.indexWeight
-%
-%            - data.isInitialized          boolean           % Is created once 
-%            - data.scanMode               boolean
-%
-%            - data.shouldOptimize
-%
-%            - data.fname
-%
-%            - data.name
-
+        % - r.isInitialized = false;      % Whether or not the computer-generated fields have been calculated.
+        % 
+        % RUNTIME-GENERATED INPUT INFO:
+        % 
+        % - r.i.num                 integer
+        % 
+        % The following are (1xd.i.num) arrays. The ith value in each array contains the info relevant to the ith input.
+        % 
+        % - r.i.i                   mcInput array           % Contains the objects that point to the appropriate inputs.
+        % - r.i.dimension           numeric array           % The dimension of the input (0 for number, 1 for vector, 2 for image).
+        % - r.a.length              numeric array           % Lengths of the inputs (prod of the dimensions) e.g. length of 16x16 input is 256
+        % - r.i.name                cell array (strings)
+        % - r.i.unit                cell array (strings)
+        % - r.i.isNIDAQ             boolean array           
+        % - r.i.inEmulation         boolean array
+        % - r.i.numInputAxes        numeric
+        % - r.i.scans               cell array              % Contains the vectors corresponding to the edges of theinputs.
+        % 
+        % RUNTIME-GENERATED AXIS INFO:
+        % 
+        % - r.a.num                 integer
+        % 
+        % The following are (1xd.i.num) arrays. The ith value in each array contains the info relevant to the ith input.
+        % 
+        % - r.a.a                   mcAxis array            % Contains the objects that point to the appropriate axes.
+        % - r.a.name                cell array (strings)
+        % - r.a.unit                cell array (strings)
+        % - r.a.isNIDAQ             boolean array           
+        % - r.a.inEmulation         boolean array
+        % - r.a.scansInternalUnits  cell array              % Contains the info in data.scans, except in internal units.
+        % - r.a.prev                numeric array           % Contains the positions of all of the loaded axes before the scan begins. This allows for returning to the same place.
+        % - r.a.timeIsAxis          boolean
+        % 
+        % RUNTIME-GENERATED LAYER INFO:
+        % 
+        % - r.l.layer               numeric array           % Current layer that any connected mcProcessedDatas should process.
+        % - r.l.axis                numeric array           % 1 ==> mcAxis, positive nums ==> the num'th axis of an input
+        % - r.l.type                numeric array           % 0 ==> mcAxis, positive nums imply the num'th input.
+        % - r.l.weight              numeric array           % First d.a.num indices are the weights of each axis. (Weight needs better explaination!)
+        % - r.l.scans               cell arrray             % Contains all the scans (for both axes and inputs). If no scans are given for the inputs, then 1:size(dim) pixels is used.
+        % - r.l.lengths             numeric arrray          % 
+        % 
+        % OTHER RUNTIME-GENERATED INFO:
+        % 
+        % - r.plotMode              integer             % e.g. 1 = '1D', 2 = '2D', ...
+        % - r.isInitialized         boolean             % Is created once the initialize() function has been called.
+        % - r.scanMode              integer             % paused = 0; running = 1; 
+        % - r.aquiring              boolean             % whether we are aquiring currently or not.
+        % - r.s                     DAQ session         % Only used if all the inputs and the first axis are NIDAQ.
+        % - r.canScanFast           boolean             % Variable that decides whether the above should be used.
+        % - r.timeIsAxis            boolean             % Flagged if time is the last axis (not currently used).
     end
     
     methods (Static)
@@ -228,377 +265,418 @@ classdef mcData < mcSavableClass
         function d = mcData(varin)
             switch nargin
                 case 0
-                    d.data = mcData.defaultConfiguration();     % If no vars are given, assume a 10x10um piezo scan centered at zero.
+                    d.d = mcData.defaultConfiguration();    % If no vars are given, assume a 10x10um piezo scan centered at zero.
                 case 1
                     if ischar(varin)
                         error('Unfinished loading protocol');
-%                         d.data = load(varin); % Unfinished!
                     else
-                        d.data = varin;
+                        d.d = varin;
                     end
                 case 4
-                    d.data.axes =               varin{1};               % Otherwise, assume the four variables are axes, scans, inputs, integration time...
-                    d.data.scans =              varin{2};
-                    d.data.inputs =             varin{3};
-                    d.data.integrationTime =    varin{4};
-                case 5
-                    d.data.axes =               varin{1};               % And if a 5th var is given, assume it is inputTypes
-                    d.data.scans =              varin{2};
-                    d.data.inputs =             varin{3};
-                    d.data.integrationTime =    varin{4};
-%                 case 6
-%                     d.data.axes =               varin{1};               % And if a 5th var is given, assume it is optimize
-%                     d.data.scans =              varin{2};
-%                     d.data.inputs =             varin{3};
-%                     d.data.integrationTime =    varin{4};
-%                     d.data.inputTypes =         varin{5};
+                    d.d.axes =              varin{1};       % Otherwise, assume the four variables are axes, scans, inputs, integration time...
+                    d.d.scans =             varin{2};
+                    d.d.inputs =            varin{3};
+                    d.d.intTimes =          varin{4};
+                    d.d.flags.shouldOptimize =    false;
+                case 5          
+                    d.d.axes =              varin{1};       % And if a 5th var is given, assume it is shouldOptimize
+                    d.d.scans =             varin{2};
+                    d.d.inputs =            varin{3};
+                    d.d.intTimes =          varin{4};
+                    d.d.flags.shouldOptimize =    varin{5};
             end
             
-            % Need more checks!
-            
-%             d.data.scans
-            
-            isScanEmpty = false;        % Do this in a MATLAB way...
-            for scan = d.data.scans
-                isScanEmpty = isScanEmpty || isempty(scan{1});
+            if ~isfield(d.d, 'shouldOptimize')
+                d.d.flags.shouldOptimize = false;
             end
             
-            if ~isScanEmpty
-                if isempty(d.data.inputs)
-                    error('mcData: Cannot do a scan without inputs...');
-                else
-                    d.initialize();
+            % Check lengths of axes and scans...
+            if length(d.d.axes) ~= length(d.d.scans)
+                error('mcData(): Expected axes and scans to have the same length.');
+            end
+            
+            % Checking the axes...
+            if iscell(d.d.axes)
+                for ii = 1:length(d.d.axes)
+                    if isa(d.d.axes{ii}, 'mcAxis')
+                        c = class(d.d.axes{ii});
+                        d.d.axes{ii} = d.d.axes{ii}.config;
+                        d.d.axes{ii}.class = c;                 % Store the class of the axis (e.g. mcaDAQ) if it isn't already...
+                    elseif isstruct(d.d.axes{ii})
+                        % Do nothing.
+                    else
+                        error(['mcData(): Unknown data type for the ' getSuffix(ii) ' axis: ' class(d.d.axes{ii})]);
+                    end
                 end
             else
-                error('mcData: At lease one of the proposed scans is empty...');
+                error('mcData(): d.d.axes must be a cell array.');
             end
+            
+            % Checking the scans...
+            if iscell(d.d.scans)
+                for ii = 1:length(d.d.scans)
+                    if ~isnumeric(d.d.scans{ii})
+                        error(['mcData(): Expected numeric array for the scan of the ' getSuffix(ii) ' axis. Got: ' class(d.d.scans{ii})]);
+                    end
+                    if min(size(d.d.scans{ii})) ~= 1 && length(size(d.d.scans{ii})) ~= 2    % If d.d.scans{ii} isn't a 1xn or nx1 vector...
+                        error(['mcData(): Expected a 1xn or nx1 vector for the scan of the ' getSuffix(ii) ' axis. Got a matrix of dimension [ ' size(d.d.scans{ii}) ' ].']);
+                    end
+                end
+            else
+                error('mcData(): d.d.scans must be a cell array.');
+            end
+            
+            % Check lengths of inputs and intTimes...
+            if length(d.d.inputs) ~= length(d.d.intTimes)
+                error('mcData(): Expected inputs and intTimes to have the same length.');
+            end
+            
+            % Checking the inputs...
+            if isempty(d.d.inputs)
+                error('mcData(): d.d.inputs is empty. Cannot do a scan without inputs.');
+            end
+            
+            if iscell(d.d.inputs)
+                for ii = 1:length(d.d.inputs)
+                    if isa(d.d.inputs{ii}, 'mcInput')
+                        c = class(d.d.inputs{ii});
+                        d.d.inputs{ii} = d.d.inputs{ii}.config;
+                        d.d.inputs{ii}.class = c;               % Store the class of the input (e.g. mciDAQ) if it isn't already...
+                    elseif isstruct(d.d.inputs{ii})
+                        % Do nothing.
+                    else
+                        error(['mcData(): Unknown data type for the ' getSuffix(ii) ' input: ' class(d.d.inputs{ii})]);
+                    end
+                end
+            else
+                error('mcData(): d.d.inputs must be a cell array');
+            end
+            
+            % Checking the intTimes...
+            if isnumeric(d.d.intTimes)
+                if any(d.d.intTimes <= 0)
+                    error('mcData(): Integration times cannot be negative.');
+                end
+            else
+                error('mcData(): d.d.intTimes must be a numeric array.');
+            end
+            
+            % Need more checks?!
         end
         
-%         function save(d, fname)
-%             switch (lower(fname(end-2:end)))
-%                 case 'mat'
-%                     save(fname, 'd.data');  % Not sure if this works.
-%                 otherwise
-%                     error('Saving filetypes other than .mat NotImplemented');
-%             end
-%         end
-        
         function initialize(d)
-            if ~isfield(d.data, 'isInitialized')     % If not initialized, then intialize.
-                d.data.README = d.README();
+            if ~isfield(d.r, 'isInitialized')     % If not initialized, then intialize.
                 
-                %%% HANDLE THE INPUTS %%%
-                d.data.numInputs = length(d.data.inputs);
+                % GENERATE INPUT RUNTIME DATA ==================================================================================
                 
-                d.data.inputDimension =     zeros(1, d.data.numInputs);     % Make empty lists for future filling.
-                d.data.sizeInput =          cell( 1, d.data.numInputs);
-                d.data.inputLength =     	zeros(1, d.data.numInputs);
-                d.data.isInputNIDAQ =       false(1, d.data.numInputs);
-                d.data.inEnmulation =       false(1, d.data.numInputs);
+                % First, figure out how many inputs we have.
+                d.r.i.num =             length(d.d.inputs);
                 
-                d.data.inputNames =         cell( 1, d.data.numInputs);
-                d.data.inputNamesUnits =    cell( 1, d.data.numInputs);
+                % Then, initialize empty lists.
+                d.r.i.i =               cell( 1, d.r.i.num);
                 
-                d.data.numInputAxes =   0;
-                d.data.layerType =      [];
-                d.data.layerIndex =     [];
-                d.data.lengths =        [];
-                d.data.indexWeight =    [];
+                d.r.i.dimension =       zeros(1, d.r.i.num);
+                d.r.i.length =          zeros(1, d.r.i.num);
+                d.r.i.size =            cell( 1, d.r.i.num);
+                
+                d.r.i.name =            cell( 1, d.r.i.num);
+                d.r.i.unit =            cell( 1, d.r.i.num);
+                
+                d.r.i.isNIDAQ =         false(1, d.r.i.num);
+                d.r.i.inEnmulation =    false(1, d.r.i.num);
+                
+                % And initialize empty variables.
+                d.r.l.axis =            [];
+                d.r.l.type =            [];
+                d.r.l.weight =          [];
+                d.r.l.scans =           [];
 
-                for ii = 1:d.data.numInputs                                 % Now fill the empty lists
-                    d.data.inputDimension(ii) =     sum(d.data.inputs{ii}.config.kind.sizeInput > 1);
-                    d.data.sizeInput{ii} =          d.data.inputs{ii}.config.kind.sizeInput(d.data.inputs{ii}.config.kind.sizeInput > 1);   % Poor naming.
-                    d.data.inputLength(ii) =        prod(d.data.inputDimension(ii));
-%                     d.data.numInputAxes = d.data.numInputAxes + d.data.inputDimension(ii);
-                    d.data.layerType =  [d.data.layerType   1:d.data.inputDimension(ii)];
-                    d.data.layerIndex = [d.data.layerIndex  ones(1, d.data.inputDimension(ii))*ii];
+                for ii = 1:d.r.i.num        % Now fill the empty lists
+                    c = d.d.inputs{ii};     % Get the config for the iith input.
                     
-                    for s = d.data.sizeInput{ii}
-                        d.data.scans = [d.data.scans {1:s}];
+                    if isfield(c, 'class')
+                        d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config),
+                    else
+                        error('mcData(): Config given without class. ');
                     end
                     
-                    lengths = d.data.sizeInput{ii};
-                    d.data.lengths =    [d.data.lengths     lengths];
+                    % Extract some info from the config.
+                    d.r.i.dimension(ii) =   sum(c.kind.sizeInput > 1);
+                    d.r.i.size{ii} =        c.kind.sizeInput(c.kind.sizeInput > 1);   % Poor naming.
+                    d.r.i.length(ii) =      prod(d.r.i.size(ii));
                     
-                    iwAdd = ones(1, d.data.inputDimension(ii)); % Temporary variable: 'indexWeightAdd' because it will be added to d.data.indexWeight.
+                    d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();  % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
+                    d.r.i.unit{ii} =            d.r.i.i{ii}.nameUnits();  %                                       ...'name (units)' form
+
+                    d.r.i.isNIDAQ(ii) =         strcmpi('nidaq', c.kind.kind(1:min(5,end)));
+                    d.r.i.inEmulation(ii) =     d.r.i.i{ii}.inEmulation;
+                    
+                    % For inputs which have dimension (e.g. a vector input like a spectrum vs a number like a voltage), fill in some info so we can display data over these input axes.
+                    d.r.l.axis =    [d.r.l.axis     1:d.r.i.dimension(ii)];             % If an input has dimension dim, then 1:dim is added, representing the 'dim' axes that this input has.
+                    d.r.l.type =    [d.r.l.type     ones(1, d.r.i.dimension(ii))*ii];   % To identify which input the above belongs to, the index is tagged with the number of the axis.
+                    d.r.l.scans =   [d.r.l.scans    d.r.i.i{ii}.getInputScans()];
+                    d.r.l.lengths = [d.r.l.lengths  d.r.i.size{ii}];                    % Will this be a cell?
+                    
+                    iwAdd = ones(1, d.r.i.dimension(ii));       % Temporary variable: 'indexWeightAdd' because it will be added to d.r.l.weight.
                     for jj = 2:length(iwAdd)
-                        iwAdd(jj:end) = iwAdd(jj:end)*d.data.sizeInput{ii}(jj-1);
+                        iwAdd(jj:end) = iwAdd(jj:end)*d.r.i.size{ii}(jj-1);
+                    end
+                    d.r.l.weight =              [d.r.l.weight iwAdd];
+                end
+                
+                % And gather some statistics based on the filled lists.
+                d.r.i.numInputAxes = sum(d.r.i.Dimension);
+                
+
+                % GENERATE AXIS RUNTIME DATA ===================================================================================
+                
+                % Again, first figure out how many axes we have.
+                d.r.a.num =         length(d.d.axes);
+                
+                % Make some empty lists...
+                d.r.a.length =          zeros(1, d.r.i.num);
+                
+                d.r.a.name =            cell(1, d.data.numAxes);
+                d.r.a.unit =            cell(1, d.data.numAxes);
+                
+                d.r.a.isNIDAQ =         false(1, d.r.i.num);
+                d.r.a.inEnmulation =    false(1, d.r.i.num);
+                
+                d.r.a.prev =            NaN( 1, d.data.numAxes);
+
+                % ...and fill them.
+                for ii = 1:d.r.a.num
+                    c = d.d.axes{ii};     % Get the config for the iith axis.
+                    
+                    if isfield(c, 'class')
+                        d.r.a.a{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config),
+                    else
+                        error('mcData(): Config given without class. ');
                     end
                     
-                    d.data.indexWeight = [d.data.indexWeight iwAdd];
-
-                    d.data.isInputNIDAQ(ii) =       strcmpi('nidaq', d.data.inputs{ii}.config.kind.kind(1:5));
-                    d.data.inEmulation(ii) =        d.data.inputs{ii}.inEmulation;
-                    d.data.inputConfigs{ii} =       d.data.inputs{ii}.config;
+                    d.r.a.length(ii) =      length(d.d.scans{ii});
                     
-                    d.data.inputNames{ii} =         d.data.inputs{ii}.nameShort();  % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
-                    d.data.inputNamesUnits{ii} =    d.data.inputs{ii}.nameUnits();  %                                            ...'name (units)' form
-                end
+                    d.r.a.name{ii} =        d.r.a.a{ii}.nameShort();
+                    d.r.a.unit{ii} =        d.r.a.a{ii}.nameUnits();
                     
-                d.data.numInputAxes = sum(d.data.inputDimension(ii));
-
-                %%% HANDLE THE AXES %%%
-                d.data.numAxes =   length(d.data.axes);
-                
-                if ~isfield(d.data, 'plotMode')
-                    d.data.plotMode = max(min(2, d.data.numAxes + d.data.numInputAxes),1);
-                end
-                
-                if ~isfield(d.data, 'layer')
-                    d.data.layer = ones(1, d.data.numAxes + d.data.numInputAxes)*(1 + d.data.plotMode);
-                    d.data.layer(1:min(d.data.plotMode, d.data.numAxes)) = 1:min(d.data.plotMode, d.data.numAxes);
+                    d.r.a.isNIDAQ(ii) =     strcmpi('nidaq', c.kind.kind(1:min(5,end)));
+                    d.r.a.inEmulation(ii) = d.r.a.a{ii}.inEmulation;
                     
-                    d.data.input = 1;
-                end
-                
-                d.data.layerType =  [zeros(1, d.data.numAxes) d.data.layerType];  % Appropriately pad the arrays...
-                d.data.layerIndex = [ones(1, d.data.numAxes)  d.data.layerIndex];
-
-                d.data.lengths =        [zeros(1, d.data.numAxes) d.data.lengths];
-                d.data.indexWeight =    [ones(1,  d.data.numAxes) d.data.indexWeight];  % Index weight is best described by an example:
-                                                                                        %   If one has a 5x4x3 matrix, then incrimenting the x axis
-                                                                                        %   increases the linear index (the index if the matrix was
-                                                                                        %   streached out) by one. Incrimenting the y axis increases
-                                                                                        %   the linear index by 5. And incrimenting the z axis increases
-                                                                                        %   the linear index by 20 = 5*4. So the index weight in this case
-                                                                                        %   is [1 5 20].
-
-                d.data.axisNames =         cell(1, d.data.numAxes);   % Same as input name generation above.
-                d.data.axisNamesUnits =    cell(1, d.data.numAxes);
-                d.data.axisPrev =          NaN( 1, d.data.numAxes);
-
-                for ii = 1:d.data.numAxes
-                    d.data.lengths(ii) =            length(d.data.scans{ii});
+%                     d.r.a.prev =            d.r.a.a{ii}.getX();
                     
-                    d.data.axisNames{ii} =          d.data.axes{ii}.nameShort();
-                    d.data.axisNamesUnits{ii} =     d.data.axes{ii}.nameUnits();
-                    d.data.axisConfigs{ii} =        d.data.axes{ii}.config;
+                    d.r.a.scansInternalUnits{ii} = arrayfun(d.r.a.a{ii}.config.kind.ext2intConv, d.d.scans{ii});
                 end
                 
+                % Then, figure out how we should initially display the data, based on the total number of axes we have.
+                d.r.plotMode = max(min(2, d.r.a.num + d.r.i.numInputAxes),1);   % Plotmode takes in 0 = histogram (no axes); 1 = 1D (1 axis); ...
                 
-            
-                if ~isfield(d.data, 'shouldOptimize')
-                    d.data.shouldOptimize = false;
+                % And choose which axes to initially display.
+                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(1 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
+                n = min(d.r.plotMode, d.r.a.num);
+                d.r.l.layer(1:n) = 1:n;                                                     % Then the first two axes are set to 1 and 2 (for 2D).
+                
+                % Then, add mcAxis info to the layer information...
+                d.r.l.axis =    [ones( 1, d.data.numAxes) d.r.l.axis];
+                d.r.l.type =    [zeros(1, d.data.numAxes) d.r.l.type];
+                d.r.l.length =  [d.r.a.length d.r.i.length];
+                
+                % Index weight is best described by an example: If one has a 5x4x3 matrix, then incrimenting the x axis
+                %   increases the linear index (the index if the matrix was streached out) by one. Incrimenting the y axis
+                %   increases the linear index by 5. And incrimenting the z axis increases the linear index by 20 = 5*4. So the
+                %   index weight in this case is [1 5 20].
+                d.r.l.weight =  [ones(1,  d.data.numAxes) d.r.l.weight];    
+                
+                % Make index weight according to the above specification.
+                for ii = 2:d.r.a.num
+                    d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 
-                d.data.name = '';
+                d.d.canScanFast = d.r.a.isNIDAQ && ~d.r.a.inEmulation  && all(d.r.i.isNIDAQ & ~d.r.a.inEmulation);
                 
-                for ii = 1:(d.data.numInputs-1)
-                    d.data.name = [d.data.name d.data.inputs{ii}.config.name ', '];
-                end
-                
-                d.data.name = [d.data.name d.data.inputs{d.data.numInputs}.config.name];
-                    
-                if ~isempty(d.data.axes)
-                    d.data.name = [d.data.name ' vs '];
-
-                    for ii = 1:(d.data.numAxes-1)
-                        d.data.name = [d.data.name d.data.axes{ii}.config.name ', '];
-                    end
-
-                    d.data.name = [d.data.name d.data.axes{d.data.numAxes}.config.name];
-                end
-
-%                 if d.data.numAxes > 2
-%                     for ii = 2:d.data.numAxes-1
-%                         d.data.indexWeight(ii+1:end) = d.data.indexWeight(ii+1:end)*d.data.lengths(ii);
-%                     end
-%                 end
-% 
-%                 d.data.indexWeight(1) = 0;
-
-                for ii = 2:d.data.numAxes
-                    d.data.indexWeight(ii:end) = d.data.indexWeight(ii:end)*d.data.lengths(ii-1);
-                end
-                
-                for ii = 1:d.data.numAxes                                 % Fill the empty lists
-                    d.data.scansInternalUnits{ii} = arrayfun(d.data.axes{ii}.config.kind.ext2intConv, d.data.scans{ii});
-                end
-
-                allInputsFast = all(d.data.isInputNIDAQ & ~d.data.inEmulation);       % Are all 'everypoint'-mode inputs NIDAQ?
-                if ~isempty(d.data.axes)
-                    % Temporarily disabling fast (in time) aquisition.
-                    d.data.canScanFast = (strcmpi('nidaq', d.data.axes{1}.config.kind.kind(1:min(5,end)))) && allInputsFast; % || strcmpi('time', d.data.axes{1}.config.kind.kind)) && ~d.data.axes{1}.inEmulation && allInputsFast;   % Is the first axis NIDAQ? If so, then everything important is NIDAQ if allInputsNIDAQ also.
-                    d.data.timeIsAxis = strcmpi('time', d.data.axes{end}.config.kind.kind);
+                if isfield(d.d, 'circTime')
+                    d.d.flags.circTime = d.d.flags.circTime && strcmpi('time', d.data.axes{end}.config.kind.kind);
                 else
-                    d.data.canScanFast = true;  % or false?
-                    d.data.timeIsAxis = false;
+                    d.d.flags.circTime = false;
                 end
                 
-%                 d.data.canScanFast = false
+                % MCDATA NAMING ================================================================================================
+                
+                % Now, figure out what this mcData should be named.
+                if ~isfield(d.d, 'name')
+                    d.d.name = '';
+                end
+                
+                % If there isn't already a name, generate one:
+                if isempty(d.d.name)
+                    for ii = 1:(d.r.i.num-1)
+                        d.d.name = [d.d.name d.r.i.name{ii} ', '];
+                    end
+
+                    d.d.name = [d.d.name d.r.i.name{d.r.i.num}];
                     
-                d.resetData();
-                d.data.isInitialized = true;
+                    if ~isempty(d.r.a.a)
+                        d.d.name = [d.d.name ' vs '];
+
+                        for ii = 1:(d.d.a.num-1)
+                            d.d.name = [d.d.name d.r.a.name{ii} ', '];
+                        end
+
+                        d.d.name = [d.d.name d.r.a.name{d.d.a.num}];
+                    end
+                end
                 
-                disp('layer stuff')
+                % FINAL ========================================================================================================
+                if ~isfield(d.d, 'index')
+                    d.resetData();
+                end
+                d.r.isInitialized = true;
                 
-                d.data.layer
-                d.data.layerType
-                d.data.layerIndex
+                d.d.info.version = mcInstrumentHandler.version();
             end
         end
         
         function resetData(d)
-            %%% INITIALIZE THE DATA TO NAN %%%
-            d.data.data =   cell([1, d.data.numInputs]);  % d.data.numInputs layers of data (one layer per input)
+            % INITIALIZE THE DATA TO NAN 
+            d.d.data =   cell([1, d.r.i.num]);      % d.r.i.num layers of data (one layer per input)
 
-            for ii = 1:d.data.numInputs
-                if d.data.inputDimension(ii) == 0                                               % If the input is singular (if it outputs just a number)
-                    d.data.data{ii} = NaN([d.data.lengths 1]);                              % Then the layer is a numeric array of NaN.
-                else                                                                            % Otherwise, if the input is more complex,
-                    % Changed 9/13.
-                    d.data.lengths
-                    d.data.layerIndex
-                    relevantLengths = d.data.lengths(d.data.layerIndex == 0 | d.data.layerIndex == ii);
-
-                    d.data.data{ii} = NaN([relevantLengths 1]);
-                        
-%                         d.data.data{ii} = cell([d.data.lengths 1]);                             % Then the layer is a cell array containing...
-%                         d.data.data{ii}(:) = {NaN(d.data.inputs{ii}.config.kind.sizeInput)};    % ...numeric arrays of NaN corresponding to the input's dimension.
-                end
+            for ii = 1:d.r.i.num
+                d.d.data{ii} =      NaN([d.r.l.length(d.r.l.type == 0 | d.r.l.type == ii) 1]);
             end
 
-            d.data.index =          ones(1, d.data.numAxes);
-            d.data.currentIndex =   2;
-            if ~isempty(d.data.index)
-                d.data.index(1) =       d.data.lengths(1);
-            end
+            % Make the variable that keeps track of where we are in 
+            d.d.index =          ones(1, d.data.numAxes);
+            d.d.currentIndex =   2;
             
-            d.data.fnameManual =        mcInstrumentHandler.timestamp(0);
-            d.data.fnameBackground =    mcInstrumentHandler.timestamp(1);
-            
-%             a = d.data.fnameManual
-%             b = d.data.fnameBackground
+            d.d.fnameManual =        mcInstrumentHandler.timestamp(0);
+            d.d.fnameBackground =    mcInstrumentHandler.timestamp(1);
                 
-            d.data.scanMode = 0;
+            d.r.scanMode = 0;
+            
+            [~, ~, d.d.other.axes, d.d.other.status] = mcInstrumentHandler.getAxes();
         end
         
         function aquire(d)
-            d.data.aquiring = true;
-            d.data.scanMode = 1;
-
-            nums = 1:d.data.numAxes;
-
-            if all(isnan(d.data.axisPrev))  % If the previous positions of the axes have not already been set...
-                for ii = nums               % For every axis,
-                    d.data.axisPrev(ii) = d.data.axes{ii}.getX();               % Remember the pre-scan positions of the axes.
-                    d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));   % And goto the starting position.
-                end
-                
-                for ii = nums               % Then, again for every axis,
-                    d.data.axes{ii}.wait(); % Wait for the axis to reach the starting position (only relevant for micros/etc).
-                end
+            d.r.aquiring = true;
+            d.r.scanMode = 1;
+            
+            if any(mcInstrumentHandler.version() ~= d.d.info.version)
+                mcDialog(  ['Warning! This data was initalized with modular Control version [ ' num2str(d.d.info.version)... 
+                            ' ]. The current version is [ ' num2str(mcInstrumentHandler.version()) ' ].'], 'Warning!');
             end
             
-            if d.data.aquiring
-                if d.data.canScanFast && (~isfield(d.data, 's') || isempty(d.data.s))     % If neccessary, then make a NIDAQ session if it has not already been created.
-%                     disp('Creating Session')
-                    d.data.s = daq.createSession('ni');
-                    
-                    d.data.axes{1}.close();
-                    d.data.axes{1}.addToSession(d.data.s);            % First add the axis,
+            % Check d.d.other.axes, d.d.other.status...
+            
+            if d.r.a.num == 0   % A simple case if we have no axes...
+                for ii = 1:d.r.i.num
+                    d.d.data{ii} = d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                end
+            else
+                nums = 1:d.r.a.num;
 
-                    for ii = 1:d.data.numInputs
-                        d.data.inputs{ii}.addToSession(d.data.s);     % Then add the inputs
+                if all(isnan(d.r.a.prev))       % If the previous positions of the axes have not already been set...
+                    for ii = nums               % For every axis,
+                        d.r.a.prev(ii) = d.r.a.a{ii}.getX();                % Remember the pre-scan positions of the axes.
+                        d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));     % And goto the starting position.
                     end
-                end 
-            end
-            
-            while d.data.aquiring
-                d.aquire1D(d.data.indexWeight(1:d.data.numAxes) * (d.data.index -1)' - d.data.index(1) + 2);
-%                 drawnow limitrate;
-                
-                if all(d.data.index == d.data.lengths)  % If the scan has finished...
-                    d.data.scanMode = 2;
-                    break;
+
+                    for ii = nums               % Then, again for every axis,
+                        d.r.a.a{ii}.wait();     % Wait for the axis to reach the starting position (only relevant for micros/etc).
+                    end
                 end
 
-                currentlyMax =  d.data.index == d.data.lengths;                 % Variables to figure out which indices need incrimenting/etc.
-                toIncriment =   [false currentlyMax(1:end-1)] & ~currentlyMax;
-                toReset =       [false currentlyMax(1:end-1)] &  currentlyMax;
-                
-                if ~d.data.aquiring                     % If the scan was stopped...
-%                     if d.data.scanMode == 1     % If stopping was unexpected...
-%                         d.data.scanMode = 3;
-%                     end
-                    break;
-                end
-                
-                toIncriment
-                
-                if d.data.timeIsAxis && toIncriment(end)    % If the last axis is time and we have run out of bounds,...
-                    disp('Time is axis and overrun!');
-                    
-                    for ii = 1:d.data.numInputs         % ...for every input, circshift the data forward one.
-                        if isnan(d.data.inputDimension(ii)) || d.data.inputDimension(ii) == 0   % If the data is contained in the cell or contained in one index of a numeric array,
-                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)]);  	
-                        else                                                                    % Otherwise, if the data is long (e.g. a vector), we need to circshift by more:
-                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)*d.data.inputLength(ii)]);
+                if d.r.aquiring
+                    % Make a NIDAQ session if it is neccessary and has not already been created.
+                    if d.r.canScanFast && (~isfield(d.r, 's') || isempty(d.r.s) || ~isvalid(d.r.s))
+                        d.r.s = daq.createSession('ni');
+
+                        d.r.a.a{1}.close();
+                        d.r.a.a{1}.addToSession(d.r.s);         % First add the axis,
+
+                        for ii = 1:d.r.i.num
+                            d.r.i.i{ii}.addToSession(d.r.s);    % Then add the inputs
                         end
-                    end
-                    
-                    toIncriment(end) = false;   % and pretend that the time axis does not need to be incrimented.
+                    end 
                 end
 
-                d.data.index = d.data.index + toIncriment;  % Incriment all the indices that were after a maximized index and not maximized.
-                d.data.index(toReset) = 1;                  % Reset all the indices that were maxed (except the first) to one.
-                
-                for ii = nums(toIncriment | toReset)
-                    d.data.axes{ii}.goto(d.data.scans{ii}(d.data.index(ii)));
+                while d.r.aquiring
+                    d.aquire1D(d.r.l.weight(1:d.r.a.num) * (d.d.index - 1)' + 1);
+
+                    currentlyMax =  d.d.index == d.r.a.length;  % Variables to figure out which indices need incrimenting/etc.
+
+                    if all(currentlyMax) && ~d.d.flags.circTime       % If the scan has finished...
+                        d.data.scanMode = 2;
+                        break;
+                    end
+
+                    toIncriment =   [true currentlyMax(1:end-1)] & ~currentlyMax;
+                    toReset =       [true currentlyMax(1:end-1)] &  currentlyMax;
+
+                    if ~d.data.aquiring                     % If the scan was stopped...
+                        break;
+                    end
+
+                    if d.d.flags.circTime && toIncriment(end)     % If we have run out of bounds and need to circshift...
+                        disp('Time is axis and overrun!');
+
+                        for ii = 1:d.r.i.num        % ...for every input, circshift the data forward one 'time' forward.
+                            d.d.data{ii} = circshift(d.d.data{ii}, [0, max(d.l.weight(d.r.l.type == 0 | d.r.l.type == ii))]);
+                        end
+
+                        toIncriment(end) = false;   % and pretend that the time axis does not need to be incrimented.
+                    end
+
+                    d.d.index = d.d.index + toIncriment;    % Incriment all the indices that were after a maximized index and not maximized.
+                    d.d.index(toReset) = 1;                 % Reset all the indices that were maxed (except the first) to one.
+
+                    for ii = nums(toIncriment | toReset)
+                        d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));
+                    end
                 end
-            end
-            
-            if d.data.canScanFast   % Destroy the session, if a session was created.
-                release(d.data.s);
-                delete(d.data.s);
-                d.data.s = [];
-            end 
-            
-            if d.data.shouldOptimize        % If there should be a post-scan optimization...
-                switch length(d.data.axes)
-                    case 1
-                        [x, ~] = mcPeakFinder(d.data.data{1}, d.data.scans{1}, 0);  % First find the peak.
-                        
-                        d.data.axes{1}.goto(d.data.scans{1}(1));    % Approaching from the same direction...
-                        
-                        d.data.axes{1}.goto(x);                     % ...goto the peak.
-                    case 2
-                        [x, y] = mcPeakFinder(d.data.data{1}, d.data.scans{1}, d.data.scans{2});    % First find the peak.
-                        
-                        d.data.axes{1}.goto(d.data.scans{1}(1));    % Approaching from the same direction...
-                        d.data.axes{2}.goto(d.data.scans{2}(1));
-                        
-                        d.data.axes{1}.goto(x);                     % ...goto the peak.
-                        d.data.axes{2}.goto(y);
-                    otherwise
-                        disp('optimization on more than 2 axes not currently supported...');
-                end 
-            elseif d.data.scanMode == 2     % Should the axes goto the original values after the scan finishes?
-                for ii = nums
-                    d.data.axes{ii}.goto(d.data.axisPrev(ii));  % Then goto the stored previous values.
+
+                if d.r.canScanFast   % Destroy the session, if a session was created.
+                    release(d.r.s);
+                    delete(d.r.s);
+                    d.r.s = [];
+                end
+
+                if d.data.shouldOptimize        % If there should be a post-scan optimization...
+                    switch length(d.r.a.a)
+                        case 1
+                            [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);    % First find the peak.
+
+                            d.r.a.a{1}.goto(d.d.scans{1}(1));                       % Approaching from the same direction...
+
+                            d.r.a.a{1}.goto(x);                                     % ...goto the peak.
+                        case 2
+                            [x, y] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, d.d.scans{2});     % First find the peak.
+
+                            d.r.a.a{1}.goto(d.d.scans{1}(1));                                   % Approaching from the same direction...
+                            d.r.a.a{2}.goto(d.d.scans{2}(1));
+
+                            d.r.a.a{1}.goto(x);                                                 % ...goto the peak.
+                            d.r.a.a{2}.goto(y);
+                        otherwise
+                            disp('mcData.aquire(): Optimization on more than 2 axes not currently supported...');
+                    end 
+                elseif d.data.scanMode == 2     % Should the axes goto the original values after the scan finishes?
+                    for ii = nums
+                        d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
+                    end
                 end
             end
         end
         function aquire1D(d, jj)
+            if d.r.canScanFast
+                d.r.s.Rate = 1/max(d.data.integrationTime);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
+                
+                d.r.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
 
-            if d.data.canScanFast
-                d.data.s.Rate = 1/max(d.data.integrationTime);   % Whoops; integration time has to be the same for all inputs... Taking the max for now...
-                
-                d.data.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
-                
-%                 d.data.s
-%                 d.data.axes{1}
-                
-                d.data.s
-
-                [data_, times] = d.data.s.startForeground();                % Should I startBackground() and use a listener?
+                [data_, times] = d.r.s.startForeground();       % Should I startBackground() and use a listener? (Do this in the future!)
 
                 kk = 1;
 
-                for ii = 1:d.data.numInputs     % Fill all of the inputs with data...
-                    if d.data.inputs{ii}.config.kind.shouldNormalize  % If this input expects to be divided by the exposure time...
-%                             jj:jj+d.data.lengths(1)-1
-%                             (diff(double(data_(:, kk)))./diff(double(times)))'
+                for ii = 1:d.r.i.num     % Fill all of the inputs with data...
+                    if d.d.inputs{ii}.kind.shouldNormalize  % If this input expects to be divided by the exposure time...
                         d.data.data{ii}(jj:jj+d.data.lengths(1)-1) = (diff(double(data_(:, kk)))./diff(double(times)))';   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
                     else
                         d.data.data{ii}(jj:jj+d.data.lengths(1)-1) = double(data_(1:end-1, kk))';
@@ -606,56 +684,47 @@ classdef mcData < mcSavableClass
 
                     kk = kk + 1;
                 end
-            elseif strcmpi(d.data.axes{1}, 'time')  % If time happens to be the current axis...
-                disp('Time is 1D axis')
-%                 while d.data.aquiring
-                    % Aquire the data.
-                    for ii = 1:d.data.numInputs         % ...for every input...
-                        if isnan(d.data.inputDimension(ii))
-                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)]);  
-                            d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
-                        elseif d.data.inputDimension(ii) == 0
-                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)]);  
-                            d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                
+                if ~isempty(d.d.index)
+                    d.d.index(1) = d.r.a.length(1);
+                end
+            elseif length(d.d.axes) == 1 && d.d.flags.circTime    % If time happens to be the current axis and we should circshift...
+                disp('Time is only axis')
+                
+                while d.data.aquiring
+                    for ii = 1:d.r.i.num
+                        len = max(d.l.weight(d.r.l.type == 0 | d.r.l.type == ii));
+                        
+                        d.d.data{ii} = circshift(d.d.data{ii}, [0, len]);
+                        
+                        if len == 1
+                            d.d.data{ii}{1} =                   d.r.i.i{ii}.measure(d.d.intTimes(ii));
                         else
-                            circshift(d.data.data{ii}, [0, d.data.indexWeight(end)*d.data.inputLength(ii)]);
-                            base = (jj+kk)*d.data.inputLength(ii);
-                            d.data.data{ii}(base:base+d.data.inputLength(ii)-1) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            d.d.data{ii}{1:d.r.i.length(ii)} =  d.r.i.i{ii}.measure(d.d.intTimes(ii));
                         end
                     end
-%                 end
+                end
             else
-                kk = 0;
-
-                for x = d.data.scans{1}                 % Now take the data.
+                for kk = d.d.index(1):d.r.a.length(1)
                     if d.data.aquiring
-                        d.data.axes{1}.goto(x);             % Goto each point...
+                        d.data.axes{1}.goto(d.data.scans{1}(kk));             % Goto each point...
                         d.data.axes{1}.wait();              % ...wait for the axis to arrive (for some types)...
 
-                        for ii = 1:d.data.numInputs         % ...for every input...
-                            if isnan(d.data.inputDimension(ii))
-                                d.data.data{ii}{jj+kk} = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
-                            elseif d.data.inputDimension(ii) == 0
-                                d.data.data{ii}(jj+kk) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                        for ii = 1:d.r.i.num         % ...for every input...
+                            if isnan(d.r.i.Dimension(ii))
+                                d.data.data{ii}{jj+kk-1} = d.r.i.s{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            elseif d.r.i.Dimension(ii) == 0
+                                d.data.data{ii}(jj+kk-1) = d.r.i.s{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             else
-                                base = (jj+kk)*d.data.inputLength(ii);
-                                d.data.data{ii}(base:base+d.data.inputLength(ii)-1) = d.data.inputs{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                                base = (jj+kk-1)*d.r.i.Length(ii) + 1;  % This is a guess.
+                                d.data.data{ii}(base:base+d.r.i.Length(ii)-1) = d.r.i.s{ii}.measure(d.data.integrationTime(ii));  % ...measure.
                             end
                         end
-
-                        kk = kk + 1;
                     end
+                    d.d.index(1) = kk;
                 end
             end
         end
-%         
-%         function incriment()
-%             
-%         end
-%         
-%         function aquire1DListener()
-%             
-%         end
     end
 end
 

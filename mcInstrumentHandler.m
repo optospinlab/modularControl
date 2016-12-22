@@ -41,7 +41,7 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function ver = version()
-            ver = [0 42];
+            ver = [0 43];
         end
         function tf = open()
             tf = true;

@@ -3,7 +3,7 @@ classdef mcDataViewer < mcSavableClass
 %
 % Status: Mostly finished, but mostly uncommented. Future: display non-singular inputs, definitely RGB, maybe 3D?
     
-    properties  % Color
+    properties  % Colors
         colorR = [1 0 0];
         colorG = [0 1 0];
         colorB = [0 0 1];
@@ -121,7 +121,7 @@ classdef mcDataViewer < mcSavableClass
                     gui.b = mcProcessedData(gui.data, varargin{4});
             end
             
-            if gui.data.data.scanMode == 2 || gui.data.data.scanMode == -1
+            if gui.data.r.scanMode == 2 || gui.data.r.scanMode == -1
                 shouldAquire = false;
             end
             
@@ -136,13 +136,13 @@ classdef mcDataViewer < mcSavableClass
                 inputNames1D = {};
                 inputNames2D = {};
                 
-                for ii = 1:gui.data.data.numInputs
-                    if gui.data.data.inputDimension(ii) == 1
-                        inputNames1D{jj} = gui.data.data.inputNames{ii};
+                for ii = 1:gui.data.r.i.num
+                    if gui.r.inputDimension(ii) == 1
+                        inputNames1D{jj} = gui.r.inputNames{ii};
                         jj = jj + 1;
                     end
-                    if gui.data.data.inputDimension(ii) == 2
-                        inputNames2D{kk} = gui.data.data.inputNames{ii};
+                    if gui.r.inputDimension(ii) == 2
+                        inputNames2D{kk} = gui.r.inputNames{ii};
                         kk = kk + 1;
                     end
                 end
@@ -157,7 +157,7 @@ classdef mcDataViewer < mcSavableClass
                 gui.tabs.t0  = uitab('Parent', utg, 'Title', 'Histogram');
                 
                 
-                switch gui.data.data.plotMode
+                switch gui.data.r.plotMode
                     case 0
                         utg.SelectedTab = gui.tabs.t0;
                     case 1
@@ -173,14 +173,14 @@ classdef mcDataViewer < mcSavableClass
 
                 uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
                 
-                gui.params1D.chooseList = cell(1, gui.data.data.numAxes); % This will be longer, but we choose not to calculate.
-                gui.params2D.chooseList = cell(1, gui.data.data.numAxes);
+                gui.params1D.chooseList = cell(1, gui.data.r.a.num); % This will be longer, but we choose not to calculate.
+                gui.params2D.chooseList = cell(1, gui.data.r.a.num);
                 
-                for ii = 1:gui.data.data.numAxes
-                    levellist = strcat(strread(num2str(gui.data.data.scans{ii}), '%s')', [' ' gui.data.data.axes{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
+                for ii = 1:gui.data.r.a.num
+                    levellist = strcat(strread(num2str(gui.data.d.scans{ii}), '%s')', [' ' gui.data.r.a.a{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
                     
                     for tab = [gui.tabs.t1d gui.tabs.t2d]
-                        uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.data.axes{ii}.nameShort() ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+                        uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.r.a.a{ii}.nameShort() ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
                         if tab == gui.tabs.t1d
                             axeslist = {'X'};
@@ -204,9 +204,9 @@ classdef mcDataViewer < mcSavableClass
                             gui.params2D.chooseList{ii} = choose;
                         end
             
-                        gui.data.data.layerType(ii) = 0;     % The layer is an axis.
-                        gui.data.data.layerIndex(ii) = ii;
-                        gui.data.data.layerDim(ii) = 1;
+                        gui.data.r.l.axis(ii) = 0;     % The layer is an axis.
+                        gui.data.r.l.type(ii) = ii;
+                        gui.data.r.l.layerDim(ii) = 1;
                     end
                 end
                 
@@ -218,11 +218,11 @@ classdef mcDataViewer < mcSavableClass
                 
                 display('adding inputs');
                 
-                for kk = 1:gui.data.data.numInputs
-                    if gui.data.data.inputDimension(kk) <= length(inputLetters)
+                for kk = 1:gui.data.r.i.num
+                    if gui.r.inputDimension(kk) <= length(inputLetters)
                         jj = 0;
                         
-                        for sizeInput = gui.data.data.inputs{kk}.config.kind.sizeInput
+                        for sizeInput = gui.r.i.i{kk}.config.kind.sizeInput
                             if sizeInput ~= 1       % A vector, according to matlab, has size [1 N]. We don't want to count the 1.
                                 jj = jj + 1;
                                 ii = ii + 1;        % Use the ii from the axis loop.
@@ -231,7 +231,7 @@ classdef mcDataViewer < mcSavableClass
 
                                 for tab = [gui.tabs.t1d gui.tabs.t2d]
                                     % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
-                                    uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.data.inputs{kk}.nameShort() ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+                                    uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.r.i.i{kk}.nameShort() ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
                                     if tab == gui.tabs.t1d
                                         axeslist = {'X'};
@@ -255,9 +255,9 @@ classdef mcDataViewer < mcSavableClass
                                         gui.params2D.chooseList{ii} = choose;
                                     end
 
-%                                     gui.data.data.layerType(ii) = 1;     % The layer is an input.
-%                                     gui.data.data.layerIndex(ii) = kk;
-%                                     gui.data.data.layerDim(ii) = 1;
+%                                     gui.data.r.l.axis(ii) = 1;     % The layer is an input.
+%                                     gui.data.r.l.type(ii) = kk;
+%                                     gui.data.r.l.layerDim(ii) = 1;
                                 end
                             end
                         end
@@ -272,7 +272,7 @@ classdef mcDataViewer < mcSavableClass
                 
                 gui.tabs.gray.Units = 'pixels';
                 tabpos = gui.tabs.gray.Position;
-                inputlist = cellfun(@(x)({x.name()}), gui.data.data.inputs);
+                inputlist = cellfun(@(x)({x.name()}), gui.r.i.i);
                                             
                 uicontrol('Parent', gui.tabs.gray, 'Style', 'text',         'String', 'Input: ', 'Units', 'pixels', 'Position', [0 tabpos(4)-3*bh tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
                 gui.paramsGray.choose = uicontrol('Parent', gui.tabs.gray, 'Style', 'popupmenu',    'String', inputlist, 'Units', 'pixels', 'Position', [tabpos(3)/3 tabpos(4)-3*bh 2*tabpos(3)/3 - bh bh], 'Value', 1);
@@ -285,14 +285,14 @@ classdef mcDataViewer < mcSavableClass
                 gui.scanButton = uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, 1, .05], 'Callback', @gui.scanButton_Callback);
                 
                 if shouldAquire     % Expand upon this in the future
-                    gui.data.data.scanMode = 1;                      % Set as scanning
+                    gui.data.r.scanMode = 1;                      % Set as scanning
                     gui.scanButton.String = 'Pause';
                 else
-                    if gui.data.data.scanMode == 0                   % If new
+                    if gui.data.r.scanMode == 0                   % If new
                         gui.scanButton.String = 'Scan';
-                    elseif gui.data.data.scanMode == -1              % If paused
+                    elseif gui.data.r.scanMode == -1              % If paused
                         gui.scanButton.String = 'Continue'; 
-                    elseif gui.data.data.scanMode == 2               % If finished
+                    elseif gui.data.r.scanMode == 2               % If finished
                         gui.scanButton.String = 'Rescan';
                     end
                 end
@@ -424,7 +424,7 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function saveGUI_Callback(gui, ~, ~)
-            gui.data.data.fnameManual
+            gui.data.data.fnameManual % BROKEN!!!
             [FileName, PathName, FilterIndex] = uiputfile({'*.mat', 'Full Data File (*.mat)'; '*.png', 'Current Image (*.png)'; '*.png', 'Current Image With Axes (*.png)'}, 'Save As', gui.data.data.fnameManual);
             
             if all(FileName ~= 0)
@@ -432,10 +432,10 @@ classdef mcDataViewer < mcSavableClass
                     case 1  % .mat
                         % This case is covered below (saves in all cases).
                     case 2  % .png
-                        if gui.data.data.plotMode == 1      % 1D
+                        if      gui.data.r.plotMode == 1      % 1D
                             d = gui.p(1).YData;
                             lim = gui.p(1).YLim;
-                        else
+                        elseif  gui.data.d.plotMode == 2      % 1D
                             d = gui.i.CData;
                             lim = gui.a.CLim;
                         end
@@ -453,8 +453,8 @@ classdef mcDataViewer < mcSavableClass
                 
                 pause(.05);                         % Pause to give time for the file to save.
                 
-                data = gui.data.data;               % Always save the .mat file, even if the user doesn't specify... (change?)
-                save([PathName FileName(1:end-3) 'mat'], 'data');
+                d = gui.data.d;               % Always save the .mat file, even if the user doesn't specify... (change?)
+                save([PathName FileName(1:end-3) 'mat'], 'd');
             else
                 disp('No file given...');
             end
@@ -464,7 +464,7 @@ classdef mcDataViewer < mcSavableClass
         end
         function closeRequestFcnDF(gui, ~, ~)   % Close function for the data figure (the one with the graph)
             % gui.data.save();
-            gui.data.data.aquiring = false;
+            gui.data.r.aquiring = false;
             
             if ~isempty(gui.listeners)
                 delete(gui.listeners.x);
@@ -495,36 +495,36 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function scanButton_Callback(gui, ~, ~)
-            switch gui.data.data.scanMode   % -1 = paused, 0 = new, 1 = scanning, 2 = finished
+            switch gui.data.r.scanMode   % -1 = paused, 0 = new, 1 = scanning, 2 = finished
                 case {0, -1}                                % If new or paused
                     gui.scanButton.String = 'Pause';
-                    gui.data.data.scanMode = 1;
+                    gui.data.r.scanMode = 1;
                     gui.data.aquire();
                 case 1                                      % If scanning
-                    gui.data.data.aquiring = false;
-                    gui.data.data.scanMode = -1;
+                    gui.data.r.aquiring = false;
+                    gui.data.r.scanMode = -1;
                     gui.scanButton.String = 'Continue';
                 case 2                                      % If finished
                     gui.data.resetData();
                     gui.scanButton.String = 'Pause';
-                    gui.data.data.scanMode = 1;
+                    gui.data.r.scanMode = 1;
                     gui.data.aquire();
             end
         end
         
         % uimenu callbacks (when right-clicking on the graph)
         function gotoPostion_Callback(gui, ~, ~, isSel, shouldGotoLayer)    % Menu option to goto a position. See below for function of isSel and shouldGotoLayer.
-            if gui.data.data.plotMode == 1
-                axisX = gui.data.data.axes{gui.data.data.layer == 1};
+            if gui.data.r.plotMode == 1
+                axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
                 
                 if isSel        % If the user wants to go to the selected position
                     axisX.goto(gui.posL.sel.XData(1));
                 else            % If the user wants to go to the selected pixel
                     axisX.goto(gui.posL.pix.XData(1));
                 end
-            elseif gui.data.data.plotMode == 2
-                axisX = gui.data.data.axes{gui.data.data.layer == 1};
-                axisY = gui.data.data.axes{gui.data.data.layer == 2};
+            elseif gui.data.r.plotMode == 2
+                axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
+                axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
                 
                 
                 if isSel        % If the user wants to go to the selected position
@@ -537,13 +537,13 @@ classdef mcDataViewer < mcSavableClass
             end
             
             if shouldGotoLayer  % If the use wants to goto the current layer also...
-                for ii = 1:length(gui.data.data.axes)
-                    if      gui.data.data.plotMode == 1 && gui.data.data.layer{ii} ~= 1
-                        scan = gui.data.data.scans{ii};
-                        gui.data.data.axes{ii}.goto(scan(gui.data.data.layer{ii} - 1));
-                    elseif  gui.data.data.plotMode == 1 && gui.data.data.layer{ii} ~= 1 && gui.data.data.layer{ii} ~= 2
-                        scan = gui.data.data.scans{ii};
-                        gui.data.data.axes{ii}.goto(scan(gui.data.data.layer{ii} - 2));
+                for ii = 1:gui.data.r.a.num
+                    if      gui.data.r.plotMode == 1 && ~any(gui.data.r.l.layer{ii} == [1 2])
+                        scan = gui.data.d.scans{ii};
+                        gui.data.r.a.a{ii}.goto(scan(gui.data.d.l.layer{ii} - 2));
+                    elseif  gui.data.r.plotMode == 1 && ~any(gui.data.r.l.layer{ii} == [1 2 3])
+                        scan = gui.data.d.scans{ii};
+                        gui.data.r.a.a{ii}.goto(scan(gui.data.d.l.layer{ii} - 3));
                     end
                 end
             end
@@ -558,7 +558,7 @@ classdef mcDataViewer < mcSavableClass
                 gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
             end
         end
-        function normalizeThis_Callback(gui, ~, ~)                          
+        function normalizeThis_Callback(gui, ~, ~)	% Add GB!
             gui.scale.gray.gui.normAuto.Value = 0;
 
             gui.scale.gray.gui.maxEdit.String = gui.r.max();
@@ -569,7 +569,7 @@ classdef mcDataViewer < mcSavableClass
         end
         function openCounter_Callback(gui, ~, ~)                            % Looks like this needs debugging.
             display('1')
-            data2 = mcData(mcData.counterConfiguration(gui.data.data.inputs{gui.data.data.input}, 100, .25))
+            data2 = mcData(mcData.counterConfiguration(gui.data.d.inputs{gui.r.input}, 100, .25))
             display('2')
             % input to open up (currently select gray input), length of counter scan (HARDCODED!? CHANGE!), exposureTime in seconds  (HARDCODED!? CHANGE!).
             mcDataViewer(data2, false)    % And don't show the control window when opening...
@@ -581,7 +581,7 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function makeProperVisibility(gui)
-            switch gui.data.data.plotMode
+            switch gui.data.r.plotMode
                 case 0
                     pvis = 'off';
                     ivis = 'off';
@@ -626,48 +626,48 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function plotSetup(gui)
-            gui.a.Title.String = gui.data.data.name;
+            gui.a.Title.String = gui.data.d.name;
             
-            switch gui.data.data.plotMode
+            switch gui.data.r.plotMode
                 case 0  % histogram
-                    gui.a.XLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
+                    gui.a.XLabel.String = gui.r.i.i{gui.r.input}.nameUnits();
                     gui.a.XLabel.String = 'Number (num/bin)';
                 case 1  % 1D
-                    gui.p(1).XData = gui.data.data.scans{gui.data.data.layer == 1};
-                    gui.p(2).XData = gui.data.data.scans{gui.data.data.layer == 1};
-                    gui.p(3).XData = gui.data.data.scans{gui.data.data.layer == 1};
+                    gui.p(1).XData = gui.data.d.scans{gui.data.r.l.layer == 1};
+                    gui.p(2).XData = gui.data.d.scans{gui.data.r.l.layer == 1};
+                    gui.p(3).XData = gui.data.d.scans{gui.data.r.l.layer == 1};
                     gui.a.XLim = [min(gui.p(1).XData) max(gui.p(1).XData)];         % Check to see if range is zero!
                     
-                    gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
-                    gui.a.YLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
+                    gui.a.XLabel.String = gui.data.r.a.a{gui.data.r.l.layer == 1}.nameUnits();
+                    gui.a.YLabel.String = gui.r.i.i{gui.r.input}.nameUnits();
                 case 2  % 2D
-                    gui.i.XData = gui.data.data.scans{gui.data.data.layer == 1};
-                    gui.i.YData = gui.data.data.scans{gui.data.data.layer == 2};
+                    gui.i.XData = gui.data.d.scans{gui.data.r.l.layer == 1};
+                    gui.i.YData = gui.data.d.scans{gui.data.r.l.layer == 2};
                     gui.a.XLim = [min(gui.i.XData) max(gui.i.XData)];         % Check to see if range is zero!
                     gui.a.YLim = [min(gui.i.YData) max(gui.i.YData)];         % Check to see if range is zero!
                     
-                    gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
-                    gui.a.YLabel.String = gui.data.data.axes{gui.data.data.layer == 2}.nameUnits();
+                    gui.a.XLabel.String = gui.data.r.a.a{gui.data.r.l.layer == 1}.nameUnits();
+                    gui.a.YLabel.String = gui.data.r.a.a{gui.data.r.l.layer == 2}.nameUnits();
             end
             
             gui.resetAxisListeners();
             gui.shouldPlot = true;
         end
         function plotData_Callback(gui,~,~)
-            if gui.data.data.scanMode == 2
+            if gui.data.r.scanMode == 2
                 gui.scanButton.String = 'Rescan (Will Overwrite Data)';
             end
 
             if gui.shouldPlot
                 dims = sum(size(gui.r.data) > 1);
 
-                if gui.data.data.plotMode == 0
+                if gui.data.r.plotMode == 0
                     if gui.isRGB
                         
                     else
-                        gui.h(1).Data = gui.data.data.data{gui.data.data.input};
+                        gui.h(1).Data = gui.data.d.data{gui.r.input};
                     end
-                elseif gui.data.data.plotMode == 1 && dims == 1
+                elseif gui.data.r.plotMode == 1 && dims == 1
                     if gui.isRGB
 
                     else
@@ -677,7 +677,7 @@ classdef mcDataViewer < mcSavableClass
                         
                         gui.scale.gray.dataChanged_Callback(0,0);
                     end
-                elseif gui.data.data.plotMode == 2 && dims == 2
+                elseif gui.data.r.plotMode == 2 && dims == 2
                     if gui.isRGB
                         
                     else
@@ -698,20 +698,20 @@ classdef mcDataViewer < mcSavableClass
                 x = event.IntersectionPoint(1);
                 y = event.IntersectionPoint(2);
                 
-                switch gui.data.data.plotMode
+                switch gui.data.r.plotMode
                     case 0  % histogram
                         % Do nothing.
                     case 1  % 1D
                         xlist = (gui.p(1).XData - x) .* (gui.p(1).XData - x);
                         xi = find(xlist == min(xlist), 1);
                         xp = gui.p(1).XData(xi);
-%                         xprv = gui.data.data.axisPrev(gui.data.data.layer == 1);
+%                         xprv = gui.data.data.axisPrev(gui.data.r.l.layer == 1);
                         
 %                         gui.posL
 %                         gui.posL.sel
 %                         gui.posL.sel.Visible
                         
-                        axisX = gui.data.data.axes{gui.data.data.layer == 1};
+                        axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
                         
                         gui.posL.sel.XData = [x x];
                         gui.posL.pix.XData = [xp xp];
@@ -727,8 +727,8 @@ classdef mcDataViewer < mcSavableClass
                         if isnan(valr)
                             gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-%                             gui.data.data.inputs{gui.paramsGray.choose.Value}.extUnits
-                            gui.menus.ctsMenu.Label = ['Value: ' num2str(valr, 4) ' ' gui.data.data.inputs{gui.paramsGray.choose.Value}.config.kind.extUnits];
+%                             gui.r.i.i{gui.paramsGray.choose.Value}.extUnits
+                            gui.menus.ctsMenu.Label = ['Value: ' num2str(valr, 4) ' ' gui.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
                         gui.menus.posMenu.Label = ['Position: ' num2str(x, 4)  ' ' axisX.config.kind.extUnits];
@@ -747,11 +747,11 @@ classdef mcDataViewer < mcSavableClass
                         gui.pos.sel.YData = y;
                         gui.pos.pix.XData = xp;
                         gui.pos.pix.YData = yp;
-%                         gui.pos.prv.XData = gui.data.data.axisPrev(gui.data.data.layer == 1);
-%                         gui.pos.prv.YData = gui.data.data.axisPrev(gui.data.data.layer == 2);
+%                         gui.pos.prv.XData = gui.data.data.axisPrev(gui.data.r.l.layer == 1);
+%                         gui.pos.prv.YData = gui.data.data.axisPrev(gui.data.r.l.layer == 2);
                         
-                        axisX = gui.data.data.axes{gui.data.data.layer == 1};
-                        axisY = gui.data.data.axes{gui.data.data.layer == 2};
+                        axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
+                        axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
 
                         val = gui.i.CData(yi, xi);
                         
@@ -760,7 +760,7 @@ classdef mcDataViewer < mcSavableClass
                         if isnan(val)
                             gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-                            gui.menus.ctsMenu.Label = ['Value: ' num2str(val, 4) ' ' gui.data.data.inputs{gui.paramsGray.choose.Value}.config.kind.extUnits];
+                            gui.menus.ctsMenu.Label = ['Value: ' num2str(val, 4) ' ' gui.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
                         gui.menus.posMenu.Label = ['Position: [ ' num2str(x, 4)  ' ' axisX.config.kind.extUnits ', ' num2str(y, 4)  ' ' axisY.config.kind.extUnits ' ]'];
@@ -775,20 +775,20 @@ classdef mcDataViewer < mcSavableClass
             delete(gui.listeners.y);
             
             prop = findprop(mcAxis, 'x');
-            switch gui.data.data.plotMode
+            switch gui.data.r.plotMode
                 case 1
-                    gui.listeners.x = event.proplistener(gui.data.data.axes{gui.data.data.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
+                    gui.listeners.x = event.proplistener(gui.data.r.a.a{gui.data.r.l.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
                 case 2
-%                     ax = gui.data.data.axes{gui.data.data.layer == 1}.name()
-%                     ay = gui.data.data.axes{gui.data.data.layer == 2}.name()
-                    gui.listeners.x = event.proplistener(gui.data.data.axes{gui.data.data.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
-                    gui.listeners.y = event.proplistener(gui.data.data.axes{gui.data.data.layer == 2}, prop, 'PostSet', @gui.listenToAxes_Callback);
+%                     ax = gui.data.r.a.a{gui.data.r.l.layer == 1}.name()
+%                     ay = gui.data.r.a.a{gui.data.r.l.layer == 2}.name()
+                    gui.listeners.x = event.proplistener(gui.data.r.a.a{gui.data.r.l.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
+                    gui.listeners.y = event.proplistener(gui.data.r.a.a{gui.data.r.l.layer == 2}, prop, 'PostSet', @gui.listenToAxes_Callback);
             end
         end
         function listenToAxes_Callback(gui, ~, ~)
 %             display('listening...')
             if isvalid(gui)
-                axisX = gui.data.data.axes{gui.data.data.layer == 1};
+                axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
 %                 bx = axisX.name()
 
                 x = axisX.getX();
@@ -796,21 +796,21 @@ classdef mcDataViewer < mcSavableClass
                 gui.posL.act.XData = [x x];
                 gui.pos.act.XData = x;
                 
-%                 xprv = gui.data.data.axisPrev(gui.data.data.layer == 1);
+%                 xprv = gui.data.data.axisPrev(gui.data.r.l.layer == 1);
                 
-                x = gui.data.data.axisPrev(gui.data.data.layer == 1);
+                x = gui.data.r.a.prev(gui.data.r.l.layer == 1);
                 if x ~= gui.pos.prv.XData
                     gui.posL.prv.XData = [x x];
                     gui.pos.prv.XData = x;
                 end
 
-                if gui.data.data.plotMode == 2
-                    axisY = gui.data.data.axes{gui.data.data.layer == 2};
+                if gui.data.r.plotMode == 2
+                    axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
 %                     by = axisY.name()
 
                     gui.pos.act.YData = axisY.getX();
                 
-                    y = gui.data.data.axisPrev(gui.data.data.layer == 2);
+                    y = gui.data.r.a.prev(gui.data.r.l.layer == 2);
                     if y ~= gui.pos.prv.YData
                         gui.pos.prv.YData = y;
                     end
@@ -820,9 +820,9 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function updateLayer_Callback(gui, src, ~)
-            layerPrev = gui.data.data.layer;
+            layerPrev = gui.data.r.l.layer;
             
-            switch gui.data.data.plotMode   % Make this reference a list instead of a switch
+            switch gui.data.r.plotMode   % Make this reference a list instead of a switch
                 case 1
                     layer = cellfun(@(x)(x.Value), gui.params1D.chooseList);
 %                     disp(layer);
@@ -838,6 +838,10 @@ classdef mcDataViewer < mcSavableClass
                         
                         layer(layer == 1 & ~changed) = 2;
                     end
+                    
+%                     if gui.isRGB
+%                         % Complain about other input axis
+%                     end
                     
                     for ii = 1:length(layer)
 %                         if layer(ii) ~= layerPrev(ii) || changed(ii)
@@ -869,17 +873,17 @@ classdef mcDataViewer < mcSavableClass
                         layer(layer == 2 & ~changed) = 3;
                     end
                     
-                    if sum(changed == 1) && gui.data.data.layerIndex(changed) && gui.data.data.layer(changed) < 3    % If an input axis was changed to X or Y,
+                    if sum(changed == 1) && gui.data.r.l.type(changed) && gui.data.r.l.layer(changed) < 3    % If an input axis was changed to X or Y,
                         % If the other axis (Y or X) is an input axis from a different input...
                         otherAxis = ~changed & layer < 3;
                         
                         if ~all(otherAxis)
                             % Next check if the changed input axis is compatible with 2D
-                            if gui.data.data.layerIndex(1) == 0
+                            if gui.data.r.l.type(1) == 0
                                 layer(1) = layer(otherAxis);
                                 layer(otherAxis) = 3;
-                            elseif sum(gui.data.data.layerIndex == gui.data.data.layerIndex(changed)) > 1
-                                layer(find(gui.data.data.layerIndex == gui.data.data.layerIndex(changed) & ~changed, 1)) = layer(otherAxis);
+                            elseif sum(gui.data.r.l.type == gui.data.r.l.type(changed)) > 1
+                                layer(find(gui.data.r.l.type == gui.data.r.l.type(changed) & ~changed, 1)) = layer(otherAxis);
                                 layer(otherAxis) = 3;
                             else
                                 error('2D incompatible with this layer input. Fix not implemented.');
@@ -893,12 +897,12 @@ classdef mcDataViewer < mcSavableClass
                         end
                     end
                 otherwise
-                    layer = 0;
+                    layer = layerPrev;
             end
             
-            gui.data.data.layer = layer;
+            gui.data.r.l.layer = layer;
             
-            if ~all(layer == layerPrev)
+            if any(layer ~= layerPrev)
                 gui.shouldPlot = false;
                 gui.plotSetup();
             end
@@ -907,21 +911,21 @@ classdef mcDataViewer < mcSavableClass
         function upperTabSwitch_Callback(gui, src, event)
             switch event.NewValue
                 case gui.tabs.t1d
-                    gui.data.data.plotMode = 1;
+                    gui.data.r.plotMode = 1;
                 case gui.tabs.t2d
-                    if gui.data.data.numAxes < 2        % Change this to accept inputs
+                    if gui.data.r.a.num < 2        % Change this to accept inputs
                         src.SelectedTab = event.OldValue;
                     else
-                        gui.data.data.plotMode = 2;
+                        gui.data.r.plotMode = 2;
                     end
                 case gui.tabs.t3d
                     if true
                         src.SelectedTab = event.OldValue;
                     else
-%                         gui.data.data.plotMode = 3;
+%                         gui.data.r.plotMode = 3;
                     end
                 case gui.tabs.t0
-                    gui.data.data.plotMode = 0;
+                    gui.data.r.plotMode = 0;
             end
             
             gui.updateLayer_Callback(0, 0);
