@@ -36,18 +36,20 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             config.joyStep =            1;              % **                                                                                                        ...the joystick  (these can be modified in the mcUserInput UI).
             
             config.A =      ;
-            config.axes =   data.d.a;
+            config.axes =   data.d.axes;
         end
     end
     
     methods             % Initialization method (this is what is called to make an axis object).
-        function a = mcaTemplate(varin)                 % ** Insert mca<MyNewAxis> name here...
-            a.extra = {'A', 'axes'};     % ** Record the names of the custom variables here (These may be used elsewhere in the program in the future).
+        function a = mcaPoints(varin)
+            a.extra = {'A', 'axes'};
             if nargin == 0
                 a.construct(a.defaultConfig());
             else
                 a.construct(varin);
             end
+            config.num = length(config.axes);
+            
             a = mcInstrumentHandler.register(a);
         end
     end
@@ -56,15 +58,15 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
     methods
         % NAME ---------- The following functions define the names that the user should use for this axis.
         function str = NameShort(a)     % 'short' name, suitable for UIs/etc.
-            str = [a.config.name ' (' a.config.customVar1 ':' a.config.customVar2 ')'];                                                     % ** Change these to your custom vars.
+            str = [a.config.name ' (with ' num2str(config.num) ' axes)'];
         end
         function str = NameVerb(a)      % 'verbose' name, suitable to explain the identity to future users.
-            str = [a.config.name ' (a template for custom mcAxes with custom vars ' a.config.customVar1 ' and ' a.config.customVar2 ')'];   % ** Change these to your custom vars.
+            str = [a.config.name ' ( ' ')'];
         end
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use a.extra for this?)
-        function tf = Eq(a, b)          % Compares two mcaTemplates
-            tf = strcmpi(a.config.customVar1,  b.config.customVar1) && strcmpi(a.config.customVar2,  b.config.customVar2);                  % ** Change these to your custom vars.
+        function tf = Eq(~, ~)
+            tf = false; % Don't care; two point axes cannot distrub each other (unlike, e.g. two DAQ axes with the same info).
         end
         
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).
@@ -72,27 +74,21 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             a.s = open(a.config.customVar1, a.config.customVar2);   % ** Change this to the custom code which opens the axis. Keep in mind that a.s should be used to store session info (e.g. serial ports, DAQ sessions). Of course, for some inputs, this is unneccessary.
         end
         function Close(a)               % Do whatever neccessary to deinitialize the axis.
-            close(a.config.customVar1, a.config.customVar2);        % ** Change this to the custom code which closes the axis.
+            for ii = 1:length(config.axes)
         end
         
-        % READ ---------- For 'slow' axes that take a while to reach the target position (a.xt), define a way to determine the actual position (a.x). These do *not* have to be defined for 'fast' axes.
-        function ReadEmulation(a)       
-            a.x = a.xt;         % ** In emulation, just assume the axis is 'fast'?
-        end
-        function Read(a)
-            a.x = read(a.s);    % ** Change this to the code to get the actual postition of the axis.
-        end
+        % READ ---------- Not neccessary
         
         % GOTO ---------- The 'meat' of the axis: the funtion that translates the user's intended movements to reality.
         function GotoEmulation(a, x)
-            a.xt = a.config.kind.ext2intConv(x);    % ** Usually, behavior should not deviate from this default a.GotoEmulation(x) function. Change this if more complex behavior is desired.
-            a.x = a.xt;
+            a.Goto(x);
         end
         function Goto(a, x)
-            a.xt = a.config.kind.ext2intConv(x);    % Set the target position a.xt (in internal units) to the user's desired x (in internal units).
-            a.x = a.xt;                             % If this axis is 'fast' and immediately advances to the target (e.g. peizos), then set a.x.
-            goto(a.s, a.x)                          % ** Change this to be the code that actually moves the axis (also change the above if different behavior is desired).
-                                                    % Also note that all 'isInRange' error checking is done in the parent mcAxis.
+            X = 1:length == x;
+            
+            Y = a.A * x';
+            
+            for 
         end
     end
         

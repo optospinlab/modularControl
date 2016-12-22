@@ -33,8 +33,10 @@ classdef mcProcessedData < handle
                 pd.parent = varin{1};
             end
             
-            prop = findprop(mcData, 'data');
-            pd.listener = event.proplistener(pd.parent, prop, 'PostSet', @pd.parentChanged_Callback);
+            prop = findprop(mcData, 'd');
+            pd.listener.d = event.proplistener(pd.parent, prop, 'PostSet', @pd.parentChanged_Callback);
+            prop2 = findprop(mcData, 'r');
+            pd.listener.r = event.proplistener(pd.parent, prop2, 'PostSet', @pd.parentChanged_Callback);
         end
         
         function m = min(pd)
@@ -52,6 +54,7 @@ classdef mcProcessedData < handle
             switch pd.parent.r.plotMode
                 case {0, 'histogram'}
                     % Do nothing.
+                    pd.parent.dataViewer.plotData_Callback(0,0);
                 case {1, '1D'}
                     selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
                     
@@ -79,10 +82,13 @@ classdef mcProcessedData < handle
                     
                     pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 2, axisXindex) );
                 case {2, '2D'}
-                    type = pd.parent.r.l.type
-                    selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1)
-                    selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2)
-                    input = pd.input
+                    selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
+                    selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2);
+                    
+                    if isempty(selTypeX) || isempty(selTypeY)
+                        warning('mcProcessedData(): Layer has not updated properly...');
+                        return;
+                    end
                     
                     if ~(selTypeX == 0 || selTypeX == pd.input) || ~(selTypeY == 0 || selTypeY == pd.input)
                         error('mcProcessedData.proccess(): mcDataViewer should prevent this from happening')
@@ -107,7 +113,7 @@ classdef mcProcessedData < handle
                     axisXindex = nums(pd.parent.r.l.layer(final) == 1);
                     axisYindex = nums(pd.parent.r.l.layer(final) == 2);
                     
-                    pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 2, axisXindex, axisYindex) );
+                    pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 3, axisXindex, axisYindex) );
                 case {3, '3D'}
                     error('3D NotImplemented');
                 otherwise

@@ -83,14 +83,14 @@ classdef mcInstrumentHandler < handle
 %                     disp(double(char));
 %                 end
 %                 
-
-                params.hostname > 256
+                
+                params.hostname(params.hostname < 32 & params.hostname >= 127) = '';
 
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
-                params.hostname = strrep(params.hostname, '\n', '');
-                params.hostname = strrep(params.hostname, '\r', '');
-                params.hostname = strrep(params.hostname, '\t', '');
-                params.hostname = strrep(params.hostname, '\0', '');
+%                 params.hostname = strrep(params.hostname, '\n', '');
+%                 params.hostname = strrep(params.hostname, '\r', '');
+%                 params.hostname = strrep(params.hostname, '\t', '');
+%                 params.hostname = strrep(params.hostname, '\0', '');
                 params.hostname = strrep(params.hostname, ':', '_');
 
                 params.mcFolder = pwd;                                              % Get the current directory
@@ -233,7 +233,7 @@ classdef mcInstrumentHandler < handle
                 if isa(instrument{1}, 'mcAxis')                 % If an instrument is an axis...
                     axes_{ii} =     instrument{1};              % ...Then append its information.
                     names{ii} =     instrument{1}.nameShort();
-                    configs{ii} =   instrument{1}.config
+                    configs{ii} =   instrument{1}.config;
                     states(ii) =    instrument{1}.getX();
                     ii = ii + 1;
                 end

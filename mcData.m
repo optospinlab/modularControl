@@ -37,14 +37,12 @@ classdef mcData < mcSavableClass
         %
         % - d.index                 numeric array       % Current 'position' of the axes in the scan.
         %
-        % - d.layer                 numeric array       % Not added. Future?
-        %
         % - d.flags.circTime        boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
         
         % Also note that config (due to inheretence from mcSavableClass) is also a member. (change this?)
     end
 
-    properties
+    properties (SetObservable)
         dataViewer = [];        % 'Pointer' to the current data viewer.
         r = [];                 % Struct for runtime-generated info. r for runtime.
         
@@ -58,8 +56,9 @@ classdef mcData < mcSavableClass
         % 
         % - r.i.i                   mcInput array           % Contains the objects that point to the appropriate inputs.
         % - r.i.dimension           numeric array           % The dimension of the input (0 for number, 1 for vector, 2 for image).
-        % - r.a.length              numeric array           % Lengths of the inputs (prod of the dimensions) e.g. length of 16x16 input is 256
+        % - r.i.length              numeric array           % Lengths of the inputs (prod of the dimensions) e.g. length of 16x16 input is 256
         % - r.i.name                cell array (strings)
+        % - r.i.nameUnit            cell array (strings)    %
         % - r.i.unit                cell array (strings)
         % - r.i.isNIDAQ             boolean array           
         % - r.i.inEmulation         boolean array
@@ -74,6 +73,7 @@ classdef mcData < mcSavableClass
         % 
         % - r.a.a                   mcAxis array            % Contains the objects that point to the appropriate axes.
         % - r.a.name                cell array (strings)
+        % - r.a.nameUnit            cell array (strings)    %
         % - r.a.unit                cell array (strings)
         % - r.a.isNIDAQ             boolean array           
         % - r.a.inEmulation         boolean array
@@ -89,6 +89,9 @@ classdef mcData < mcSavableClass
         % - r.l.weight              numeric array           % First d.a.num indices are the weights of each axis. (Weight needs better explaination!)
         % - r.l.scans               cell arrray             % Contains all the scans (for both axes and inputs). If no scans are given for the inputs, then 1:size(dim) pixels is used.
         % - r.l.lengths             numeric arrray          % 
+        % - r.l.name                cell array (strings)    %
+        % - r.l.nameUnit            cell array (strings)    %
+        % - r.l.unit                cell array (strings)    %
         % 
         % OTHER RUNTIME-GENERATED INFO:
         % 
@@ -123,7 +126,7 @@ classdef mcData < mcSavableClass
             configPiezoY = mcaDAQ.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
             configPiezoZ = mcaDAQ.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            configTest = mciFunction.testConfig();
+            configTest = mciFunction.randConfig();
             
             data.axes =     {configPiezoX, configPiezoY, configPiezoZ};                         % Fill the...   ...axes...
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};     %               ...scans...
@@ -276,8 +279,16 @@ classdef mcData < mcSavableClass
                     d.d.flags.shouldOptimize =    varin{5};
             end
             
-            if ~isfield(d.d, 'shouldOptimize')
+            if ~isfield(d.d, 'flags')
+                d.d.flags = [];
+            end
+            
+            if ~isfield(d.d.flags, 'shouldOptimize')
                 d.d.flags.shouldOptimize = false;
+            end
+            
+            if ~isfield(d.d.flags, 'circTime')
+                d.d.flags.circTime = false;
             end
             
             % Check lengths of axes and scans...
@@ -344,7 +355,7 @@ classdef mcData < mcSavableClass
             
             % Checking the intTimes...
             if isnumeric(d.d.intTimes)
-                if any(d.d.intTimes <= 0)
+                if any(d.d.intTimes < 0)
                     error('mcData(): Integration times cannot be negative.');
                 end
             else
@@ -372,6 +383,7 @@ classdef mcData < mcSavableClass
                 d.r.i.size =            cell( 1, d.r.i.num);
                 
                 d.r.i.name =            cell( 1, d.r.i.num);
+                d.r.i.nameUnit =        cell( 1, d.r.i.num);
                 d.r.i.unit =            cell( 1, d.r.i.num);
                 
                 d.r.i.isNIDAQ =         false(1, d.r.i.num);
@@ -383,6 +395,11 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =          [];
                 d.r.l.scans =           [];
                 d.r.l.lengths =         [];
+                d.r.l.name =            [];
+                d.r.l.nameUnit =        [];
+                d.r.l.unit =            [];
+                    
+                inputLetters = 'XYZUVW';
 
                 for ii = 1:d.r.i.num        % Now fill the empty lists
                     c = d.d.inputs{ii};     % Get the config for the iith input.
@@ -398,8 +415,9 @@ classdef mcData < mcSavableClass
                     d.r.i.size{ii} =        c.kind.sizeInput(c.kind.sizeInput > 1);   % Poor naming.
                     d.r.i.length(ii) =      prod(d.r.i.size{ii});
                     
-                    d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();  % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
-                    d.r.i.unit{ii} =            d.r.i.i{ii}.nameUnits();  %                                       ...'name (units)' form
+                    d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();        % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
+                    d.r.i.nameUnit{ii} =        d.r.i.i{ii}.nameUnits();        %                                       ...'name (units)' form
+                    d.r.i.unit{ii} =            d.d.inputs{ii}.kind.extUnits;   %                                       ...'units'
 
                     d.r.i.isNIDAQ(ii) =         strcmpi('nidaq', c.kind.kind(1:min(5,end)));
                     d.r.i.inEmulation(ii) =     d.r.i.i{ii}.inEmulation;
@@ -409,6 +427,16 @@ classdef mcData < mcSavableClass
                     d.r.l.type =    [d.r.l.type     ones(1, d.r.i.dimension(ii))*ii];   % To identify which input the above belongs to, the index is tagged with the number of the axis.
                     d.r.l.scans =   [d.r.l.scans    d.r.i.i{ii}.getInputScans()];
                     d.r.l.lengths = [d.r.l.lengths  d.r.i.size{ii}];                    % Will this be a cell?
+                    
+                    if d.r.i.dimension(ii) > length(inputLetters)
+                        error('mcData.initialize(): Too many dimensions on this input. Not enough letters to describe each dimension.')
+                    end
+                    
+                    for jj = 1:d.r.i.dimension(ii)
+                        d.r.l.name =        [d.r.l.name     {[d.d.inputs{ii}.name ' ' inputLetters(jj)]}];
+                        d.r.l.nameUnit =    [d.r.l.nameUnit {[d.d.inputs{ii}.name ' ' inputLetters(jj) ' (' d.d.inputs{ii}.kind.extUnits ')']}];
+                        d.r.l.unit =        [d.r.l.unit     {d.d.inputs{ii}.kind.extUnits}];
+                    end
                     
                     iwAdd = ones(1, d.r.i.dimension(ii));       % Temporary variable: 'indexWeightAdd' because it will be added to d.r.l.weight.
                     for jj = 2:length(iwAdd)
@@ -429,7 +457,9 @@ classdef mcData < mcSavableClass
                 % Make some empty lists...
                 d.r.a.length =          zeros(1, d.r.a.num);
                 
+                justname =              cell(1, d.r.a.num);
                 d.r.a.name =            cell(1, d.r.a.num);
+                d.r.a.nameUnit =        cell(1, d.r.a.num);
                 d.r.a.unit =            cell(1, d.r.a.num);
                 
                 d.r.a.isNIDAQ =         false(1, d.r.a.num);
@@ -449,8 +479,10 @@ classdef mcData < mcSavableClass
                     
                     d.r.a.length(ii) =      length(d.d.scans{ii});
                     
+                    justname{ii} =          d.d.axes{ii}.name;
                     d.r.a.name{ii} =        d.r.a.a{ii}.nameShort();
-                    d.r.a.unit{ii} =        d.r.a.a{ii}.nameUnits();
+                    d.r.a.nameUnit{ii} =    d.r.a.a{ii}.nameUnits();
+                    d.r.a.unit{ii} =        d.d.axes{ii}.kind.extUnits;
                     
                     d.r.a.isNIDAQ(ii) =     strcmpi('nidaq', c.kind.kind(1:min(5,end)));
                     d.r.a.inEmulation(ii) = d.r.a.a{ii}.inEmulation;
@@ -460,18 +492,22 @@ classdef mcData < mcSavableClass
                     d.r.a.scansInternalUnits{ii} = arrayfun(d.r.a.a{ii}.config.kind.ext2intConv, d.d.scans{ii});
                 end
                 
+                d.r.l.name =        [justname       d.r.l.name];
+                d.r.l.nameUnit =    [d.r.a.nameUnit d.r.l.nameUnit];
+                d.r.l.unit =        [d.r.a.unit     d.r.l.unit];
+                
                 % Then, figure out how we should initially display the data, based on the total number of axes we have.
                 d.r.plotMode = max(min(2, d.r.a.num + d.r.i.numInputAxes),1);   % Plotmode takes in 0 = histogram (no axes); 1 = 1D (1 axis); ...
                 
                 % And choose which axes to initially display.
-                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(1 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
+                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(2 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
                 n = min(d.r.plotMode, d.r.a.num);
                 d.r.l.layer(1:n) = 1:n;                                                     % Then the first two axes are set to 1 and 2 (for 2D).
                 
                 % Then, add mcAxis info to the layer information...
                 d.r.l.axis =    [ones( 1, d.r.a.num) d.r.l.axis];
                 d.r.l.type =    [zeros(1, d.r.a.num) d.r.l.type];
-                type = d.r.l.type
+%                 type = d.r.l.type
 %                 d.r.l.length =  [d.r.a.length d.r.i.length];    % Not sure why this is here...
                 d.r.l.lengths =  [d.r.a.length  d.r.l.lengths];
                 
@@ -487,16 +523,15 @@ classdef mcData < mcSavableClass
                 end
                 
                 if ~isempty(d.d.axes)
+                    d.d.flags.circTime = d.d.flags.circTime && strcmpi('time', d.d.axes{end}.kind.kind);
+                
                     d.r.canScanFast = d.r.a.isNIDAQ(1) && ~d.r.a.inEmulation(1) && all(d.r.i.isNIDAQ & ~d.r.a.inEmulation);
                 else
                     d.r.canScanFast = false;
-                end
-                
-                if isfield(d.d, 'circTime')
-                    d.d.flags.circTime = d.d.flags.circTime && strcmpi('time', d.d.axes{end}.kind.kind);
-                else
                     d.d.flags.circTime = false;
                 end
+                
+                
                 
                 % MCDATA NAMING ================================================================================================
                 
@@ -508,19 +543,19 @@ classdef mcData < mcSavableClass
                 % If there isn't already a name, generate one:
                 if isempty(d.d.name)
                     for ii = 1:(d.r.i.num-1)
-                        d.d.name = [d.d.name d.r.i.name{ii} ', '];
+                        d.d.name = [d.d.name d.d.inputs{ii}.name ', '];
                     end
 
-                    d.d.name = [d.d.name d.r.i.name{d.r.i.num}];
+                    d.d.name = [d.d.name d.d.inputs{d.r.i.num}.name];
                     
                     if ~isempty(d.r.a.a)
                         d.d.name = [d.d.name ' vs '];
 
                         for ii = 1:(d.r.a.num-1)
-                            d.d.name = [d.d.name d.r.a.name{ii} ', '];
+                            d.d.name = [d.d.name d.r.l.name{ii} ', '];
                         end
 
-                        d.d.name = [d.d.name d.r.a.name{d.r.a.num}];
+                        d.d.name = [d.d.name d.r.l.name{d.r.a.num}];
                     end
                 end
                 
@@ -602,11 +637,13 @@ classdef mcData < mcSavableClass
 
                 while d.r.aquiring
                     d.aquire1D(d.r.l.weight(1:d.r.a.num) * (d.d.index - 1)' + 1);
+                    
+                    drawnow
 
                     currentlyMax =  d.d.index == d.r.a.length;  % Variables to figure out which indices need incrimenting/etc.
 
                     if all(currentlyMax) && ~d.d.flags.circTime       % If the scan has finished...
-                        d.data.scanMode = 2;
+                        d.r.scanMode = 2;
                         break;
                     end
 
@@ -641,7 +678,7 @@ classdef mcData < mcSavableClass
                     d.r.s = [];
                 end
 
-                if d.data.shouldOptimize        % If there should be a post-scan optimization...
+                if d.d.flags.shouldOptimize     % If there should be a post-scan optimization...
                     switch length(d.r.a.a)
                         case 1
                             [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);    % First find the peak.
@@ -660,7 +697,7 @@ classdef mcData < mcSavableClass
                         otherwise
                             disp('mcData.aquire(): Optimization on more than 2 axes not currently supported...');
                     end 
-                elseif d.data.scanMode == 2     % Should the axes goto the original values after the scan finishes?
+                elseif d.r.scanMode == 2        % Should the axes goto the original values after the scan finishes?
                     for ii = nums
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
@@ -668,7 +705,23 @@ classdef mcData < mcSavableClass
             end
         end
         function aquire1D(d, jj)
-            if d.r.canScanFast
+            if length(d.d.axes) == 1 && d.d.flags.circTime    % If time happens to be the current axis and we should circshift...
+                disp('Time is only axis')
+                
+                while d.r.aquiring
+                    for ii = 1:d.r.i.num
+                        len = max(d.r.l.weight(d.r.l.type == 0 | d.r.l.type == ii));
+                        
+                        d.d.data{ii} = circshift(d.d.data{ii}, [len, 0]);
+                        
+                        if len == 1
+                            d.d.data{ii}(1) =                   d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                        else
+                            d.d.data{ii}(1:d.r.i.length(ii)) =  d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                        end
+                    end
+                end
+            elseif d.r.canScanFast
                 d.r.s.Rate = 1/max(d.data.intTimes);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
                 
                 d.r.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
@@ -690,22 +743,6 @@ classdef mcData < mcSavableClass
                 if ~isempty(d.d.index)
                     d.d.index(1) = d.r.a.length(1);
                 end
-            elseif length(d.d.axes) == 1 && d.d.flags.circTime    % If time happens to be the current axis and we should circshift...
-                disp('Time is only axis')
-                
-                while d.data.aquiring
-                    for ii = 1:d.r.i.num
-                        len = max(d.l.weight(d.r.l.type == 0 | d.r.l.type == ii));
-                        
-                        d.d.data{ii} = circshift(d.d.data{ii}, [0, len]);
-                        
-                        if len == 1
-                            d.d.data{ii}{1} =                   d.r.i.i{ii}.measure(d.d.intTimes(ii));
-                        else
-                            d.d.data{ii}{1:d.r.i.length(ii)} =  d.r.i.i{ii}.measure(d.d.intTimes(ii));
-                        end
-                    end
-                end
             else
                 for kk = d.d.index(1):d.r.a.length(1)
                     if d.r.aquiring
@@ -716,7 +753,7 @@ classdef mcData < mcSavableClass
                             if d.r.i.dimension(ii) == 0
                                 d.d.data{ii}(jj+kk-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             else
-                                base = (jj+kk-1)*d.r.i.length(ii) + 1;  % This is a guess.
+                                base = (jj+kk)*d.r.i.length(ii) - 1;  % This is a guess.
                                 d.d.data{ii}(base:base+d.r.i.length(ii)-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             end
                         end

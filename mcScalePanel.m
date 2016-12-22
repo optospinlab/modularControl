@@ -187,14 +187,16 @@ classdef mcScalePanel < handle
                 str = '0';
             else
                 magn = floor(log10(m));
-                str = [num2str(m/(10^magn), '%1.1f') 'e' num2str(magn)];
+%                 str = [num2str(m/(10^magn), '%1.1f') 'e' num2str(magn)];
+                str = [num2str(floor(m/(10^(magn-1)))/10, '%1.1f') 'e' num2str(magn)];
             end
 
             if M <= 0
                 STR = '0';
             else
                 magn = floor(log10(M));
-                STR = [num2str(M/(10^magn), '%1.1f') 'e' num2str(magn)];
+%                 STR = [num2str(M/(10^magn), '%1.1f') 'e' num2str(magn)];
+                STR = [num2str(ceil(M/(10^(magn-1)))/10, '%1.1f') 'e' num2str(magn)];
             end
             
             str0 = panel.gui.dataMinEdit.String;
@@ -205,6 +207,8 @@ classdef mcScalePanel < handle
 
             if panel.gui.normAuto.Value && ~(strcmpi(str0, str) && strcmpi(STR0, STR))
                 panel.normalize_Callback(0,0);
+            else
+                panel.applyScale()
             end
         end
         function applyScale(panel)

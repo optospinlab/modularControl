@@ -180,7 +180,9 @@ classdef mcDataViewer < mcSavableClass
                     levellist = strcat(strread(num2str(gui.data.d.scans{ii}), '%s')', [' ' gui.data.r.a.a{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
                     
                     for tab = [gui.tabs.t1d gui.tabs.t2d]
-                        uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.r.a.a{ii}.nameShort() ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+%                         uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.a.a{kk}.nameShort(), 'String', [gui.data.d.axes{ii}.name ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+
+                        uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.a.name{kk}, 'String', [gui.data.r.l.name{ii} ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
                         if tab == gui.tabs.t1d
                             axeslist = {'X', 'Mean'};
@@ -216,7 +218,7 @@ classdef mcDataViewer < mcSavableClass
                     ii = 0;
                 end
                 
-                display('adding inputs');
+%                 display('adding inputs');
                 
                 for kk = 1:gui.data.r.i.num
                     if gui.data.r.i.dimension(kk) <= length(inputLetters)
@@ -231,7 +233,9 @@ classdef mcDataViewer < mcSavableClass
 
                                 for tab = [gui.tabs.t1d gui.tabs.t2d]
                                     % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
-                                    uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.r.i.i{kk}.nameShort() ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+                                    uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.i.i{kk}.nameShort(), 'String', [gui.data.d.inputs{kk}.name ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+
+%                                     uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.i.name{kk}, 'String', [gui.data.r.l.name{kk + } ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
                                     if tab == gui.tabs.t1d
                                         axeslist = {'X', 'Mean'};
@@ -311,7 +315,9 @@ classdef mcDataViewer < mcSavableClass
             gui.df.CloseRequestFcn = @gui.closeRequestFcnDF;
             menu = uicontextmenu;
 
-            gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on', 'UIContextMenu', menu); %, 'Xgrid', 'on', 'Ygrid', 'on'
+            gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on', 'UIContextMenu', menu, 'Xgrid', 'on', 'Ygrid', 'on'); %
+%             gui.a.Layer = 'top';
+            
             colormap(gui.a, gray(256)); % Change when RGB is added...
             
             hold(gui.a, 'on');
@@ -340,9 +346,9 @@ classdef mcDataViewer < mcSavableClass
             gui.h(2).FaceColor = gui.colorG;
             gui.h(3).FaceColor = gui.colorB;
             
-            gui.h(1).EdgeColor = gui.colorR/2;
-            gui.h(2).EdgeColor = gui.colorG/2;
-            gui.h(3).EdgeColor = gui.colorB/2;
+            gui.h(1).EdgeColor = gui.colorR;
+            gui.h(2).EdgeColor = gui.colorG;
+            gui.h(3).EdgeColor = gui.colorB;
             
             % 1D Setup
             gui.p = plot(x, rand(1, 50), x, rand(1, 50), x, rand(1, 50), 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
@@ -364,6 +370,23 @@ classdef mcDataViewer < mcSavableClass
             gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPix, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
             gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorAct, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
             
+            if true % darkmode
+                gui.a.Color = [.1 .1 .1];
+                gui.a.GridColor = [.9 .9 .9];
+                gui.a.XColor = 'white';
+                gui.a.YColor = 'white';
+                gui.a.Title.Color = 'white';
+                gui.df.Color = 'black';
+            end
+            
+            if true % thickness
+                gui.a.LineWidth = 1;
+                gui.a.FontSize = 15;
+                for ii = 1:3
+                    gui.p(ii).LineWidth = 1;
+                    gui.h(ii).LineWidth = 1;
+                end
+            end
             
             gui.a.YDir = 'normal';
             
@@ -568,12 +591,11 @@ classdef mcDataViewer < mcSavableClass
             gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
         end
         function openCounter_Callback(gui, ~, ~)                            % Looks like this needs debugging.
-            display('1')
-            data2 = mcData(mcData.counterConfiguration(gui.data.d.inputs{gui.r.input}, 100, .25))
-            display('2')
+            pixels = max(round(10/gui.data.d.intTimes(gui.r.input)), 10);
+            
+            data2 = mcData(mcData.counterConfiguration(gui.data.d.inputs{gui.r.input}, pixels, gui.data.d.intTimes(gui.r.input)));
             % input to open up (currently select gray input), length of counter scan (HARDCODED!? CHANGE!), exposureTime in seconds  (HARDCODED!? CHANGE!).
             mcDataViewer(data2, false)    % And don't show the control window when opening...
-            display('3')
         end
         function openCounterAtPoint_Callback(gui, ~, ~, isSel, shouldGotoLayer)
             gui.gotoPostion_Callback(0, 0, isSel, shouldGotoLayer);
@@ -631,7 +653,7 @@ classdef mcDataViewer < mcSavableClass
             switch gui.data.r.plotMode
                 case 0  % histogram
                     gui.a.XLabel.String = gui.data.r.i.i{gui.r.input}.nameUnits();
-                    gui.a.XLabel.String = 'Number (num/bin)';
+                    gui.a.YLabel.String = 'Number (num/bin)';
                 case 1  % 1D
                     gui.p(1).XData = gui.data.d.scans{gui.data.r.l.layer == 1};
                     gui.p(2).XData = gui.data.d.scans{gui.data.r.l.layer == 1};
@@ -649,6 +671,12 @@ classdef mcDataViewer < mcSavableClass
                     gui.a.XLabel.String = gui.data.r.a.a{gui.data.r.l.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.r.a.a{gui.data.r.l.layer == 2}.nameUnits();
             end
+                        
+            if gui.isRGB
+
+            else
+                gui.scale.gray.dataChanged_Callback(0,0);
+            end
             
             gui.resetAxisListeners();
             gui.shouldPlot = true;
@@ -665,13 +693,20 @@ classdef mcDataViewer < mcSavableClass
                     if gui.isRGB
                         
                     else
+                        gui.a.DataAspectRatioMode = 'auto';
+                        gui.a.YLimMode = 'auto';
+                        
                         gui.h(1).Data = gui.data.d.data{gui.r.input};
+                        gui.h(1).NumBins = 20;
+                        
+                        gui.scale.gray.dataChanged_Callback(0,0);
                     end
                 elseif gui.data.r.plotMode == 1 && dims == 1
                     if gui.isRGB
 
                     else
                         gui.a.DataAspectRatioMode = 'auto';
+                        gui.a.YLimMode = 'manual';
                         
                         gui.p(1).YData = gui.r.data;
                         
@@ -681,8 +716,14 @@ classdef mcDataViewer < mcSavableClass
                     if gui.isRGB
                         
                     else
-                        gui.a.DataAspectRatioMode = 'manual';
-                        gui.a.DataAspectRatio = [1 1 1];
+                        if strcmpi(gui.data.r.l.unit{gui.data.r.l.layer == 1}, gui.data.r.l.unit{gui.data.r.l.layer == 1})
+                            gui.a.DataAspectRatioMode = 'manual';
+                            gui.a.DataAspectRatio = [1 1 1];
+                        else
+                            gui.a.DataAspectRatioMode = 'auto';
+                        end
+                        
+                        gui.a.YLimMode = 'manual';
                         
                         gui.i.CData =       gui.r.data;
                         gui.i.AlphaData =   ~isnan(gui.r.data);
@@ -902,7 +943,7 @@ classdef mcDataViewer < mcSavableClass
             
             gui.data.r.l.layer = layer;
             
-            if any(layer ~= layerPrev)
+            if any(layer ~= layerPrev) || gui.data.r.plotMode == 0
                 gui.shouldPlot = false;
                 gui.plotSetup();
             end
@@ -926,10 +967,13 @@ classdef mcDataViewer < mcSavableClass
                     end
                 case gui.tabs.t0
                     gui.data.r.plotMode = 0;
+                    gui.plotData_Callback(0,0);
             end
             
             gui.updateLayer_Callback(0, 0);
             gui.makeProperVisibility();
+            gui.shouldPlot = true;
+            gui.plotSetup();
         end
         function lowerTabSwitch_Callback(gui, src, event)
             switch event.NewValue
@@ -942,10 +986,10 @@ classdef mcDataViewer < mcSavableClass
     end
 end
 
-function drawSquarePatch(p, x1, y1, x2, y2)
-    p.XData = [x1 x1 x2 x2];
-    p.YData = [y1 y2 y2 y1];
-end
+% function drawSquarePatch(p, x1, y1, x2, y2)
+%     p.XData = [x1 x1 x2 x2];
+%     p.YData = [y1 y2 y2 y1];
+% end
 
 function copyLabelToClipboard(src, ~)
     split = strsplit(src.Label, ': ');

@@ -85,6 +85,7 @@ classdef mciFunction < mcInput
                 data = I.config.fnc(integrationTime);
             else
                 data = I.config.fnc();
+                pause(integrationTime);
             end
         end
     end
