@@ -18,27 +18,28 @@ classdef mcData < mcSavableClass
         
         % d contains:
         %
-        % - d.name              string              % Name of this mcData scan. If left empty or uninitiated, it is auto-generated.
-        % - d.kind.name         string              % Always equals 'mcData' allows other parts of the program to distinguish it from other configs. (Change?)
+        % - d.name                  string              % Name of this mcData scan. If left empty or uninitiated, it is auto-generated.
+        % - d.kind.name             string              % Always equals 'mcData' allows other parts of the program to distinguish it from other configs. (Change?)
         %
-        % - d.axes              cell array          % The configs for the axes. For n axes, this is 1xn.
-        % - d.inputs            cell array          % The configs for the inputs. For m inputs, this is 1xm.
-        % - d.scans             cell array          % The points that each axis scans across. The ith entry in the cell array corresponds to the ith axis. Note that these are in external units.
-        % - d.intTimes          numeric array       % Contains the integration time for each input. Thus this is 1xm. For NIDAQ devices which 'can scan fast' by scanning altogether, the maximum intTime is used.
-        % - d.shouldOptimize    boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
+        % - d.axes                  cell array          % The configs for the axes. For n axes, this is 1xn.
+        % - d.inputs                cell array          % The configs for the inputs. For m inputs, this is 1xm.
+        % - d.scans                 cell array          % The points that each axis scans across. The ith entry in the cell array corresponds to the ith axis. Note that these are in external units.
+        % - d.intTimes              numeric array       % Contains the integration time for each input. Thus this is 1xm. For NIDAQ devices which 'can scan fast' by scanning altogether, the maximum intTime is used.
+        % - d.flags.shouldOptimize  boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
         %
-        % - d.data              cell array          % This is the 'meat' of this structure. Data is a 1xm cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
+        % - d.data                  cell array          % This is the 'meat' of this structure. Data is a 1xm cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
         %
-        % - d.timestamp         string              % 
-        % - d.fname             string              % Where the data should be saved. By default, this is in a folder 
-        % - d.axesStatus        struct              % Status of all the axes when the scan is started.
-        % - d.version           numeric array       % The version of modularControl that this data was taken with.
+        % - d.info.timestamp        string              % 
+        % - d.info.fname            string              % Where the data should be saved. By default, this is in a folder 
+        % - d.info.version          numeric array       % The version of modularControl that this data was taken with.
+        % - d.info.other.axes       cell array          % Status of all the axes when the scan is started.
+        % - d.info.other.status     numeric array       % 
         %
-        % - d.index             numeric array       % Current 'position' of the axes in the scan.
+        % - d.index                 numeric array       % Current 'position' of the axes in the scan.
         %
-        % - d.layer             numeric array       % Not added. Future?
+        % - d.layer                 numeric array       % Not added. Future?
         %
-        % - d.circTime          boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
+        % - d.flags.circTime        boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
         
         % Also note that config (due to inheretence from mcSavableClass) is also a member. (change this?)
     end
@@ -276,17 +277,17 @@ classdef mcData < mcSavableClass
                     d.d.scans =             varin{2};
                     d.d.inputs =            varin{3};
                     d.d.intTimes =          varin{4};
-                    d.d.shouldOptimize =    false;
+                    d.d.flags.shouldOptimize =    false;
                 case 5          
                     d.d.axes =              varin{1};       % And if a 5th var is given, assume it is shouldOptimize
                     d.d.scans =             varin{2};
                     d.d.inputs =            varin{3};
                     d.d.intTimes =          varin{4};
-                    d.d.shouldOptimize =    varin{5};
+                    d.d.flags.shouldOptimize =    varin{5};
             end
             
             if ~isfield(d.d, 'shouldOptimize')
-                d.d.shouldOptimize = false;
+                d.d.flags.shouldOptimize = false;
             end
             
             % Check lengths of axes and scans...
@@ -493,9 +494,9 @@ classdef mcData < mcSavableClass
                 d.d.canScanFast = d.r.a.isNIDAQ && ~d.r.a.inEmulation  && all(d.r.i.isNIDAQ & ~d.r.a.inEmulation);
                 
                 if isfield(d.d, 'circTime')
-                    d.d.circTime = d.d.circTime && strcmpi('time', d.data.axes{end}.config.kind.kind);
+                    d.d.flags.circTime = d.d.flags.circTime && strcmpi('time', d.data.axes{end}.config.kind.kind);
                 else
-                    d.d.circTime = false;
+                    d.d.flags.circTime = false;
                 end
                 
                 % MCDATA NAMING ================================================================================================
@@ -530,6 +531,7 @@ classdef mcData < mcSavableClass
                 end
                 d.r.isInitialized = true;
                 
+                d.d.info.version = mcInstrumentHandler.version();
             end
         end
         
@@ -549,11 +551,20 @@ classdef mcData < mcSavableClass
             d.d.fnameBackground =    mcInstrumentHandler.timestamp(1);
                 
             d.r.scanMode = 0;
+            
+            [~, ~, d.d.other.axes, d.d.other.status] = mcInstrumentHandler.getAxes();
         end
         
         function aquire(d)
             d.r.aquiring = true;
             d.r.scanMode = 1;
+            
+            if any(mcInstrumentHandler.version() ~= d.d.info.version)
+                mcDialog(  ['Warning! This data was initalized with modular Control version [ ' num2str(d.d.info.version)... 
+                            ' ]. The current version is [ ' num2str(mcInstrumentHandler.version()) ' ].'], 'Warning!');
+            end
+            
+            % Check d.d.other.axes, d.d.other.status...
             
             if d.r.a.num == 0   % A simple case if we have no axes...
                 for ii = 1:d.r.i.num
@@ -592,7 +603,7 @@ classdef mcData < mcSavableClass
 
                     currentlyMax =  d.d.index == d.r.a.length;  % Variables to figure out which indices need incrimenting/etc.
 
-                    if all(currentlyMax) && ~d.d.circTime       % If the scan has finished...
+                    if all(currentlyMax) && ~d.d.flags.circTime       % If the scan has finished...
                         d.data.scanMode = 2;
                         break;
                     end
@@ -604,7 +615,7 @@ classdef mcData < mcSavableClass
                         break;
                     end
 
-                    if d.d.circTime && toIncriment(end)     % If we have run out of bounds and need to circshift...
+                    if d.d.flags.circTime && toIncriment(end)     % If we have run out of bounds and need to circshift...
                         disp('Time is axis and overrun!');
 
                         for ii = 1:d.r.i.num        % ...for every input, circshift the data forward one 'time' forward.
@@ -677,7 +688,7 @@ classdef mcData < mcSavableClass
                 if ~isempty(d.d.index)
                     d.d.index(1) = d.r.a.length(1);
                 end
-            elseif length(d.d.axes) == 1 && d.d.circTime    % If time happens to be the current axis and we should circshift...
+            elseif length(d.d.axes) == 1 && d.d.flags.circTime    % If time happens to be the current axis and we should circshift...
                 disp('Time is only axis')
                 
                 while d.data.aquiring

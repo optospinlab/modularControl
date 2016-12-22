@@ -3,29 +3,36 @@
 ## To Run:
 * Add `modularControl` (and subfolders) to MATLAB path.
 * Run the desired function or initialize the desired class.
+ * e.g. in the diamond room, run `mcDiamond`.
 
 ## Modularity
-`modularControl` is, as the name suggests, meant to be modular.
+`modularControl` is, as the name suggests, meant to be a modular and versitile solution to data aquisition in MATLAB.
 
-### Background:
+#### Background
 There are two concepts that we first must introduce: behavior and identity.
+
 * Behavior defines how something should behave, while 
 * Identity separates objects of the same behavior.
+
 In analogy, behavior is like the profession of a person, while identity separates persons of the same profession. For instance, Dr. John behaves the same as Dr. Smith because they are both medical doctors, but does not have the same identity. Dr. John would not behave or be the same as Mr. Doe, a businessman.
 
-### In `modularControl`
+#### In `modularControl`
 The behavior of each `mc<Classname>` is defined by the logic in the functions of the class. The identity, however is defined by what is given to the constructor of the class:
+
 * `mc<Classname>()`,			no identity given, defaults to `mc<Classname>(mc<Classname>.defaultConfig())` where `defaultConfig()` is a `static` function that returns the default config struct (see below);
-* `mc<Classname>(config)`,		uses the identity of the struct config;
+* `mc<Classname>(config)`,		uses the identity of the struct `config`. Fields of `config` might include `config.name` (i.e. the name of the identity), etc;
 * `mc<Classname>('config.mat')`,	uses the identity in the file `'config.mat'`
+
 Often there are other `static` functions such as `mc<Classname>.defaultConfig()` (e.g. `piezoConfig()`) which conveniently define identity (in the form of a returned `config` struct) so that the user does not have to correctly assemble a `config` struct every time. Differences between `config`s amount to simple differences in identity. For instance, `config.chn` for a `mcaDAQ` object, the DAQ channel that the object is connected to, could be `'ao0'`, `'ao1'`, and so on.
+
 This separation of behavior and identity means that this code is inherently modular. `mcAxis` is a class that generalizes the behavior of a 1D parameter space. The main function in `mcAxis` is `.goto(x)`, which tells the axis to goto that particular `x` value. This function can be used on a variety of real objects that behave like a 1D parameter space: linear motion for piezos, wavelength for a tunable frequency laser, etc.
 
 ## What's Up With `mca`, `mci`, etc?:
-`mca<Classname>`, `mci<Classname>`, `mce<Classname>`, and `mcg<Classname>` are subclasses of `mcAxis`, `mcInput`, `mcExperiment`, and `mcGrid`, respectively. All the `mca`s and `mci`s are `mcAxes` and `mcInputs`, respectively, and so on. The reason for this specification is that `mcaDAQ`s and `mcaMicro`s, despite their common functionality (e.g. each `.goto(x)`), behave very differently. Attempting to contain the behavior of every `mcAxis` inside a single `mcAxis` class became difficult as the number of necessary behaviors increased. Instead, `mcAxis` and `mcInput` spawn a set of subclass `mca`s and `mci`s that define the specific functionality. How is this done? Each `mca` and `mci` must 'fill in' functionality via the capitalized version of each function. For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`, the method that the user calls. `.measure()` is defined in the `mcInput` superclass, along with an empty version of `.Measure()`, which is 'filled in' by the subclass `mciDAQ`.
+`mca<Classname>`, `mci<Classname>`, and `mce<Classname>` are subclasses of `mcAxis`, `mcInput`, and `mcExperiment`, respectively. All the `mca`s and `mci`s are `mcAxes` and `mcInputs`, respectively, and so on. The reason for this specification is that `mcaDAQ`s and `mcaMicro`s, despite their common functionality (e.g. each `.goto(x)`), behave very differently. Attempting to contain the behavior of every `mcAxis` inside a single `mcAxis` class became difficult as the number of necessary behaviors increased. Instead, `mcAxis` and `mcInput` spawn a set of subclass `mca`s and `mci`s that define the specific functionality. How is this done? Each `mca` and `mci` must 'fill in' functionality via the capitalized version of each function. For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`, the method that the user calls. `.measure()` is defined in the `mcInput` superclass, along with an empty version of `.Measure()`, which is 'filled in' by the subclass `mciDAQ`.
 
 ## Example
 Suppose that we want to do an XY scan on the counter with the X piezo and the Y micrometer.
+
  1. Load the piezo:
   1. Let `configP = mcaDAQ.piezoConfig()`. This gives us the default configuration for a MadCity Piezo.
   2. By default, `configP.dev` and `configP.chn` are set to `'Dev1'` and `'ao0'`, respectively. Change these if neccessary. For instance, set `configP.chn = 'ao1'` to access the piezo on the 2nd DAQ channel.
@@ -53,7 +60,7 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
  6. To scan, either
   1. Aquire in the command line with `data.aquire()`. Note that this provides no visual input about the progress of the scan. It also blocks the MATLAB command line. The resulting data can be accessed afterward in `data.d.data`. This will be a cell array with one entry (corresponding to the one input). This one entry will be a 11x11 numeric matrix with the `ij`th index corresponding to the result at pixel `[i, j]`, i.e. the point `[scans{1}(i), scans{2}(j)]` um.
   2. Aquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
- 7. The function `mcScan` is a GUI which makes a `mcData` structure without having to go through the command line as in step 5. Run `mcScan` and simply select the appropriate values.
+ 7. The function `mcScan` is a GUI which makes a `mcData` structure without having to go through the command line as in step 5. Run `mcScan` and simply select the appropriate axes/scans/etc using edit boxes and dropdown lists.
 
 
 

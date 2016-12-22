@@ -41,7 +41,7 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function ver = version()
-            ver = [0 40];
+            ver = [0 42];
         end
         function tf = open()
             tf = true;
@@ -215,7 +215,7 @@ classdef mcInstrumentHandler < handle
             params = mcInstrumentHandler.params();
             instruments = params.instruments;
         end
-        function [axes_, names, states] = getAxes()
+        function [axes_, names, configs, states] = getAxes()
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
@@ -226,10 +226,11 @@ classdef mcInstrumentHandler < handle
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcAxis')                 % If an instrument is a axis...
-                    axes_{ii} = instrument{1};                  % ...Then append its information.
-                    names{ii} = instrument{1}.nameShort();
-                    states(ii) = instrument{1}.config.kind.int2extConv(instrument{1}.x);
+                if isa(instrument{1}, 'mcAxis')                 % If an instrument is an axis...
+                    axes_{ii} =     instrument{1};              % ...Then append its information.
+                    names{ii} =     instrument{1}.nameShort();
+                    configs{ii} =   instrument{1}.config
+                    states(ii) =    instrument{1}.getX();
                     ii = ii + 1;
                 end
             end
