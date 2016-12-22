@@ -113,10 +113,10 @@ classdef mcData < mcSavableClass
             
             configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
             
-            data.axes =     {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};                 % Fill the...   ...axes...
-            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
-            data.inputs =   {mciDAQ(configCounter)};                                                            %               ...inputs.
-            data.integrationTime = .05;
+            data.axes =     {configPiezoX, configPiezoY, configPiezoZ};                         % Fill the...   ...axes...
+            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};     %               ...scans...
+            data.inputs =   {configCounter};                                                    %               ...inputs.
+            data.intTimes = .05;
         end
         function data = xyzConfiguration2()      % Just a test configuration.
             configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
@@ -125,10 +125,10 @@ classdef mcData < mcSavableClass
             
             configTest = mciFunction.testConfig();
             
-            data.axes =     {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};                 % Fill the...   ...axes...
-            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
-            data.inputs =   {mciFunction(configTest)};                                                          %               ...inputs.
-            data.integrationTime = .05;
+            data.axes =     {configPiezoX, configPiezoY, configPiezoZ};                         % Fill the...   ...axes...
+            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};     %               ...scans...
+            data.inputs =   {configTest};                                                       %               ...inputs.
+            data.intTimes = .05;
         end
         function data = squareScanConfiguration(axisX, axisY, input, range, speedX, pixels)                 % Square version of the below.
             data = mcData.scanConfiguration(axisX, axisY, input, range, range, speedX, pixels, pixels); 
@@ -217,7 +217,7 @@ classdef mcData < mcSavableClass
             data.axes =     {axisX, axisY};                                                                     % Fill the...   ...axes...
             data.scans =    {linspace(rangeX(1), rangeX(2), pixelsX), linspace(rangeY(1), rangeY(2), pixelsY)}; %               ...scans...
             data.inputs =   {input};                                                                            %               ...inputs.
-            data.integrationTime = (diff(rangeX)/speedX)/pixelsX;
+            data.intTimes = (diff(rangeX)/speedX)/pixelsX;
         end
         function data = optimizeConfiguration(axis_, input, range, pixels, seconds)                         % Optimizes 'input' over 'range' of 'axis_'
 %             axis_
@@ -233,31 +233,21 @@ classdef mcData < mcSavableClass
             data.axes =     {axis_};                    % Fill the...   ...axis...
             data.scans =    {scan};                     %               ...scan...
             data.inputs =   {input};                    %               ...input.
-            data.integrationTime = seconds/pixels;
-            data.shouldOptimize = true;
+            data.intTimes = seconds/pixels;
+            data.flags.shouldOptimize = true;
         end
         function data = counterConfiguration(input, length, integrationTime)    
             data.axes =     {mcAxis()};                 % This is the time axis.
             data.scans =    {1:abs(round(length))};     % range of 'scans ago'.
             data.inputs =   {input};                    % input.
-            data.integrationTime = integrationTime;
+            data.intTimes = integrationTime;
+            data.flags.circTime = true;
         end
         function data = testConfiguration() % Not sure what I was doing here
             data.axes =     {};
             data.scans =    {};
             data.inputs =   {mciFunction(mciFunction.testConfig())};
-            data.integrationTime = 1;
-        end
-        function str = README()
-            % This is outdated.
-            str = ['This is a scan of struct.numInputs inputs over the struct.scans of struct.numAxes axes. '...
-                   'struct.data is a cell array with a cell for each input. Inside each cell is the result of '...
-                   'the measurement of that input for each point of the ND grid formed by the scans of the axes. '...
-                   'If the measurement is singular (i.e. just a number like a voltage measurement), then the '...
-                   'contents of the input cell is a numeric array with dimensions corresponding to the lengths of '...
-                   'struct.scans. If the measurement is more complex (e.g. a vector like a spectra), then the '...
-                   'contents of the input cell is a cell array with dimensions corresponding to the lengths of '...
-                   'struct.scans.'];
+            data.intTimes = 1;
         end
     end
     
@@ -361,6 +351,8 @@ classdef mcData < mcSavableClass
                 error('mcData(): d.d.intTimes must be a numeric array.');
             end
             
+            d.initialize();
+            
             % Need more checks?!
         end
         
@@ -390,6 +382,7 @@ classdef mcData < mcSavableClass
                 d.r.l.type =            [];
                 d.r.l.weight =          [];
                 d.r.l.scans =           [];
+                d.r.l.lengths =         [];
 
                 for ii = 1:d.r.i.num        % Now fill the empty lists
                     c = d.d.inputs{ii};     % Get the config for the iith input.
@@ -403,7 +396,7 @@ classdef mcData < mcSavableClass
                     % Extract some info from the config.
                     d.r.i.dimension(ii) =   sum(c.kind.sizeInput > 1);
                     d.r.i.size{ii} =        c.kind.sizeInput(c.kind.sizeInput > 1);   % Poor naming.
-                    d.r.i.length(ii) =      prod(d.r.i.size(ii));
+                    d.r.i.length(ii) =      prod(d.r.i.size{ii});
                     
                     d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();  % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
                     d.r.i.unit{ii} =            d.r.i.i{ii}.nameUnits();  %                                       ...'name (units)' form
@@ -425,7 +418,7 @@ classdef mcData < mcSavableClass
                 end
                 
                 % And gather some statistics based on the filled lists.
-                d.r.i.numInputAxes = sum(d.r.i.Dimension);
+                d.r.i.numInputAxes = sum(d.r.i.dimension);
                 
 
                 % GENERATE AXIS RUNTIME DATA ===================================================================================
@@ -434,15 +427,15 @@ classdef mcData < mcSavableClass
                 d.r.a.num =         length(d.d.axes);
                 
                 % Make some empty lists...
-                d.r.a.length =          zeros(1, d.r.i.num);
+                d.r.a.length =          zeros(1, d.r.a.num);
                 
-                d.r.a.name =            cell(1, d.data.numAxes);
-                d.r.a.unit =            cell(1, d.data.numAxes);
+                d.r.a.name =            cell(1, d.r.a.num);
+                d.r.a.unit =            cell(1, d.r.a.num);
                 
-                d.r.a.isNIDAQ =         false(1, d.r.i.num);
-                d.r.a.inEnmulation =    false(1, d.r.i.num);
+                d.r.a.isNIDAQ =         false(1, d.r.a.num);
+                d.r.a.inEnmulation =    false(1, d.r.a.num);
                 
-                d.r.a.prev =            NaN( 1, d.data.numAxes);
+                d.r.a.prev =            NaN( 1, d.r.a.num);
 
                 % ...and fill them.
                 for ii = 1:d.r.a.num
@@ -476,25 +469,31 @@ classdef mcData < mcSavableClass
                 d.r.l.layer(1:n) = 1:n;                                                     % Then the first two axes are set to 1 and 2 (for 2D).
                 
                 % Then, add mcAxis info to the layer information...
-                d.r.l.axis =    [ones( 1, d.data.numAxes) d.r.l.axis];
-                d.r.l.type =    [zeros(1, d.data.numAxes) d.r.l.type];
-                d.r.l.length =  [d.r.a.length d.r.i.length];
+                d.r.l.axis =    [ones( 1, d.r.a.num) d.r.l.axis];
+                d.r.l.type =    [zeros(1, d.r.a.num) d.r.l.type];
+                type = d.r.l.type
+%                 d.r.l.length =  [d.r.a.length d.r.i.length];    % Not sure why this is here...
+                d.r.l.lengths =  [d.r.a.length  d.r.l.lengths];
                 
                 % Index weight is best described by an example: If one has a 5x4x3 matrix, then incrimenting the x axis
                 %   increases the linear index (the index if the matrix was streached out) by one. Incrimenting the y axis
                 %   increases the linear index by 5. And incrimenting the z axis increases the linear index by 20 = 5*4. So the
                 %   index weight in this case is [1 5 20].
-                d.r.l.weight =  [ones(1,  d.data.numAxes) d.r.l.weight];    
+                d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
                 for ii = 2:d.r.a.num
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 
-                d.d.canScanFast = d.r.a.isNIDAQ && ~d.r.a.inEmulation  && all(d.r.i.isNIDAQ & ~d.r.a.inEmulation);
+                if ~isempty(d.d.axes)
+                    d.r.canScanFast = d.r.a.isNIDAQ(1) && ~d.r.a.inEmulation(1) && all(d.r.i.isNIDAQ & ~d.r.a.inEmulation);
+                else
+                    d.r.canScanFast = false;
+                end
                 
                 if isfield(d.d, 'circTime')
-                    d.d.flags.circTime = d.d.flags.circTime && strcmpi('time', d.data.axes{end}.config.kind.kind);
+                    d.d.flags.circTime = d.d.flags.circTime && strcmpi('time', d.d.axes{end}.kind.kind);
                 else
                     d.d.flags.circTime = false;
                 end
@@ -517,11 +516,11 @@ classdef mcData < mcSavableClass
                     if ~isempty(d.r.a.a)
                         d.d.name = [d.d.name ' vs '];
 
-                        for ii = 1:(d.d.a.num-1)
+                        for ii = 1:(d.r.a.num-1)
                             d.d.name = [d.d.name d.r.a.name{ii} ', '];
                         end
 
-                        d.d.name = [d.d.name d.r.a.name{d.d.a.num}];
+                        d.d.name = [d.d.name d.r.a.name{d.r.a.num}];
                     end
                 end
                 
@@ -530,6 +529,8 @@ classdef mcData < mcSavableClass
                     d.resetData();
                 end
                 d.r.isInitialized = true;
+                
+                d.r.scanMode = 0;
                 
                 d.d.info.version = mcInstrumentHandler.version();
             end
@@ -540,11 +541,12 @@ classdef mcData < mcSavableClass
             d.d.data =   cell([1, d.r.i.num]);      % d.r.i.num layers of data (one layer per input)
 
             for ii = 1:d.r.i.num
-                d.d.data{ii} =      NaN([d.r.l.length(d.r.l.type == 0 | d.r.l.type == ii) 1]);
+                % [d.r.l.lengths(d.r.l.type == 0 | d.r.l.type == ii) 1]
+                d.d.data{ii} =      NaN([d.r.l.lengths(d.r.l.type == 0 | d.r.l.type == ii) 1]);
             end
 
             % Make the variable that keeps track of where we are in 
-            d.d.index =          ones(1, d.data.numAxes);
+            d.d.index =          ones(1, d.r.a.num);
             d.d.currentIndex =   2;
             
             d.d.fnameManual =        mcInstrumentHandler.timestamp(0);
@@ -611,7 +613,7 @@ classdef mcData < mcSavableClass
                     toIncriment =   [true currentlyMax(1:end-1)] & ~currentlyMax;
                     toReset =       [true currentlyMax(1:end-1)] &  currentlyMax;
 
-                    if ~d.data.aquiring                     % If the scan was stopped...
+                    if ~d.r.aquiring                % If the scan was stopped...
                         break;
                     end
 
@@ -667,7 +669,7 @@ classdef mcData < mcSavableClass
         end
         function aquire1D(d, jj)
             if d.r.canScanFast
-                d.r.s.Rate = 1/max(d.data.integrationTime);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
+                d.r.s.Rate = 1/max(d.data.intTimes);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
                 
                 d.r.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
 
@@ -706,18 +708,16 @@ classdef mcData < mcSavableClass
                 end
             else
                 for kk = d.d.index(1):d.r.a.length(1)
-                    if d.data.aquiring
-                        d.data.axes{1}.goto(d.data.scans{1}(kk));             % Goto each point...
-                        d.data.axes{1}.wait();              % ...wait for the axis to arrive (for some types)...
+                    if d.r.aquiring
+                        d.r.a.a{1}.goto(d.d.scans{1}(kk));             % Goto each point...
+                        d.r.a.a{1}.wait();              % ...wait for the axis to arrive (for some types)...
 
                         for ii = 1:d.r.i.num         % ...for every input...
-                            if isnan(d.r.i.Dimension(ii))
-                                d.data.data{ii}{jj+kk-1} = d.r.i.s{ii}.measure(d.data.integrationTime(ii));  % ...measure.
-                            elseif d.r.i.Dimension(ii) == 0
-                                d.data.data{ii}(jj+kk-1) = d.r.i.s{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                            if d.r.i.dimension(ii) == 0
+                                d.d.data{ii}(jj+kk-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             else
-                                base = (jj+kk-1)*d.r.i.Length(ii) + 1;  % This is a guess.
-                                d.data.data{ii}(base:base+d.r.i.Length(ii)-1) = d.r.i.s{ii}.measure(d.data.integrationTime(ii));  % ...measure.
+                                base = (jj+kk-1)*d.r.i.length(ii) + 1;  % This is a guess.
+                                d.d.data{ii}(base:base+d.r.i.length(ii)-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             end
                         end
                     end

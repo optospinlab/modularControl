@@ -216,12 +216,15 @@ classdef mcScalePanel < handle
             end
 
             if ~isempty(panel.data)
-                if      panel.data.parent.data.plotMode == 1
-                    ylim(panel.data.parent.dataViewer.a, [m M]);
-                elseif  panel.data.parent.data.plotMode == 2
-    %                 disp('here');
-    %                 panel.data.parent.dataViewer.a
-                    caxis(panel.data.parent.dataViewer.a, [m M]);
+                switch panel.data.parent.r.plotMode
+                    case 0
+                        xlim(panel.data.parent.dataViewer.a, [m M]);
+                    case 1
+                        ylim(panel.data.parent.dataViewer.a, [m M]);
+                    case 2
+        %                 disp('here');
+        %                 panel.data.parent.dataViewer.a
+                        caxis(panel.data.parent.dataViewer.a, [m M]);
                 end
             end
         end

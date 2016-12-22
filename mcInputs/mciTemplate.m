@@ -43,6 +43,8 @@ classdef mciTemplate < mcInput              % ** Insert mci<MyNewInput> name her
             config = mciTemplate.customConfig();        % ** Rename this to whatever static config should be used.
         end
         function config = customConfig()                % ** Use a descriptive name for this particular 'identity' of mci<MyNewInput>.
+            config.class = 'mciTemplate';
+            
             config.name = 'Template';                   % ** Change this to the UI name for this identity of mci<MyNewInput>.
 
             config.kind.kind =          'template';     % ** Change this to the programatic name that the program should use for this identity of mci<MyNewInput>.

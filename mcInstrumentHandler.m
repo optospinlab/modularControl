@@ -41,7 +41,7 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function ver = version()
-            ver = [0 43];
+            ver = [0 44];
         end
         function tf = open()
             tf = true;
@@ -83,9 +83,13 @@ classdef mcInstrumentHandler < handle
 %                     disp(double(char));
 %                 end
 %                 
+
+                params.hostname > 256
+
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
                 params.hostname = strrep(params.hostname, '\n', '');
                 params.hostname = strrep(params.hostname, '\r', '');
+                params.hostname = strrep(params.hostname, '\t', '');
                 params.hostname = strrep(params.hostname, '\0', '');
                 params.hostname = strrep(params.hostname, ':', '_');
 

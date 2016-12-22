@@ -16,6 +16,8 @@ classdef mciDAQ < mcInput
             config = mciDAQ.counterConfig();
         end
         function config = counterConfig()
+            config.class = 'mciDAQ';
+            
             config.name =               'Default Counter';
 
             config.kind.kind =          'NIDAQcounter';
@@ -29,6 +31,8 @@ classdef mciDAQ < mcInput
             config.type =               'EdgeCount';
         end
         function config = voltageConfig()
+            config.class = 'mciDAQ';
+            
             config.name =               'Default Voltage Input';
 
             config.kind.kind =          'NIDAQanalog';
@@ -42,6 +46,8 @@ classdef mciDAQ < mcInput
             config.type =               'Voltage';
         end
         function config = digitalConfig()
+            config.class = 'mciDAQ';
+            
             config.name =               'Digital Output';
 
             config.kind.kind =          'NIDAQdigital';

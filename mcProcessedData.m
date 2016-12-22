@@ -79,8 +79,10 @@ classdef mcProcessedData < handle
                     
                     pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 2, axisXindex) );
                 case {2, '2D'}
-                    selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
-                    selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2);
+                    type = pd.parent.r.l.type
+                    selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1)
+                    selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2)
+                    input = pd.input
                     
                     if ~(selTypeX == 0 || selTypeX == pd.input) || ~(selTypeY == 0 || selTypeY == pd.input)
                         error('mcProcessedData.proccess(): mcDataViewer should prevent this from happening')
@@ -97,7 +99,7 @@ classdef mcProcessedData < handle
                         d = mean(d, ii);
                     end
 
-                    final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 2;   % If relevant and not singleton or meaned.
+                    final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 3;   % If relevant and not singleton or meaned.
 
                     d = squeeze(d); % Remove singleton dimensions (whether natural or meaned).
                     

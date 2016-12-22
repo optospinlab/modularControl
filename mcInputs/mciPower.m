@@ -15,6 +15,8 @@ classdef mciPower < mcInput
             config = mciPower.diamondConfig();
         end
         function config = diamondConfig()
+            config.class = 'mciPower';
+            
             config.name = 'Powermeter';
             
             config.power =  mciNIGPIB();

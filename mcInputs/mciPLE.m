@@ -17,6 +17,8 @@ classdef mciPLE < mcInput
             config = mciPLE.PLEConfig(636, 637, 1000, 1, 4);
         end
         function config = PLEConfig(xMin, xMax, upPixels, upSpeed, downSpeed)
+            config.class = 'mciPLE';
+            
             config.name = 'PLE with NFLaser';
 
             config.kind.kind =          'PLE';

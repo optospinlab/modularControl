@@ -16,6 +16,8 @@ classdef mciNIGPIB < mcInput
             config = mciNIGPIB.powermeterConfig();
         end
         function config = powermeterConfig()
+            config.class = 'mciNGPIB';
+            
             config.name = 'Powermeter';
 
             config.kind.kind =          'nigpib';

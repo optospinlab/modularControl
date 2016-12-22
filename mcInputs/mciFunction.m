@@ -16,6 +16,8 @@ classdef mciFunction < mcInput
             config = mciFunction.randConfig();
         end
         function config = randConfig()
+            config.class = 'mciFunction';
+            
             config.name =               'rand()';
 
             config.kind.kind =          'function';
@@ -28,16 +30,18 @@ classdef mciFunction < mcInput
             config.description =        'wraps the MATLAB rand() function';
         end
         function config = testConfig()
+            config.class = 'mciFunction';
+            
             config.name =               'Test Input';
 
             config.kind.kind =          'function';
             config.kind.name =          'Large-Dimension Test Input';
             config.kind.extUnits =      'arb';                  % 'External' units.
             config.kind.normalize =     false;
-            config.kind.sizeInput =     [13 42 49 8];
+            config.kind.sizeInput =     [13 10 10 8];
             
             config.fnc =                @()(rand(config.kind.sizeInput));
-            config.description =        'wraps the MATLAB rand(config.kind.sizeInput) function';
+            config.description =        'rand()';
         end
     end
     

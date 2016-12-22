@@ -127,7 +127,7 @@ classdef mcDataViewer < mcSavableClass
             
             if true
                 gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
-                gui.cf.Position = [100,100,300,500];
+                gui.cf.Position = [100,100,300,700];
                 gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
                 
                 jj = 1;
@@ -137,12 +137,12 @@ classdef mcDataViewer < mcSavableClass
                 inputNames2D = {};
                 
                 for ii = 1:gui.data.r.i.num
-                    if gui.r.inputDimension(ii) == 1
-                        inputNames1D{jj} = gui.r.inputNames{ii};
-                        jj = jj + 1;
+                    if gui.data.r.i.dimension(ii) == 1
+                        inputNames1D{jj} = gui.data.r.i.name{ii};
+                        jj = jj + 1;wa
                     end
-                    if gui.r.inputDimension(ii) == 2
-                        inputNames2D{kk} = gui.r.inputNames{ii};
+                    if gui.data.r.i.dimension(ii) == 2
+                        inputNames2D{kk} = gui.data.r.i.name{ii};
                         kk = kk + 1;
                     end
                 end
@@ -183,9 +183,9 @@ classdef mcDataViewer < mcSavableClass
                         uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.r.a.a{ii}.nameShort() ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
                         if tab == gui.tabs.t1d
-                            axeslist = {'X'};
+                            axeslist = {'X', 'Mean'};
                         else
-                            axeslist = {'X', 'Y'};
+                            axeslist = {'X', 'Y', 'Mean'};
                         end
 
                         val = length(axeslist)+1;
@@ -204,9 +204,9 @@ classdef mcDataViewer < mcSavableClass
                             gui.params2D.chooseList{ii} = choose;
                         end
             
-                        gui.data.r.l.axis(ii) = 0;     % The layer is an axis.
-                        gui.data.r.l.type(ii) = ii;
-                        gui.data.r.l.layerDim(ii) = 1;
+%                         gui.data.r.l.axis(ii) = 0;     % The layer is an axis.
+%                         gui.data.r.l.type(ii) = ii;
+%                         gui.data.r.l.layerDim(ii) = 1;
                     end
                 end
                 
@@ -219,24 +219,24 @@ classdef mcDataViewer < mcSavableClass
                 display('adding inputs');
                 
                 for kk = 1:gui.data.r.i.num
-                    if gui.r.inputDimension(kk) <= length(inputLetters)
+                    if gui.data.r.i.dimension(kk) <= length(inputLetters)
                         jj = 0;
                         
-                        for sizeInput = gui.r.i.i{kk}.config.kind.sizeInput
+                        for sizeInput = gui.data.d.inputs{kk}.kind.sizeInput
                             if sizeInput ~= 1       % A vector, according to matlab, has size [1 N]. We don't want to count the 1.
                                 jj = jj + 1;
                                 ii = ii + 1;        % Use the ii from the axis loop.
                     
-                                levellist = strcat('pixel ', strread(num2str(1:sizeInput), '%s')');  % Returns the pixels in 'pixel ##' form.
+                                levellist = strcat('pixel  ', strread(num2str(1:sizeInput), ' %s')');  % Returns the pixels in 'pixel ##' form.
 
                                 for tab = [gui.tabs.t1d gui.tabs.t2d]
                                     % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
-                                    uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.r.i.i{kk}.nameShort() ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+                                    uicontrol('Parent', tab, 'Style', 'text', 'String', [gui.data.r.i.i{kk}.nameShort() ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
                                     if tab == gui.tabs.t1d
-                                        axeslist = {'X'};
+                                        axeslist = {'X', 'Mean'};
                                     else
-                                        axeslist = {'X', 'Y'};
+                                        axeslist = {'X', 'Y', 'Mean'};
                                     end
 
                                     val = length(axeslist)+1;
@@ -272,7 +272,7 @@ classdef mcDataViewer < mcSavableClass
                 
                 gui.tabs.gray.Units = 'pixels';
                 tabpos = gui.tabs.gray.Position;
-                inputlist = cellfun(@(x)({x.name()}), gui.r.i.i);
+                inputlist = cellfun(@(x)({x.name()}), gui.data.r.i.i);
                                             
                 uicontrol('Parent', gui.tabs.gray, 'Style', 'text',         'String', 'Input: ', 'Units', 'pixels', 'Position', [0 tabpos(4)-3*bh tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
                 gui.paramsGray.choose = uicontrol('Parent', gui.tabs.gray, 'Style', 'popupmenu',    'String', inputlist, 'Units', 'pixels', 'Position', [tabpos(3)/3 tabpos(4)-3*bh 2*tabpos(3)/3 - bh bh], 'Value', 1);
@@ -630,7 +630,7 @@ classdef mcDataViewer < mcSavableClass
             
             switch gui.data.r.plotMode
                 case 0  % histogram
-                    gui.a.XLabel.String = gui.r.i.i{gui.r.input}.nameUnits();
+                    gui.a.XLabel.String = gui.data.r.i.i{gui.r.input}.nameUnits();
                     gui.a.XLabel.String = 'Number (num/bin)';
                 case 1  % 1D
                     gui.p(1).XData = gui.data.d.scans{gui.data.r.l.layer == 1};
@@ -639,7 +639,7 @@ classdef mcDataViewer < mcSavableClass
                     gui.a.XLim = [min(gui.p(1).XData) max(gui.p(1).XData)];         % Check to see if range is zero!
                     
                     gui.a.XLabel.String = gui.data.r.a.a{gui.data.r.l.layer == 1}.nameUnits();
-                    gui.a.YLabel.String = gui.r.i.i{gui.r.input}.nameUnits();
+                    gui.a.YLabel.String = gui.data.r.i.i{gui.r.input}.nameUnits();
                 case 2  % 2D
                     gui.i.XData = gui.data.d.scans{gui.data.r.l.layer == 1};
                     gui.i.YData = gui.data.d.scans{gui.data.r.l.layer == 2};
@@ -727,8 +727,8 @@ classdef mcDataViewer < mcSavableClass
                         if isnan(valr)
                             gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-%                             gui.r.i.i{gui.paramsGray.choose.Value}.extUnits
-                            gui.menus.ctsMenu.Label = ['Value: ' num2str(valr, 4) ' ' gui.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
+%                             gui.data.r.i.i{gui.paramsGray.choose.Value}.extUnits
+                            gui.menus.ctsMenu.Label = ['Value: ' num2str(valr, 4) ' ' gui.data.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
                         gui.menus.posMenu.Label = ['Position: ' num2str(x, 4)  ' ' axisX.config.kind.extUnits];
@@ -760,7 +760,7 @@ classdef mcDataViewer < mcSavableClass
                         if isnan(val)
                             gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-                            gui.menus.ctsMenu.Label = ['Value: ' num2str(val, 4) ' ' gui.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
+                            gui.menus.ctsMenu.Label = ['Value: ' num2str(val, 4) ' ' gui.data.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
                         gui.menus.posMenu.Label = ['Position: [ ' num2str(x, 4)  ' ' axisX.config.kind.extUnits ', ' num2str(y, 4)  ' ' axisY.config.kind.extUnits ' ]'];

@@ -20,6 +20,8 @@ classdef mciSpectrum < mcInput
             config = mciSpectrum.pyWinSpecConfig();
         end
         function config = pyWinSpecConfig()
+            config.class =              'mciSpectrum';
+            
             config.name =               'Default Spectrometer Input';
 
             config.kind.kind =          'pyWinSpectrum';
