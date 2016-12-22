@@ -27,32 +27,32 @@ This separation of behavior and identity means that this code is inherently modu
 ## Example
 Suppose that we want to do an XY scan on the counter with the X piezo and the Y micrometer.
 1. Load the piezo:
-    * Let `configP = mcaDAQ.piezoConfig()`. This gives us the default configuration for a MadCity Piezo.
-    * By default, `configP.dev` and `configP.chn` are set to `'Dev1'` and `'ao0'`, respectively. Change these if neccessary. For instance, set `configP.chn = 'ao1'` to access the piezo on the 2nd DAQ channel.
-    * Set `configP.name` to a descriptive name in order to keep track of this axis later. e.g. `configP.name = 'Piezo X'`
-    * Set `piezo = mcaDAQ(configP)` which gives us a `mcaDAQ` object with the desired `config`. 
-        * Note that access to object pointed by `piezo` is not limited by access to the variable `piezo`. Every time an axis is initialized, it is registered with `mcInstrumentHandler` for access via the rest of the program.
-        * Note also that letting `piezo2 = mcaDAQ(configP)` will not make a new object. Instead, this will merely set `piezo2 = piezo`. `mcInstrumentHandler` makes sure there are no duplicate axes.
+    1. Let `configP = mcaDAQ.piezoConfig()`. This gives us the default configuration for a MadCity Piezo.
+    2. By default, `configP.dev` and `configP.chn` are set to `'Dev1'` and `'ao0'`, respectively. Change these if neccessary. For instance, set `configP.chn = 'ao1'` to access the piezo on the 2nd DAQ channel.
+    3. Set `configP.name` to a descriptive name in order to keep track of this axis later. e.g. `configP.name = 'Piezo X'`
+    4. Set `piezo = mcaDAQ(configP)` which gives us a `mcaDAQ` object with the desired `config`. 
+        1. Note that access to object pointed by `piezo` is not limited by access to the variable `piezo`. Every time an axis is initialized, it is registered with `mcInstrumentHandler` for access via the rest of the program.
+        2. Note also that letting `piezo2 = mcaDAQ(configP)` will not make a new object. Instead, this will merely set `piezo2 = piezo`. `mcInstrumentHandler` makes sure there are no duplicate axes.
 2. Load the micrometer:
-    * Let `configM = mcaMicro.microConfig()`. This gives us the default configuration for a Newport Micrometer.
-    * By default, `configM.port` is set to the USB port `'COM6'`. Change this if neccessary. For instance, set `configM.port = 'COM7'` to access the micrometer connected to USB port `'COM7'`.
-    * Set `configM.name` to a descriptive name. e.g. `configP.name = 'Micro Y'`
-    * Set `micro = mcaMicro(configM)` which gives us a `mcaMicro` object with the desired `config`.
+    1. Let `configM = mcaMicro.microConfig()`. This gives us the default configuration for a Newport Micrometer.
+    2. By default, `configM.port` is set to the USB port `'COM6'`. Change this if neccessary. For instance, set `configM.port = 'COM7'` to access the micrometer connected to USB port `'COM7'`.
+    3. Set `configM.name` to a descriptive name. e.g. `configP.name = 'Micro Y'`
+    4. Set `micro = mcaMicro(configM)` which gives us a `mcaMicro` object with the desired `config`.
 3. Load the counter:
-    * Let `configI = mciDAQ.counterConfig()`.
-    * By default, `configI.dev` and `configI.chn` are set to `'Dev1'` and `'ctr1'`, respectively. Change these if neccessary. For instance, set `configP.chn = 'ctr2'` to access the 2nd counter channel.
-    * Set `configI.name` to a descriptive name. e.g. `configI.name = 'Counter'`
-    * Set `count = mciDAQ(configI)` which gives us a `mciDAQ` object with the desired `config`.
+    1. Let `configI = mciDAQ.counterConfig()`.
+    2. By default, `configI.dev` and `configI.chn` are set to `'Dev1'` and `'ctr1'`, respectively. Change these if neccessary. For instance, set `configP.chn = 'ctr2'` to access the 2nd counter channel.
+    3. Set `configI.name` to a descriptive name. e.g. `configI.name = 'Counter'`
+    4. Set `count = mciDAQ(configI)` which gives us a `mciDAQ` object with the desired `config`.
 4. Note that the last three steps can be streamlined by a startup script. `mcDiamond` serves this purpose for the diamond microscope and load all of the pertinant axes and inputs.
 5. Suppose that we want to do a 11x11 pixel scan from 10um to 20um with the x piezo and 20um to 30um with the y micrometer. We will use `mcData`.
-    * Set `axes_ = {piezo, micro}`. This gives `mcData` the axes we want to scan over. Note that it is also sufficient to set `axes_ = {configP, configM}` as long as `configP.class = mcaDAQ` and `configM.class = mcaMicro`. If you want to really be obscene, `axes_ = {piezo, configM}` is also valid.
-    * Set `scans = {linspace(10, 20, 11), linspace(20, 30, 11)}`. These vectors contain all of the points that we will scan over, with the `i`th index of this cell array corresponding to the axis of the `i`th index of the cell array `axes_`. Note that one can input pretty crazy vectors whose entries are not-neccessarily equally spaced (although this is not reccommended because the 2D imaging method assumes equal spacing; the 1D imaging method, however, should display correctly).
-    * Set `inputs = {count}`. This gives `mcData` the input that we want to measure at each point of the scan. Note specifically that more inputs can be added as additional entries of the cell array (naturally). As with axes, using the `config` instead of the `mcInput` object is sufficient.
-    * Set `integrationTime = [time]` to the time `time` (in seconds) that we want to spend at each point. `time = .09` sounds reasonable for ~1 second X scans.
-    * Now call `data = mcData(axes_, scans, inputs, integrationTime)`. This gives an `mcData` object that is ready to scan.
+    1. Set `axes_ = {piezo, micro}`. This gives `mcData` the axes we want to scan over. Note that it is also sufficient to set `axes_ = {configP, configM}` as long as `configP.class = mcaDAQ` and `configM.class = mcaMicro`. If you want to really be obscene, `axes_ = {piezo, configM}` is also valid.
+    2. Set `scans = {linspace(10, 20, 11), linspace(20, 30, 11)}`. These vectors contain all of the points that we will scan over, with the `i`th index of this cell array corresponding to the axis of the `i`th index of the cell array `axes_`. Note that one can input pretty crazy vectors whose entries are not-neccessarily equally spaced (although this is not reccommended because the 2D imaging method assumes equal spacing; the 1D imaging method, however, should display correctly).
+    3. Set `inputs = {count}`. This gives `mcData` the input that we want to measure at each point of the scan. Note specifically that more inputs can be added as additional entries of the cell array (naturally). As with axes, using the `config` instead of the `mcInput` object is sufficient.
+    4. Set `integrationTime = [time]` to the time `time` (in seconds) that we want to spend at each point. `time = .09` sounds reasonable for ~1 second X scans.
+    5. Now call `data = mcData(axes_, scans, inputs, integrationTime)`. This gives an `mcData` object that is ready to scan.
 6. To scan, either
-    * Aquire in the command line with `data.aquire()`. Note that this provides no visual input about the progress of the scan. It also blocks the MATLAB command line. The resulting data can be accessed afterward in `data.d.data`. This will be a cell array with one entry (corresponding to the one input). This one entry will be a 11x11 numeric matrix with the `ij`th index corresponding to the result at pixel `[i, j]`, i.e. the point `[scans{1}(i), scans{2}(j)]` um.
-    * Aquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
+    1. Aquire in the command line with `data.aquire()`. Note that this provides no visual input about the progress of the scan. It also blocks the MATLAB command line. The resulting data can be accessed afterward in `data.d.data`. This will be a cell array with one entry (corresponding to the one input). This one entry will be a 11x11 numeric matrix with the `ij`th index corresponding to the result at pixel `[i, j]`, i.e. the point `[scans{1}(i), scans{2}(j)]` um.
+    2. Aquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
 7. The function `mcScan` is a GUI which makes a `mcData` structure without having to go through the command line as in step 5. Run `mcScan` and simply select the appropriate values.
 
 
