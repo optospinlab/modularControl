@@ -1,6 +1,9 @@
 classdef (Sealed) mcaGrid < mcAxis
-% mcaGrid is the index'th axis of the mcGrid grid. Telling this axis to goto a value will send the
-% axes controlled by the mcGrid grid to 
+% mcaGrid is the index'th axis of a mcGrid grid. Telling this axis to goto a value will send the axes controlled by the mcGrid
+% grid to the appropriate coordinates. For instance, suppose we have a 1D grid in a 2D plane. The virtual axis of the grid will
+% control the two real axes of the plane to goto the correct coordinates.
+%
+% Also see mcaTemplate and mcAxis.
     
     methods (Static)
         % Neccessary extra vars:
@@ -13,6 +16,8 @@ classdef (Sealed) mcaGrid < mcAxis
             config = mcaGrid.gridConfig();
         end
         function config = gridConfig(grid, index)
+            config.class =              'mcaGrid';
+            
             config.kind.kind =          'grid';
             config.kind.name =          'Grid Axis';
             config.kind.intRange =      [-Inf Inf];             % Change this?
@@ -48,16 +53,16 @@ classdef (Sealed) mcaGrid < mcAxis
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
     %   more-complex methods defined in mcAxis.
-    methods %(Access = ?mcAxis)
+    methods
         % NAME
         function str = NameShort(a)
             str = [a.config.grid.name() ' ' a.config.letter];
         end
         function str = NameVerb(a)
-            ['Grid Axis in the ' a.config.letter ' direction of ' a.config.grid.name()];
+            str = ['Grid Axis in the ' a.config.letter ' direction for ' a.config.grid.name()];
         end
         
-        %EQ
+        % EQ
         function tf = Eq(a, b)
             tf = a.grid == b.grid && strcmpi(a.config.letter, b.config.letter);
         end

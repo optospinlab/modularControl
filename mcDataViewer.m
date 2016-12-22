@@ -3,7 +3,7 @@ classdef mcDataViewer < mcSavableClass
 %
 % Status: Mostly finished, but mostly uncommented. Future: display non-singular inputs, definitely RGB, maybe 3D?
     
-    properties
+    properties  % Color
         colorR = [1 0 0];
         colorG = [0 1 0];
         colorB = [0 0 1];
@@ -14,7 +14,7 @@ classdef mcDataViewer < mcSavableClass
         colorPrv = [0 .7 .7];  %                                             ...the previous (physical) position of the axes (e.g. for optimization).
     end
 
-    properties
+    properties  % Figure vars
         data = [];          % mcData structure currently being plotted.
         
         r = [];             % Three channels of processed data.
@@ -22,7 +22,7 @@ classdef mcDataViewer < mcSavableClass
         b = [];
         
         cf = [];            % Control figure.
-        cfToggle = [];      % uitoggletool that controls the visibility of cf...
+        cfToggle = [];      % uitoggletool in the bar that controls the visibility of cf.
         
         df = [];            % Data figure.
         a = [];             % Main axes in the data figure.
@@ -30,6 +30,7 @@ classdef mcDataViewer < mcSavableClass
         p = [];             % plot() object (for 1D).
         i = [];             % image() object (for 2D).
         % s = [];             % surf() object (for 3D)?
+        h = [];             % histogram() object.
         
         pos = [];           % Contains four scatter plots (each containing one point) that denote the selected point, the selected pixel, the current point (of the axes), and the previous point (e.g. before optimization).
         posL = [];          % Contains four lines plots (each containing one line...   "     "     "   ...
@@ -153,9 +154,12 @@ classdef mcDataViewer < mcSavableClass
                 
                 gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
                 gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D (Disabled)');
+                gui.tabs.t0  = uitab('Parent', utg, 'Title', 'Histogram');
                 
                 
                 switch gui.data.data.plotMode
+                    case 0
+                        utg.SelectedTab = gui.tabs.t0;
                     case 1
                         utg.SelectedTab = gui.tabs.t1d;
                     case 2
@@ -312,7 +316,7 @@ classdef mcDataViewer < mcSavableClass
             
             hold(gui.a, 'on');
             
-            gui.r
+%             gui.r
             
             gui.r.process();
             if gui.isRGB
@@ -320,20 +324,28 @@ classdef mcDataViewer < mcSavableClass
                 gui.b.process();
             end
             
-            x = 1:50;
+            x = 1:50;           % Change this initialization?
             y = 1:50;
             z = rand(1, 50);
             c = mod(magic(50),2); %ones(50);
             
-            gui.i = imagesc(x, y, c, 'Parent', gui.a, 'alphadata', c, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
+            % Histogram Setup
+            gui.h = [histogram(x, 'Parent', gui.a), histogram(x, 'Parent', gui.a), histogram(x, 'Parent', gui.a)];
+            
+            gui.h(1).FaceColor = gui.colorR;
+            gui.h(2).FaceColor = gui.colorG;
+            gui.h(3).FaceColor = gui.colorB;
+            
+            gui.h(1).FaceColor = gui.colorR;
+            gui.h(2).FaceColor = gui.colorG;
+            gui.h(3).FaceColor = gui.colorB;
+            
+            gui.h(1).EdgeColor = gui.colorR/2;
+            gui.h(2).EdgeColor = gui.colorG/2;
+            gui.h(3).EdgeColor = gui.colorB/2;
+            
+            % 1D Setup
             gui.p = plot(x, rand(1, 50), x, rand(1, 50), x, rand(1, 50), 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
-            
-            gui.plotData_Callback(0,0);
-            
-            gui.pos.prv = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPrv, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
-            gui.pos.sel = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorSel, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
-            gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPix, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
-            gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorAct, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
             
             gui.p(1).Color = gui.colorR;
             gui.p(2).Color = gui.colorG;
@@ -344,8 +356,19 @@ classdef mcDataViewer < mcSavableClass
             gui.posL.pix = plot([0 0], [-100 100], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', gui.colorPix, 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
             gui.posL.act = plot([0 0], [-100 100], 'Parent', gui.a, 'XDataMode', 'manual', 'YDataMode', 'manual', 'Color', gui.colorAct, 'PickableParts', 'none', 'Linewidth', 2, 'Visible', 'off');
             
+            % 2D Setup
+            gui.i = imagesc(x, y, c, 'Parent', gui.a, 'alphadata', c, 'XDataMode', 'manual', 'YDataMode', 'manual', 'ButtonDownFcn', @gui.figureClickCallback, 'UIContextMenu', menu, 'Visible', 'off');
+            
+            gui.pos.prv = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPrv, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
+            gui.pos.sel = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorSel, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
+            gui.pos.pix = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorPix, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'x', 'Visible', 'off');
+            gui.pos.act = scatter(0, 0, 'Parent', gui.a, 'SizeData', 40, 'XDataMode', 'manual', 'YDataMode', 'manual', 'CData', gui.colorAct, 'PickableParts', 'none', 'Linewidth', 2, 'Marker', 'o', 'Visible', 'off');
+            
+            
             gui.a.YDir = 'normal';
             
+            
+            % Menu Setup
             gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value: ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             gui.menus.posMenu = uimenu(menu, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
@@ -374,7 +397,9 @@ classdef mcDataViewer < mcSavableClass
 %             params.a.XLim = [min(x), max(x)]; 
 %             params.a.YLim = [min(y), max(y)];
             
-            hold(gui.a, 'off');
+            hold(gui.a, 'off');         % Why does hold need to be off?
+            
+            gui.plotData_Callback(0,0);
             
 %             edit.UserData = addlistener(axis_{1}, 'x', 'PostSet', @(s,e)(axisChanged_Callback(s, e, edit)));
 
@@ -437,7 +462,7 @@ classdef mcDataViewer < mcSavableClass
         function loadGUI_Callback(gui, ~, ~)
             
         end
-        function closeRequestFcnDF(gui, ~, ~)
+        function closeRequestFcnDF(gui, ~, ~)   % Close function for the data figure (the one with the graph)
             % gui.data.save();
             gui.data.data.aquiring = false;
             
@@ -445,18 +470,18 @@ classdef mcDataViewer < mcSavableClass
                 delete(gui.listeners.x);
                 delete(gui.listeners.y);
                 delete(gui.listeners.r);
-%                 delete(gui.listeners.g);
+%                 delete(gui.listeners.g);    % Should these be commented?
 %                 delete(gui.listeners.b);
             end
             
             delete(gui.cf);
             delete(gui.df);
             
-            delete(gui.data);   % This should be done gracefully.
+            delete(gui.data);               % This should be done gracefully.
             
             delete(gui);
         end
-        function closeRequestFcnCF(gui, ~, ~)
+        function closeRequestFcnCF(gui, ~, ~)   % Close function for the control figure (the one with the buttons)
             gui.toggleCF_Callback(0, 0)
         end
         function toggleCF_Callback(gui, ~, ~)
@@ -487,8 +512,8 @@ classdef mcDataViewer < mcSavableClass
             end
         end
         
-        % Right-click menu callbacks
-        function gotoPostion_Callback(gui, ~, ~, isSel, shouldGotoLayer)
+        % uimenu callbacks (when right-clicking on the graph)
+        function gotoPostion_Callback(gui, ~, ~, isSel, shouldGotoLayer)    % Menu option to goto a position. See below for function of isSel and shouldGotoLayer.
             if gui.data.data.plotMode == 1
                 axisX = gui.data.data.axes{gui.data.data.layer == 1};
                 
@@ -523,7 +548,7 @@ classdef mcDataViewer < mcSavableClass
                 end
             end
         end
-        function minmax_Callback(gui, ~, ~, isMax)
+        function minmax_Callback(gui, ~, ~, isMax)                          % Menu option to set the minimum or maximum to value of the selected pixel.
             gui.scale.gray.gui.normAuto.Value = 0;
             if isMax
                 gui.scale.gray.gui.maxEdit.String = gui.selData(1);
@@ -533,7 +558,7 @@ classdef mcDataViewer < mcSavableClass
                 gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
             end
         end
-        function normalizeThis_Callback(gui, ~, ~)
+        function normalizeThis_Callback(gui, ~, ~)                          
             gui.scale.gray.gui.normAuto.Value = 0;
 
             gui.scale.gray.gui.maxEdit.String = gui.r.max();
@@ -542,7 +567,7 @@ classdef mcDataViewer < mcSavableClass
             gui.scale.gray.gui.minEdit.String = gui.r.min();
             gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
         end
-        function openCounter_Callback(gui, ~, ~)
+        function openCounter_Callback(gui, ~, ~)                            % Looks like this needs debugging.
             display('1')
             data2 = mcData(mcData.counterConfiguration(gui.data.data.inputs{gui.data.data.input}, 100, .25))
             display('2')
@@ -557,12 +582,18 @@ classdef mcDataViewer < mcSavableClass
         
         function makeProperVisibility(gui)
             switch gui.data.data.plotMode
+                case 0
+                    pvis = 'off';
+                    ivis = 'off';
+                    hvis = 'on';
                 case 1
                     pvis = 'on';
                     ivis = 'off';
+                    hvis = 'off';
                 case 2
                     pvis = 'off';
                     ivis = 'on';
+                    hvis = 'off';
             end
             
             gui.p(1).Visible =       pvis;
@@ -574,9 +605,15 @@ classdef mcDataViewer < mcSavableClass
             if gui.isRGB
                 gui.p(2).Visible =       pvis;
                 gui.p(3).Visible =       pvis;
+                
+                gui.h(2).Visible =         hvis;
+                gui.h(3).Visible =         hvis;
             else
                 gui.p(2).Visible =       'off';
                 gui.p(3).Visible =       'off';
+                
+                gui.h(2).Visible =         'off';
+                gui.h(3).Visible =         'off';
             end
             
             gui.i.Visible =         ivis;
@@ -584,15 +621,18 @@ classdef mcDataViewer < mcSavableClass
             gui.pos.pix.Visible =   ivis;
             gui.pos.act.Visible =   ivis;
             gui.pos.prv.Visible =   ivis;
+            
+            gui.h(1).Visible =         hvis;
         end
         
         function plotSetup(gui)
             gui.a.Title.String = gui.data.data.name;
             
             switch gui.data.data.plotMode
-                case 1
-%                     gui.data.data.layer == 1
-%                     disp('here1');
+                case 0  % histogram
+                    gui.a.XLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
+                    gui.a.XLabel.String = 'Number (num/bin)';
+                case 1  % 1D
                     gui.p(1).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.p(2).XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.p(3).XData = gui.data.data.scans{gui.data.data.layer == 1};
@@ -600,15 +640,11 @@ classdef mcDataViewer < mcSavableClass
                     
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.inputs{gui.data.data.input}.nameUnits();
-%                     disp('there1');
-                case 2
+                case 2  % 2D
                     gui.i.XData = gui.data.data.scans{gui.data.data.layer == 1};
                     gui.i.YData = gui.data.data.scans{gui.data.data.layer == 2};
-%                     [min(gui.i.XData) max(gui.i.XData)]
                     gui.a.XLim = [min(gui.i.XData) max(gui.i.XData)];         % Check to see if range is zero!
                     gui.a.YLim = [min(gui.i.YData) max(gui.i.YData)];         % Check to see if range is zero!
-                    
-                    
                     
                     gui.a.XLabel.String = gui.data.data.axes{gui.data.data.layer == 1}.nameUnits();
                     gui.a.YLabel.String = gui.data.data.axes{gui.data.data.layer == 2}.nameUnits();
@@ -618,8 +654,6 @@ classdef mcDataViewer < mcSavableClass
             gui.shouldPlot = true;
         end
         function plotData_Callback(gui,~,~)
-%             disp('here');
-            
             if gui.data.data.scanMode == 2
                 gui.scanButton.String = 'Rescan (Will Overwrite Data)';
             end
@@ -627,27 +661,33 @@ classdef mcDataViewer < mcSavableClass
             if gui.shouldPlot
                 dims = sum(size(gui.r.data) > 1);
 
-                if dims == gui.data.data.plotMode
-                    switch gui.data.data.plotMode
-                        case 1
-                            if gui.isRGB
+                if gui.data.data.plotMode == 0
+                    if gui.isRGB
+                        
+                    else
+                        gui.h(1).Data = gui.data.data.data{gui.data.data.input};
+                    end
+                elseif gui.data.data.plotMode == 1 && dims == 1
+                    if gui.isRGB
 
-                            else
-                                gui.a.DataAspectRatioMode = 'auto';
-        %                         data = gui.r.data
-                                gui.p(1).YData = gui.r.data;
-                                gui.scale.gray.dataChanged_Callback(0,0);
-                            end
-                        case 2
-                            if gui.isRGB
-                            else
-                                gui.a.DataAspectRatioMode = 'manual';
-                                gui.a.DataAspectRatio = [1 1 1];
-        %                         data = gui.r.data
-                                gui.i.CData =       gui.r.data;
-                                gui.i.AlphaData =   ~isnan(gui.r.data);
-                                gui.scale.gray.dataChanged_Callback(0,0);
-                            end
+                    else
+                        gui.a.DataAspectRatioMode = 'auto';
+                        
+                        gui.p(1).YData = gui.r.data;
+                        
+                        gui.scale.gray.dataChanged_Callback(0,0);
+                    end
+                elseif gui.data.data.plotMode == 2 && dims == 2
+                    if gui.isRGB
+                        
+                    else
+                        gui.a.DataAspectRatioMode = 'manual';
+                        gui.a.DataAspectRatio = [1 1 1];
+                        
+                        gui.i.CData =       gui.r.data;
+                        gui.i.AlphaData =   ~isnan(gui.r.data);
+                        
+                        gui.scale.gray.dataChanged_Callback(0,0);
                     end
                 end
             end
@@ -659,7 +699,9 @@ classdef mcDataViewer < mcSavableClass
                 y = event.IntersectionPoint(2);
                 
                 switch gui.data.data.plotMode
-                    case 1
+                    case 0  % histogram
+                        % Do nothing.
+                    case 1  % 1D
                         xlist = (gui.p(1).XData - x) .* (gui.p(1).XData - x);
                         xi = find(xlist == min(xlist), 1);
                         xp = gui.p(1).XData(xi);
@@ -691,7 +733,7 @@ classdef mcDataViewer < mcSavableClass
                         
                         gui.menus.posMenu.Label = ['Position: ' num2str(x, 4)  ' ' axisX.config.kind.extUnits];
                         gui.menus.pixMenu.Label = ['Pixel: '    num2str(xp, 4) ' ' axisX.config.kind.extUnits];
-                    case 2
+                    case 2  % 2D
                         xlist = (gui.i.XData - x) .* (gui.i.XData - x);
                         ylist = (gui.i.YData - y) .* (gui.i.YData - y);
                         xi = find(xlist == min(xlist), 1);
@@ -867,7 +909,7 @@ classdef mcDataViewer < mcSavableClass
                 case gui.tabs.t1d
                     gui.data.data.plotMode = 1;
                 case gui.tabs.t2d
-                    if gui.data.data.numAxes < 2
+                    if gui.data.data.numAxes < 2        % Change this to accept inputs
                         src.SelectedTab = event.OldValue;
                     else
                         gui.data.data.plotMode = 2;
@@ -876,8 +918,10 @@ classdef mcDataViewer < mcSavableClass
                     if true
                         src.SelectedTab = event.OldValue;
                     else
-                        gui.data.data.plotMode = 3;
+%                         gui.data.data.plotMode = 3;
                     end
+                case gui.tabs.t0
+                    gui.data.data.plotMode = 0;
             end
             
             gui.updateLayer_Callback(0, 0);

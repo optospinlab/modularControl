@@ -1,5 +1,9 @@
 classdef (Sealed) mcaMicro < mcAxis
-% mcaMicro is the subclass of mcAxis that manages all serial micrometers.
+% mcaMicro is the subclass of mcAxis for Newport serial micrometers.
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Finished. Reasonably commented.
     
     methods (Static)
         % Neccessary extra vars:
@@ -10,17 +14,19 @@ classdef (Sealed) mcaMicro < mcAxis
             config = mcaMicro.microConfig();
         end
         function config = microConfig()
+            config.class =              'mcaMicro';
+            
             config.name =               'Default Micrometers';
 
             config.kind.kind =          'Serial Micrometer';
-            config.kind.name =          'Tholabs Micrometer';   % Check for better name.
-            config.kind.intRange =      [0 25];
+            config.kind.name =          'Newport Micrometer';
+            config.kind.intRange =      [0 25];                 % 0 -> 25 mm.
             config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
             config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'mm';                   % 'Internal' units.
             config.kind.extUnits =      'um';                   % 'External' units.
             config.kind.base =          0;                      % The (internal) value that the axis seeks at startup.
-            config.kind.resetParam =    '';
+            config.kind.resetParam =    '';                     % Currently unused? Check this.
 
             config.port =               'COM6';                 % Micrometer Port.
             config.addr =               '1';                    % Micrometer Address.
@@ -91,7 +97,6 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % READ
         function ReadEmulation(a)
-%             display('ReadEmulation');
             if abs(a.x - a.xt) > 1e-4           % Simple equation that attracts a.x to the target value of a.xt.
                 a.x = a.x + (a.xt - a.x)/100;
             else
@@ -111,7 +116,7 @@ classdef (Sealed) mcaMicro < mcAxis
             
             % The micrometers are not immediate, so...
             if isempty(a.t)         % ...if the timer to update the position of the micrometers is not currently running...
-                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 5fps
+                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .25); % 4fps
                 start(a.t);         % ...then run it.
             end
         end
@@ -121,10 +126,6 @@ classdef (Sealed) mcaMicro < mcAxis
 
             a.xt = a.config.kind.ext2intConv(x);
             
-%             a
-%             a.s
-%             abs(a.xt - a.x)
-
             if abs(a.xt - a.x) > 20 && isempty(a.t)
                 a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
                 start(a.t);

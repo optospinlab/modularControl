@@ -1,4 +1,4 @@
-function cdata = iconRead(filename,guessalpha)
+function cdata = iconRead(filename, guessalpha)
 % ICONREAD read an image file and convert it to CData for a HG icon.
 %
 % CDATA=ICONREAD(FILENAME)

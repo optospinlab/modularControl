@@ -1,5 +1,6 @@
 function x = interpretNeSpectrum(varargin)
-% interpretNeSpectrum calculates the conversion between pixels and nanometers based on a Ne spectrum
+% interpretNeSpectrum calculates the conversion between pixels and nanometers based on a Ne spectrum. It tries to match the
+% provided spectrum with the expected Ne spectrum (peak positions and relative heights).
 %
 % Syntax:
 % 
@@ -8,6 +9,8 @@ function x = interpretNeSpectrum(varargin)
 % interpretNeSpectrum('spectrum.SPE')           %
 %
 % interpretNeSpectrum(oneOfTheAbove, outputNM)  % optional switch to output Hz (false) vs the default nm (true)
+%
+% Status: Not fully debugged. Not sure what will happen if a peak is missing.
     
     % These values are approximations from the OceanOptics documentation.
     peaksNe = [ %341.790, NaN;

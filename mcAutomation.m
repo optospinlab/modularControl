@@ -1,6 +1,8 @@
 classdef mcAutomation < handle
     %UNTITLED2 Summary of this class goes here
     %   Detailed explanation goes here
+    % 
+    % Status: Probably going to replace with mcExperiment.
     
     properties
         grid

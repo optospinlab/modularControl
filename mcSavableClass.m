@@ -23,6 +23,8 @@ classdef mcSavableClass < handle
                     obj = varin;
                     if isfield(obj.config, 'src')
                         fname = obj.config.src;
+                    elseif isfield(obj.config, 'name')
+                        fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep obj.config.name '.mat'];
                     else
                         if ismethod(obj, 'name')
                             fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep obj.name() '.mat'];
@@ -38,6 +40,8 @@ classdef mcSavableClass < handle
             if isfield(obj, 'f') && isfield(obj.config, 'Position') % If this savable class has a figure and cares about position,
                 obj.config.Position = obj.f.Position;
             end
+            
+            obj.makeClassFolder();
 
             config = obj.config;
 

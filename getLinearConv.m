@@ -3,17 +3,17 @@ function config = getLinearConv(config, intRange, extRange)
 % and extRange.
 
     if ~all(size(intRange) == [1 2]) && ~all(size(intRange) == [2 1])
-        error(['getLinearConv: unexpected size of intRange; is ' size(intRange) ' but must be [1 2] or [2 1]']);
+        error(['getLinearConv(): Unexpected size of intRange; is ' size(intRange) ' but must be [1 2] or [2 1]']);
     end
     if ~all(size(extRange) == [1 2]) && ~all(size(extRange) == [2 1])
-        error(['getLinearConv: unexpected size of intRange; is ' size(extRange) ' but must be [1 2] or [2 1]']);
+        error(['getLinearConv(): Unexpected size of intRange; is ' size(extRange) ' but must be [1 2] or [2 1]']);
     end
     
     if diff(intRange) == 0
-        error('intRange cannot have zero range.');
+        error('getLinearConv(): intRange cannot have zero range.');
     end
     if diff(extRange) == 0
-        error('extRange cannot have zero range.');
+        error('getLinearConv(): extRange cannot have zero range.');
     end
     
     config.kind.intRange =      intRange;

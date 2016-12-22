@@ -37,7 +37,7 @@ classdef mcAxis < mcSavableClass
         inUse = false;          % Boolean.
         inEmulation = false;    % Boolean.
         
-        reservedBy = [];        % Boolean.    
+        reservedBy = [];        % Object (unfinished...)
     end
     
     properties
@@ -84,8 +84,12 @@ classdef mcAxis < mcSavableClass
         function a = mcAxis(varin)
             if nargin == 0
                 a.construct(a.defaultConfig());
-            else
-                a.construct(varin);
+            elseif nargin == 1
+                if isstruct(varin)
+                    a.construct(varin);
+                else
+                    error('mcAxis(): Configs must be of type struct.');
+                end
             end
         end
         

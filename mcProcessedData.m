@@ -61,6 +61,8 @@ classdef mcProcessedData < handle
         
         function process(pd)
             switch pd.parent.data.plotMode
+                case {0, 'histogram'}
+                    % Do nothing.
                 case {1, '1D'}
                     nums = 1:pd.parent.data.numAxes;
 

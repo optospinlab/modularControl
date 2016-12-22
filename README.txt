@@ -1,3 +1,9 @@
+To Run:
+
+ + Add modularControl (and subfolders) to path.
+ + 
+
+
 +Modularity:
 
 modularControl is, as the name suggests, meant to be modular. 
@@ -16,6 +22,6 @@ This separation of behavior and identity means that this code is inherently modu
 
 +What's Up With 'mca' and 'mci'?:
 
-mca<Classname> and mci<Classname> are subclasses of mcAxis and mcInput, respectively. All the mca's and mci's are in the mcAxes and mcInputs, respectively. The reason for this specification is that mcaDAQs and mcaMicros, despite their common functionality (e.g. each .goto(x)), behave very differently. Attempting to contain the behavior of every mcAxis inside the mcAxis class become difficult as the number of necessary behaviors increased. Instead, mcAxis and mcInput spawn a set of subclass mca's and mci's that define the specific functionality. How is this done? Each mca and mci must 'fill in' functionality in the capitalized version of each function. For instance, mciDAQ must define .Measure() which is called by .measure(), 
+mca<Classname> and mci<Classname> are subclasses of mcAxis and mcInput, respectively. All the mca's and mci's are mcAxes and mcInputs, respectively. The reason for this specification is that mcaDAQs and mcaMicros, despite their common functionality (e.g. each .goto(x)), behave very differently. Attempting to contain the behavior of every mcAxis inside the mcAxis class become difficult as the number of necessary behaviors increased. Instead, mcAxis and mcInput spawn a set of subclass mca's and mci's that define the specific functionality. How is this done? Each mca and mci must 'fill in' functionality via the capitalized version of each function. For instance, mciDAQ must define .Measure() which is called by .measure(), a method defined in the mcInput superclass.
 
 (unfinished).

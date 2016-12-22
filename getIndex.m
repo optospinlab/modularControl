@@ -7,10 +7,12 @@ function index = getIndex(varargin)
 % Syntax:
 %   - getIndex(lengths, layer, x)           % 1D
 %   - getIndex(lengths, layer, x, y)        % 2D
-%   - getIndex(lengths, layer, x, y, z)     % (sometime) 3D
+%   - getIndex(lengths, layer, x, y, z)     % 3D (will finish sometime (probably never))
 %
 % Status: Function finished. Math and reasoning under-explained. Could use
 %   better examples.
+%
+% Future: Make this work with implicit addition (new to 2016b) instead of repmat...
 %
 % 2D example:
 %   We want to get a 2D slice of an ND matrix with dimensions lengths 
@@ -20,6 +22,7 @@ function index = getIndex(varargin)
 %   position of the slice in the other dimensions; the returned slice
 %   will always pass through the point layer in ND space (note that the
 %   xth and yth components of layer do not matter, of course).
+
 
     mode = nargin;
     
@@ -53,11 +56,6 @@ function index = getIndex(varargin)
             % First term is a vector with spacing appropriate for the line
             % we are trying to make. Second term offsets this vector to
             % correspond to the layer that we desire.
-%             1:indexWeight(x):lx*indexWeight(x)
-%             indexWeight
-%             layer-1
-%             (nums ~= x)
-%             indexWeight * ((layer - 1).* (nums ~= x))'
             index = (1:indexWeight(x):lx*indexWeight(x)) + (indexWeight * ((layer - 1).* (nums ~= x))');
         case 4
             lengths =   varargin{1};

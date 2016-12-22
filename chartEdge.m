@@ -1,5 +1,6 @@
 function chartEdge(input, waypoints)
 %chartEdge follows the edge of something (presumably diamond), droppping waypoints as it goes.
+% Status: Unfinished. Just an idea.
 
 %     axesZ.focus();
 

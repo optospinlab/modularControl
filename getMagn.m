@@ -2,7 +2,17 @@ function [char, magn, str] = getMagn(num)
 % getMagn returns the character corresponding to the magnitude (rounded to nearest 3) of num. Also returned is magn, the
 %   calculated magnitude of num. It also returns the number in '###.## c' form where c is the character corresponding to the
 %   magnitude.
-% Status: Finished and commented. Only issue is that it won't handle numbers above Yotta or below yocto.
+% Status: Finished and commented.
+
+    if ~isnumeric(num)                      % If a number was not given, return N/A values
+        warning('getMagn(): Expected numeric input');
+        
+        char = '';
+        magn = NaN;
+        str = '###.## ';
+        
+        return;
+    end
 
     if num == 0                             % log10 can't handle zero, so a special case...
         char = '';
@@ -16,10 +26,17 @@ function [char, magn, str] = getMagn(num)
     end
 
     chars = 'YZEPTGMk munpfazy';            % https://en.wikipedia.org/wiki/Order_of_magnitude#Uses
+    
+    if m > 8                                % Make sure that m is in range (even though this probably won't be an issue)
+        m = 8;
+    end
+    if m < -8
+        m = -8;
+    end
 
-    char = chars(9-m);                      % This will break if m is out of range.
+    char = chars(9-m);
     if char == ' '
-        char = '';      
+        char = '';
     end
 
     magn = 1000^(-m);

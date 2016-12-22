@@ -1,5 +1,9 @@
 classdef (Sealed) mcaNFLaser < mcAxis
-% mcaNFLaser is currently undocumented
+% mcaNFLaser is for controlling the New Focus red laser via serial.
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Working, but slow. Mostly uncommented.
     
     properties
         key = 0;
@@ -14,6 +18,8 @@ classdef (Sealed) mcaNFLaser < mcAxis
             config = mcaNFLaser.lambdaConfig();
         end
         function config = lambdaConfig()
+            config.class =              'mcaNFLaser';
+            
             config.name = 'NF Red';
 
             config.kind.kind =          'NFLaser';
@@ -79,9 +85,9 @@ classdef (Sealed) mcaNFLaser < mcAxis
         % OPEN/CLOSE
         function Open(a)            
             if (~libisloaded('npusb'))    
-                    loadlibrary('usbdll.dll', 'NewpDll.h', 'alias', 'npusb');   % usbdll.lib
+                loadlibrary('usbdll.dll', 'NewpDll.h', 'alias', 'npusb');   % usbdll.lib
             else
-                    disp('Note: npusb was already loaded');
+                disp('mcaNFLaser.open(): n.b. npusb was already loaded');
             end
             
             calllib('npusb', 'newp_usb_init_product', 0);
@@ -110,16 +116,12 @@ classdef (Sealed) mcaNFLaser < mcAxis
 %                 calibrationDate =   a.listen('SYSTem:LASer:CALDATE?')
 
                 a.speak('SYSTem:MCONtrol REM');     % Disables user input to the controller panel.
-                a.speakWithVar('OUTPut:STATe', 1);  % Turn the laser on.
-                a.speakWithVar('OUTPut:TRACk', 1);  % Turn lambda track on
-                a.speakWithVar('HWCONFIG', 16);     % Set HWCONFIG to keep lambda track on even after the laser has reached the desired wavelength.
 
                 a.read();
 %             end
         end
         function Close(a)
             a.speak('SYSTem:MCONtrol LOC');     % Enables user input to the controller panel.
-            a.speakWithVar('OUTPut:STATe', 0);  % Turn the laser off.
             
             calllib('npusb', 'newp_usb_uninit_system');  % Close the session.
         end
@@ -144,16 +146,20 @@ classdef (Sealed) mcaNFLaser < mcAxis
         
     methods
         % EXTRA
-        function speak(a, str)
-            reply = a.listen(str);  % There are some commands that do not reply... Not sure how these will behave without testing.
+        function tf = speak(a, str)
+            reply = a.listen(str);                  % There are some commands that do not reply... Not sure how these will behave without testing.
             
-            if ~strcmp(reply, 'OK')
+            if ~strcmpi(reply, 'OK')
                 warning(['mcaNFLaser: Laser returns error: ' reply]);
-                a.beep();       % Infinite recursion?
+                a.beep();                           % Infinite recursion?
+                tf = false;
+                return;
             end
+            
+            tf = true;
         end
         function speakWithVar(a, str, var)
-            a.speak([str ' ' num2str(var)]); % Fix precision on num2str?
+            a.speak([str ' ' num2str(var)]);        % Fix precision on num2str?
         end
         function reply = listen(a, str)
             disp('Sending message to laser...');
@@ -161,7 +167,7 @@ classdef (Sealed) mcaNFLaser < mcAxis
             fail =              calllib('npusb', 'newp_usb_send_ascii',   a.key, libpointer('cstring', str), length(str));
             toc
             
-            if fail == 0
+            if fail == 0                            % If success...
                 disp('Waiting for reply...');
                 tic
                 [~, reply, ~] = calllib('npusb', 'newp_usb_get_ascii',    a.key, blanks(256), 256, libpointer('uint32Ptr'));    % Receiving reply takes 2 seconds!?!
@@ -170,8 +176,17 @@ classdef (Sealed) mcaNFLaser < mcAxis
                 disp('Reply received.');
                 
                 split = strsplit(reply, ['' 13]);
-                reply = split{1};
+                reply = split{1};                   % What was in the rest?
             end
+        end
+        
+        function tf = on(a)
+            % Turn the laser and lambda track on.
+            tf = a.speakWithVar('OUTPut:STATe', 1) && a.speakWithVar('OUTPut:TRACk', 1);
+        end
+        function tf = off(a)
+            % Turn the laser off.
+            tf = a.speakWithVar('OUTPut:STATe', 0);
         end
         
         function time = scan(a, xMin, xMax, vFor, vRet, nScans)
@@ -182,34 +197,34 @@ classdef (Sealed) mcaNFLaser < mcAxis
             vMax = str2double(a.listen('SOURce:WAVE:MAXVEL?'));
             
             if vFor <= 0
-                warning('mcaNFLaser: Forward velocity cannot be negative or zero. Setting to max velocity.');
+                warning('mcaNFLaser.scan(): Forward velocity cannot be negative or zero. Setting to max velocity.');
                 vFor = vMax;
             end
             if vRet <= 0
-                warning('mcaNFLaser: Forward velocity cannot be negative or zero. Setting to max velocity.');
+                warning('mcaNFLaser.scan(): Forward velocity cannot be negative or zero. Setting to max velocity.');
                 vRet = vMax;
             end
             
             if vMax < vFor
-                warning(['mcaNFLaser: Forward velocity of ' num2str(vFor) ' nm/sec is greater than the max velocity of ' num2str(vMax) ' nm/sec... Setting to max velocity.']);
+                warning(['mcaNFLaser.scan(): Forward velocity of ' num2str(vFor) ' nm/sec is greater than the max velocity of ' num2str(vMax) ' nm/sec... Setting to max velocity.']);
                 vFor = vMax;
             end
             if vMax < vRet
-                warning(['mcaNFLaser: Return velocity of ' num2str(vRet) ' nm/sec is greater than the max velocity of ' num2str(vMax) ' nm/sec... Setting to max velocity.']);
+                warning(['mcaNFLaser.scan(): Return velocity of ' num2str(vRet) ' nm/sec is greater than the max velocity of ' num2str(vMax) ' nm/sec... Setting to max velocity.']);
                 vRet = vMax;
             end
             
             if ~a.inRange(xMin)
-                warning(['mcaNFLaser: Min wavelength of ' num2str(xMin) ' nm is out of range. Setting to min wavelength.']);
+                warning(['mcaNFLaser.scan(): Min wavelength of ' num2str(xMin) ' nm is out of range. Setting to min wavelength.']);
                 xMin = min(a.config.kind.intRange);
             end
             if ~a.inRange(xMax)
-                warning(['mcaNFLaser: Max wavelength of ' num2str(xMax) ' nm is out of range. Setting to max wavelength.']);
+                warning(['mcaNFLaser.scan(): Max wavelength of ' num2str(xMax) ' nm is out of range. Setting to max wavelength.']);
                 xMax = max(a.config.kind.intRange);
             end
             
             if nScans < 0 || nScans ~= round(nScans)
-                warning(['mcaNFLaser: ' num2str(nScans) ' is an invalid number of scans. Setting to ' num2str(ceil(abs(nScans))) '.']);
+                warning(['mcaNFLaser.scan(): ' num2str(nScans) ' is an invalid number of scans. Setting to ' num2str(ceil(abs(nScans))) '.']);
                 nScans = ceil(abs(nScans));
             end
             

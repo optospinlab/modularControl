@@ -1,6 +1,10 @@
 classdef mciDAQ < mcInput
 % mciDAQ is the subclass of mcInput that manages all NIDAQ devices. This includes:
 %  - generic digital, analog, and counter outputs.
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Finished. Mostly uncommented.
 
     methods (Static)
         % Neccessary extra vars:

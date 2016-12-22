@@ -3,6 +3,10 @@ classdef (Sealed) mcaDAQ < mcAxis
 %  - generic digital and analog outputs.
 %  - piezos
 %  - galvos
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Finished. Mostly uncommented.
     
     methods (Static)
         % Neccessary extra vars:
@@ -14,6 +18,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config = mcaDAQ.piezoConfig();
         end
         function config = analogConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Analog Output';
 
             config.kind.kind =          'NIDAQanalog';
@@ -33,6 +39,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = PIE616Config()
+            config.class =              'mcaDAQ';
+            
             config.name =               'High Voltage Analog Output';
 
             config.kind.kind =          'NIDAQanalog';
@@ -52,6 +60,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = greenConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Green Laser';
 
             config.kind.kind =          'NIDAQdigital';
@@ -71,6 +81,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            2;
         end
         function config = redConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Red Freq';
 
             config.kind.kind =          'NIDAQanalog';
@@ -90,6 +102,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = piezoConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Default Piezo';
 
             config.kind.kind =          'NIDAQanalog';
@@ -109,6 +123,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = piezoZConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Piezo Z';
 
             config.kind.kind =          'NIDAQanalog';
@@ -128,6 +144,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = digitalConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Digital Output';
 
             config.kind.kind =          'NIDAQdigital';
@@ -227,7 +245,7 @@ classdef (Sealed) mcaDAQ < mcAxis
         
         % GOTO
         function GotoEmulation(a, x)
-            a.xt = a.config.kind.ext2intConv(x);    % This will cause preformance reduction for digital. Change?
+            a.xt = a.config.kind.ext2intConv(x);    % This will cause preformance reduction for identity conversions (@(x)(x)) e.g. digital. Change?
             a.x = a.xt;
         end
         function Goto(a, x)

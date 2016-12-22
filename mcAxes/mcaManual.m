@@ -1,6 +1,10 @@
 classdef (Sealed) mcaManual < mcAxis
 % mcaManual is a subclass of mcAxis for axes that are (not yet) automated. When the program wants to change the value of this
-%   axis, the user will be prompted to change it manually.
+%   axis, the user will be prompted (with a dialog box and a gong sound) to change it manually.
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Finished, decently commented.
     
     methods (Static)
         % Neccessary extra vars:
@@ -8,10 +12,12 @@ classdef (Sealed) mcaManual < mcAxis
         %  - verb
         
         function config = defaultConfig()
-            config = mcaDAQ.piezoConfig();
+            config = mcaManual.polarizationConfig();
         end
         function config = polarizationConfig()
-            config.name = 'Half Wave Plate';
+            config.class =              'mcaManual';
+            
+            config.name =               'Half Wave Plate';
 
             config.kind.kind =          'manual';
             config.kind.name =          'Polarization';
@@ -44,7 +50,7 @@ classdef (Sealed) mcaManual < mcAxis
     
     % These methods overwrite the empty methods defined in mcAxis. mcAxis will use these. The capitalized methods are used in
     %   more-complex methods defined in mcAxis.
-    methods %(Access = ?mcAxis)
+    methods
         % NAME
         function str = NameShort(a)
             str = [a.config.name ' (' a.config.kind.name ':' a.config.verb ')'];

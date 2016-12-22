@@ -1,6 +1,10 @@
 classdef mciPower < mcInput
 % mciPower combines a mcInput for power reading and a mcAxis controlling a flip mirror to the
 % powermeter for seamless power measurement.
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Probably will replace this...
 
     methods (Static)
         % Neccessary extra vars:

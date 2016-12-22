@@ -41,7 +41,7 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function ver = version()
-            ver = [0 35];
+            ver = [0 36];
         end
         function tf = open()
             tf = true;
@@ -57,6 +57,10 @@ classdef mcInstrumentHandler < handle
                     daqreset
                 end
                 
+                if ~usejava('swing')
+                    error('mcInstrumentHandler: Java Swing import failed. Not sure what to do if this happens.');
+                end
+                
                 params.open =                       true;
                 
                 params.instruments =                {};
@@ -67,29 +71,37 @@ classdef mcInstrumentHandler < handle
                 params.figures =                    {};
                 params.registeredInstruments =      [];
                 params.warningLight =               [];
+                params.defaultVideo =               [];
                 
-                mcInstrumentHandler.params(params);                                 % Fill params with this so that we don't risk infinite recursion when we try to add the time axis.
+                tf = false;                                         % Return whether the mcInstrumentHandler was open...
                 
-                tf = false;                                                         % Return whether the mcInstrumentHandler was open...
+                [~, params.hostname] = system('hostname');          % A quick way to identify which system we are on.
                 
-                [~, params.hostname] = system('hostname');
-                
-                params.hostname = params.hostname(1:end-1);
+%                 params.hostname = params.hostname(1:end-2);
                 
 %                 for char = params.hostname
 %                     disp(double(char));
 %                 end
 %                 
-%                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
-%                 params.hostname = strrep(params.hostname, '\n', '');
-%                 params.hostname = strrep(params.hostname, '\r', '');
-%                 params.hostname = strrep(params.hostname, '\0', '');
+                params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
+                params.hostname = strrep(params.hostname, '\n', '');
+                params.hostname = strrep(params.hostname, '\r', '');
+                params.hostname = strrep(params.hostname, '\0', '');
+                params.hostname = strrep(params.hostname, ':', '_');
+
+                params.mcFolder = pwd;                                              % Get the current directory
                 
-                params.instruments =                {mcAxis(mcAxis.timeConfig())};  % Initialize with only time (which is special)
-                      % Temperary global variable that tells axes/inputs whether to be inEmulation or not. Will be replaced with a better system.
-%                 [~, params.hostname] =              system('hostname');
+                while ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
+                    mcDialog('For everything to function properly, mcInstrumentHandler must know where the modularControl folder is. Press OK to select that folder.', 'Need modularControl folder');
+                    
+                    params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl Folder.');
+                end
+
+                mcInstrumentHandler.params(params);                 % Load persistant params with this so that we don't risk infinite recursion when we try to add the time axis (see below).
                 
-                mcInstrumentHandler.params(params);
+                params.instruments = {mcAxis(mcAxis.timeConfig())}; % Initialize with only time (which is special)
+                
+                mcInstrumentHandler.params(params);                 % Finally, load persistant params with this.
                 
                 folder = mcInstrumentHandler.getConfigFolder();
                 if ~exist(folder, 'file')
@@ -167,7 +179,7 @@ classdef mcInstrumentHandler < handle
                 str = params.saveDirManual;
             end
         end
-        function str = timestamp(varin)
+        function [str, stamp] = timestamp(varin)
             if ischar(varin)                                % If varin is a string, folder = '<manualsavedir>\<string>\<yyyy_mm_dd>'
                 folder = [mcInstrumentHandler.getSaveFolder(0) varin filesep datestr(now,'yyyy_mm_dd')];
             elseif isnumeric(varin) || islogical(varin)     % If varin is a number or t/f, folder = '<manualsavedir>\<yyyy_mm_dd>' or '<backgroundsavedir>\<yyyy_mm_dd>' depending upon whether varin evaluates as true or false
@@ -180,7 +192,9 @@ classdef mcInstrumentHandler < handle
                 mkdir(folder);
             end
             
-            str = [folder filesep datestr(now,'HH_MM_SS_FFF')];     % Then return the string '<folder>\HH_MM_SS_FFF' (i.e. the file is saved as the time inside the date folder)
+            stamp = datestr(now,'HH_MM_SS_FFF');
+            
+            str = [folder filesep stamp];   % Then return the string '<folder>\HH_MM_SS_FFF' (i.e. the file is saved as the time inside the date folder)
         end
         
         
@@ -275,7 +289,7 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.params(params);
         end 
         
-        % UICONTROL REGISTRATION
+        % UICONTROL REGISTRATION (Unfinished feature!)
         function registerControl(control, controlledInstruments)    % In: uicontrol and cell array of controlled instruments.
             mcInstrumentHandler.open();
             
@@ -306,11 +320,11 @@ classdef mcInstrumentHandler < handle
             
             params = mcInstrumentHandler.params();
             
-            if ~ischar(state)
+            if ~ischar(state)       % Convert a boolean state to 'on'/'off'...
                 if state
-                    state = 'on'
+                    state = 'on';
                 else
-                    state = 'off'
+                    state = 'off';
                 end
             end
             
@@ -328,8 +342,6 @@ classdef mcInstrumentHandler < handle
                 end
             end
         end
-        
-%         function 
         
         % CLEAR PARAMS
         function clearAll() % Resets params; Usage not recommended.
@@ -369,30 +381,9 @@ classdef mcInstrumentHandler < handle
         end
         
         % FIGURE
-        function f = createFigure(obj, toolBarMode)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for piezo control).
+        function f = createFigure(obj, toolBarMode)     % Creates a figure that has the proper params.globalWindowKeyPressFcn (e.g. for arrow key control outside of mcUserInput).
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
-            
-            
-%             if ~isempty(params.figures)
-%                 a = cellfun(@(x)(isvalid(x)), params.figures);
-%                 if sum(a) > 1
-% %                     a
-% %                     b = strcmp(params.figures{a}.Name, title);
-% %                 elseif sum(a) > 1
-% %                     a
-% %                     params.figures{a}
-%                     b = cellfun(@(x)(strcmp(x.Name, title)), params.figures(a));
-%                 else
-%                     b = 0;
-%                 end
-%             else
-%                 b = 0;
-%             end
-            
-%             if sum(b) == 0
-%                 
-%             end
 
             if ischar(obj)
                 str = obj;
@@ -417,11 +408,11 @@ classdef mcInstrumentHandler < handle
             if strcmp(toolBarMode, 'saveopen')
                 t = uitoolbar(f, 'tag', 'FigureToolBar');
                 
-                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', iconRead(fullfile('icons','file_open_new.png')));
-                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile('icons','file_open.png')));
+                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open_new.png')));
+                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open.png')));
                 
-%                 uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile('icons','file_save_as.png')));
-                uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', iconRead(fullfile('icons','file_save.png')));
+%                 uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile(params.mcFolder, 'icons','file_save_as.png')));
+                uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', iconRead(fullfile(params.mcFolder, 'icons','file_save.png')));
             end
             
             if ~isempty(params.globalWindowKeyPressFcn)

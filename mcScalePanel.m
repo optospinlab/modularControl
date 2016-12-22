@@ -7,14 +7,9 @@ classdef mcScalePanel < handle
         min = 0;        % The minimum that the user chooses.
         max = 1;        % The maximum that the user chooses.
         
-        dmin = NaN;     % The minimum of the currently-plotted data.
-        dmax = NaN;     % The maximum of the currently-plotted data.
-        
         gui = [];       % All the gui data (e.g. uicontrols) live here in this struct.
         
         data = [];      % Reference to parent mcProcessedData.
-        
-%         datalistener = [];
     end
     
     methods
@@ -85,7 +80,7 @@ classdef mcScalePanel < handle
                     panel.slider_Callback(panel.gui.maxSlid, 0)
             end
         end
-        function normalize_Callback(panel, src, event)
+        function normalize_Callback(panel, ~, ~)
             panel.gui.minSlid.Max = str2double(panel.gui.dataMinEdit.String);
             panel.gui.minSlid.Value = panel.gui.minSlid.Max;
 

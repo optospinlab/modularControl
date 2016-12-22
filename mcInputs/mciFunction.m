@@ -1,5 +1,9 @@
 classdef mciFunction < mcInput
 % mciFunction is the subclass of mcInput that wraps (near) arbitrary functions.
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Finished. Reasonably commented.
 
     methods (Static)
         % Neccessary extra vars:
@@ -12,10 +16,10 @@ classdef mciFunction < mcInput
             config = mciFunction.randConfig();
         end
         function config = randConfig()
-            config.name =               'Default Function Input';
+            config.name =               'rand()';
 
             config.kind.kind =          'function';
-            config.kind.name =          'Default Function Input';
+            config.kind.name =          'rand()';
             config.kind.extUnits =      'arb';                  % 'External' units.
             config.kind.normalize =     false;
             config.kind.sizeInput =     [1 1];
@@ -30,7 +34,7 @@ classdef mciFunction < mcInput
             config.kind.name =          'Large-Dimension Test Input';
             config.kind.extUnits =      'arb';                  % 'External' units.
             config.kind.normalize =     false;
-            config.kind.sizeInput =     [25 25 25 25];
+            config.kind.sizeInput =     [13 42 49 8];
             
             config.fnc =                @()(rand(config.kind.sizeInput));
             config.description =        'wraps the MATLAB rand(config.kind.sizeInput) function';
@@ -46,7 +50,7 @@ classdef mciFunction < mcInput
                 I.construct(varin);
             end
             I = mcInstrumentHandler.register(I);
-            I.config.giveIntegration = nargin(I.config.fnc) ~= -1;    % Internal variable to decide whether the integration time in I.measure(integrationTime) should be passed to the mciFunction function as an input.
+            I.config.giveIntegration = nargin(I.config.fnc) > 0;    % Internal variable to decide whether the integration time in I.measure(integrationTime) should be passed to the mciFunction function as an input.
         end
     end
     
@@ -54,7 +58,7 @@ classdef mciFunction < mcInput
     %   more-complex methods defined in mcInput.
     methods
         % EQ
-        function tf = Eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
+        function tf = Eq(I, b)      % Check if a foriegn object (b) is equal to this input object (I).
             tf = isequal(I.config.fnc,  b.config.fnc);
         end
         

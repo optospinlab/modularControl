@@ -10,6 +10,8 @@ classdef mcData < mcSavableClass
 %   d = mcData(axes_, scans, inputs, integrationTime, shouldOptimize)   % In addition to the previous, shouldOptimize tells the mcData to optimize after finishing or not (only works for 1D and 2D scans with singular data) 
 %
 % Status: Mosly finished and commented. Loading needs to be finished.
+% Update: Going through process to make it work for input of any sizeInput. Parts are not functional.]
+% Future: Organize .mat file. Remeber positions of other axes. Fix loading.
 
     properties (SetObservable)
         data = [];                  % Our generic data structure.
@@ -37,6 +39,9 @@ classdef mcData < mcSavableClass
 %
 %            - data.posStart               numeric array     % Contains the positions of all of the axes before the scan begins. This allows for returning to the same place.
 %
+%            - data.allConfigs
+%            - data.allConfigs
+%
 %            - data.README                 string            % Instructions about how to use the data.
 %
 %            - data.plotMode               integer           % e.g. 1 = '1D', 2 = '2D', ...
@@ -61,7 +66,7 @@ classdef mcData < mcSavableClass
     
     methods (Static)
         function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
-            data = mcData.xyzConfiguration();
+            data = mcData.xyzConfiguration2();
 %             data = mcData.testConfiguration();
         end
         function data = xyzConfiguration()      % Just a test configuration.
@@ -74,6 +79,18 @@ classdef mcData < mcSavableClass
             data.axes =     {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};                 % Fill the...   ...axes...
             data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
             data.inputs =   {mciDAQ(configCounter)};                                                            %               ...inputs.
+            data.integrationTime = .05;
+        end
+        function data = xyzConfiguration2()      % Just a test configuration.
+            configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
+            configPiezoY = mcaDAQ.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
+            configPiezoZ = mcaDAQ.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            
+            configTest = mciFunction.testConfig();
+            
+            data.axes =     {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};                 % Fill the...   ...axes...
+            data.scans =    {linspace(-10,10,21), linspace(-10,10,21), linspace(-10,10,2)};                     %               ...scans...
+            data.inputs =   {mciFunction(configTest)};                                                          %               ...inputs.
             data.integrationTime = .05;
         end
         function data = squareScanConfiguration(axisX, axisY, input, range, speedX, pixels)                 % Square version of the below.
@@ -214,7 +231,7 @@ classdef mcData < mcSavableClass
                     d.data = mcData.defaultConfiguration();     % If no vars are given, assume a 10x10um piezo scan centered at zero.
                 case 1
                     if ischar(varin)
-                        error('Unfinished loadign protocol');
+                        error('Unfinished loading protocol');
 %                         d.data = load(varin); % Unfinished!
                     else
                         d.data = varin;
@@ -334,8 +351,8 @@ classdef mcData < mcSavableClass
                     d.data.input = 1;
                 end
                 
-                d.data.layerType =  [zeros(d.data.numAxes) d.data.layerType];  % Appropraitely pad the arrays...
-                d.data.layerIndex = [ones(d.data.numAxes)  d.data.layerIndex];
+                d.data.layerType =  [zeros(1, d.data.numAxes) d.data.layerType];  % Appropriately pad the arrays...
+                d.data.layerIndex = [ones(1, d.data.numAxes)  d.data.layerIndex];
 
                 d.data.lengths =        [zeros(1, d.data.numAxes) d.data.lengths];
                 d.data.indexWeight =    [ones(1,  d.data.numAxes) d.data.indexWeight];  % Index weight is best described by an example:
@@ -412,6 +429,12 @@ classdef mcData < mcSavableClass
                     
                 d.resetData();
                 d.data.isInitialized = true;
+                
+                disp('layer stuff')
+                
+                d.data.layer
+                d.data.layerType
+                d.data.layerIndex
             end
         end
         
@@ -482,7 +505,7 @@ classdef mcData < mcSavableClass
             end
             
             while d.data.aquiring
-                d.aquire1D(d.data.indexWeight * (d.data.index -1)' - d.data.index(1) + 2);
+                d.aquire1D(d.data.indexWeight(1:d.data.numAxes) * (d.data.index -1)' - d.data.index(1) + 2);
 %                 drawnow limitrate;
                 
                 if all(d.data.index == d.data.lengths)  % If the scan has finished...

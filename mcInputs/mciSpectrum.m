@@ -2,6 +2,10 @@ classdef mciSpectrum < mcInput
 % mciSpectrum is the subclass of mcInput that reads our old spectra via a shoddy matlab-python handshake.
 %
 % Future: Generalize this to a mciPyTrigger?
+%
+% Also see mcaTemplate and mcAxis.
+%
+% Status: Not debugged yet.
 
     properties
         prevIntegrationTime;
@@ -46,11 +50,11 @@ classdef mciSpectrum < mcInput
             I.prevIntegrationTime = NaN;
         end
         
-        function axes_ = getInputAxes(I)
+        function scans = getInputScans(I)
             if isfield(I.config, 'Ne')
-                axes_ = {interpretNeSpectrum(I.config.Ne)};
+                scans = {interpretNeSpectrum(I.config.Ne)};
             else
-                axes_ = {1:512};    % Make general?
+                scans = {1:512};    % Make general?
             end
         end
     end

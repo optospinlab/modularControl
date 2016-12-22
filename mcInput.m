@@ -25,17 +25,8 @@ classdef mcInput < mcSavableClass
 %
 %   data =  I.measure(integrationTime)          % Measures the input for integrationTime seconds and returns the result.
 %
-%   tf =    I.addToSession(s)                   % If the input is NIDAQ, adds the input to the NIDAQ session s.
+% Status: Mostly finished. Mostly commented.
 %
-% Status: Mostly finished. Mostly commented. See below for future plans.
-%
-% IMPORTANT: Not sure whether a better architecture decision would be to
-% have kinds (such as piezos and galvos) extend the mcAxis class in their
-% own subclass (e.g. mcPiezo < mcAxis) instead of the potentially-messy 
-% switch statements that are currently in the code.
-% UPDATE: Decided to change this eventually, but keep it the same for now.
-% UPDATE2: Did the above; it's much better now.
-    
     properties
 %         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
         
@@ -52,23 +43,23 @@ classdef mcInput < mcSavableClass
     end
     
     methods
-        function construct(I, varin)
+        function construct(I, varin)        % Construct the input using info from varin
             % Constructor
-            if iscell(varin)
-                config = varin{1};
+            if iscell(varin)                % If varin is a cell...
+                config = varin{1};          % ...assume that config is the first object in the cell...
                 
-                if length(varin) == 2
+                if length(varin) == 2       % ...and use any second boolean-like object as an enumaltion flag.
                     if islogical(varin{2}) || isnumeric(varin{2})
                         I.inEmulation = varin{2};
                     else
-                        warning('Second argument not understood; it needs to be logical or numeric');
+                        warning('mcInput.construct(): Second argument not understood; it needs to be logical or numeric');
                     end
                 end
-            else
+            else                            % If varin is not a cell,
                 config = varin;
             end
                     
-            if ischar(config)
+            if ischar(config)               % If we are given a string, assume that it is the path to the config (in .mat form)
                 if exist(config, 'file') && strcmpi(config(end-3:end), '.mat')
                     vars = load(config);
                     if isfield(vars, 'config')
@@ -140,6 +131,10 @@ classdef mcInput < mcSavableClass
         end
         
         function tf = eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
+            if ~isvalid(I) || ~isvalid(b)
+                tf = false; return;
+            end
+            
             if ~isprop(b, 'config')     % Make sure that b.config.kind.kind exists...
                 tf = false; return;
             else
@@ -279,15 +274,28 @@ classdef mcInput < mcSavableClass
             end
         end
         
-        function axes_ = getInputAxes(I)
+        function scans = getInputScans(I)        % scans is a cell array containing the scans for each dimension. By default, axes go from 1 to axis dim pixels.
             if all(I.config.kind.sizeInput == 1)
-                axes_ = [];
+                scans = [];
             else
                 nonsingular = I.config.kind.sizeInput(I.config.kind.sizeInput ~= 1);
-                axes_ = cell(1,length(nonsingular));
+                scans = cell(1, length(nonsingular));
                 
                 for ii = 1:length(nonsingular)
-                    axes_{ii} = 1:nonsingular(ii);
+                    scans{ii} = 1:nonsingular(ii);
+                end
+            end
+        end
+        
+        function units = getInputScanUnits(I)   % units is a cell array containing the units for each axis dim. By default, units are pixels.
+            if all(I.config.kind.sizeInput == 1)
+                units = [];
+            else
+                numnonsingular = length(I.config.kind.sizeInput(I.config.kind.sizeInput ~= 1));
+                units = cell(1, numnonsingular);
+                
+                for ii = 1:numnonsingular
+                    units{ii} = 'pixels';
                 end
             end
         end

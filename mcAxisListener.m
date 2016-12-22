@@ -1,6 +1,6 @@
 function f = mcAxisListener(varin)
 % mcAxisListener creates a GUI that regularly updates the position of any
-% number of axes, specified by axes_.
+% number of axes, specified by the cell array axes_.
 %
 %   f =  mcAxisListener()                   % Makes listener panel in new figure that listens to all registered axes.
 % %   f =  mcAxisListener(config)             % Disabled.

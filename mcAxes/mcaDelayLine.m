@@ -1,5 +1,7 @@
 classdef (Sealed) mcaDelayLine < mcAxis
 % mcaDelayLine is a servo-controlled path-delay arm from Emma's previous lab (with picosecond? precision).
+%
+% Also see mcaTemplate and mcAxis.
     
     methods (Static)
         % Neccessary extra vars:
@@ -9,7 +11,9 @@ classdef (Sealed) mcaDelayLine < mcAxis
             config = mcaDelayLine.customConfig();
         end
         function config = customConfig()
-            config.name = 'Delay Line';
+            config.class =              'mcaDelayLine';
+            
+            config.name =               'Delay Line';
 
             config.kind.kind =          'delayline';
             config.kind.name =          'DelayLine<insert servo name>100ps';
