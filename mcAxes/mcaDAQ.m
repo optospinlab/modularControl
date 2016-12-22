@@ -69,16 +69,16 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.intRange =      {0 1};
             config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
             config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
-            config.kind.intUnits =      'V';                    % 'Internal' units.
-            config.kind.extUnits =      'V';                    % 'External' units.
+            config.kind.intUnits =      '1/0';                  % 'Internal' units.
+            config.kind.extUnits =      '1/0';                  % 'External' units.
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'Port0/Line0';
             config.type =               'Output';
             
-            config.keyStep =            2;
-            config.joyStep =            2;
+            config.keyStep =            1;
+            config.joyStep =            1;
         end
         function config = redConfig()
             config.class =              'mcaDAQ';
