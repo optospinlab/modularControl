@@ -19,10 +19,13 @@ classdef mcDiamond
     
     methods
         function dc = mcDiamond()
+            % Open some GUIs:
             dc.video = mcVideo();
             dc.input = mcUserInput(mcUserInput.diamondConfig());
-%             mcAxisListener();
+            dc.input.openListener();        
+            dc.input.openWaypoints();
             
+            % Additionally, open these instruments:
             mcaManual(mcaManual.polarizationConfig());
             
             configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
@@ -30,6 +33,7 @@ classdef mcDiamond
             
             dc.spectrum = mciSpectrum();
             
+            % Next, make the figure:
             dc.f = mcInstrumentHandler.createFigure(dc, 'saveopen');
             dc.f.Resize =      'off';
             dc.f.Position = [100, 100, dc.pw, dc.ph];
@@ -246,7 +250,7 @@ classdef mcDiamond
             mcDataViewer(data, false);  % Open mcDataViewer to view this data, but do not open the control figure
         end
         
-        function YVoltageSpectra(dc,~,~)
+        function YVoltageSpectra(~,~,~)
             laser = mcaDAQ(mcaDAQ.greenConfig); % Turn the laser on.
             laser.goto(1)
             
@@ -264,12 +268,12 @@ classdef mcDiamond
             data = NaN(512, length(V));
             ii = 1;
             
-            f = figure;
-            a = axes(f);
+            f2 = figure;
+            a = axes(f2);
             hold on
             
             for v = V
-                if isvalid(f)
+                if isvalid(f2)
                     disp(v)
 
                     if v < 0

@@ -48,7 +48,12 @@ classdef mcWaypoints < mcSavableClass
             configPiezoZ = mcaDAQ.piezoConfig();    configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
             config.axes = {mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ)};
-            config.xi = 1;
+            config.xi = 1;  % Of the list of axes to keep track of, which axes should be displayed as x and y in the gui?
+            config.yi = 2;
+        end
+        function config = customConfig(axisX, axisY, axisZ)
+            config.axes = {axisX, axisY, axisZ};
+            config.xi = 1;  % Of the list of axes to keep track of, which axes should be displayed as x and y in the gui?
             config.yi = 2;
         end
     end

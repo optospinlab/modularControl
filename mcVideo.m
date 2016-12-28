@@ -24,10 +24,10 @@ classdef mcVideo < mcInput
             config = mcVideo.blueConfig();
         end
         function config = blueConfig()
-            config.name =               'Blue Video Input';
+            config.name =               'Blue';
 
             config.kind.kind =          'videoinput';
-            config.kind.name =          'Default Function Input';
+            config.kind.name =          'videoinput() Input';
             config.kind.extUnits =      'arb';                      % 'External' units.
             config.kind.normalize =     false;
             config.kind.sizeInput =     [NaN NaN];                  % Unknown until initiation
@@ -41,6 +41,25 @@ classdef mcVideo < mcInput
             configPiezoZ = mcaDAQ.piezoZConfig();   configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
             config.fbAxes = {mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mcaDAQ(configPiezoZ)};
+        end
+        function config = brynnConfig()
+            config.name =               'Point Grey';
+
+            config.kind.kind =          'videoinput';
+            config.kind.name =          'videoinput() Input';
+            config.kind.extUnits =      'arb';                      % 'External' units.
+            config.kind.normalize =     false;
+            config.kind.sizeInput =     [NaN NaN];                  % Unknown until initiation
+            
+            config.adaptor =            'pointgrey';
+            config.format =             'FF7_Raw8_2048x2048_Mode0';
+            
+            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X';  configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y';  configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            
+            configObjZ = mcaEO.piezoZConfig();      configObjZ.name = 'EO Z';    configObjZ.srl = int16(1051);
+            
+            config.fbAxes = {mcaDAQ(configGalvoX), mcaDAQ(configGalvoY), mcaEO(configObjZ)};
         end
     end
     

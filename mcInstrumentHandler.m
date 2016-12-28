@@ -421,7 +421,7 @@ classdef mcInstrumentHandler < handle
                 str = class(obj);
             end
             
-            f = figure('NumberTitle', 'off', 'Tag', str, 'Name', str, 'MenuBar', 'none', 'ToolBar', 'none');    % , 'ToolBar', 'figure');
+            f = figure('NumberTitle', 'off', 'Tag', str, 'Name', str, 'MenuBar', 'none', 'ToolBar', 'none', 'Visible', 'off');    % , 'ToolBar', 'figure');
             
             if isa(obj, 'mcSavableClass')
                 

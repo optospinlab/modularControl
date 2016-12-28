@@ -25,9 +25,6 @@ classdef mcUserInput < mcSavableClass
             config = mcUserInput.diamondConfig();
         end
         function config = diamondConfig()
-            % High Voltage configuration for the diamond microscope, in which
-            % the piezos, the micrometers, the galvos, and the lasers are the axes
-            
             config.name =               'Default User Input';
             
             configPiezoX = mcaDAQ.piezoConfig();    configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
@@ -65,6 +62,24 @@ classdef mcUserInput < mcSavableClass
             config.joyEnabled = false;
             
             config.axesGroups{4}{4}.open(); % Open the flip mirror (why?)
+        end
+        function config = brynnConfig()
+            config.name =               'Default User Input';
+            
+            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X';  configMicroX.port = 'COM5';
+            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y';  configMicroY.port = 'COM6';
+
+            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X';  configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
+            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y';  configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            
+            configObjZ = mcaEO.piezoZConfig();      configObjZ.name = 'EO Z';    configObjZ.srl = int16(1051);
+            
+            config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Galvos',        mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configObjZ) } };
+                              
+            config.numGroups = length(config.axesGroups);
+            
+            config.joyEnabled = false;
         end
         function config = diamondConfigHV()
             % High Voltage configuration for the diamond microscope, in which
@@ -261,9 +276,6 @@ classdef mcUserInput < mcSavableClass
             obj.gui.joyState = -1;
             obj.gui.axisState = [0 0 0];
             
-            obj.openListener();     % Not sure if this should be enabled by default.
-            obj.openWaypoints();
-            
             f.Visible = 'on';
             pause(.1);
             obj.joyEnableFunction(0,0);
@@ -274,7 +286,7 @@ classdef mcUserInput < mcSavableClass
             fl.Position(2) = 670;
         end
         function openWaypoints(obj)
-            obj.wp = mcWaypoints();
+            obj.wp = mcWaypoints(config.axesGroups{1}{2}, config.axesGroups{1}{3}, config.axesGroups{1}{4});
             obj.wp.f.Position(2) = 400;
         end
         
@@ -607,7 +619,7 @@ function setAxisJoyStep_Callback(src, ~, axis_)
     axis_.config.joyStep = val;
 end
 
-function limit_Callback(src, event, range)
+function limit_Callback(src, ~, range)
     val = str2double(src.String);
 
     if isnan(val)                   % If it's NaN (if str2double fails), check if it's an equation (eval is ~20 times slower so we only want to use it if it is neccessary)

@@ -129,235 +129,241 @@ classdef mcDataViewer < mcSavableClass
             end
             
             % Control Figure --------------------------------------------------------------------------------------------------------------
-            if true
-                gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
-                gui.cf.Visible = 'off';
-                gui.cf.Position = [100,100,300,700];
-                gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
-                gui.cf.Resize = 'off';      % Change? What if there are too many axes?
-                
-                jj = 1;
-                kk = 1;
-                
-                inputNames1D = {};
-                inputNames2D = {};
-                
-                for ii = 1:gui.data.r.i.num
-                    if gui.data.r.i.dimension(ii) == 1
-                        inputNames1D{jj} = gui.data.r.i.name{ii};
-                        jj = jj + 1;
-                    end
-                    if gui.data.r.i.dimension(ii) == 2
-                        inputNames2D{kk} = gui.data.r.i.name{ii};
-                        kk = kk + 1;
-                    end
+            gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
+            gui.cf.Visible = 'off';
+            gui.cf.Position = [100,100,300,700];
+            gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
+            gui.cf.Resize = 'off';      % Change? What if there are too many axes?
+
+            jj = 1;
+            kk = 1;
+
+            inputNames1D = {};
+            inputNames2D = {};
+
+            for ii = 1:gui.data.r.i.num
+                if gui.data.r.i.dimension(ii) == 1
+                    inputNames1D{jj} = gui.data.r.i.name{ii};
+                    jj = jj + 1;
                 end
-                
-                utg = uitabgroup('Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
-                gui.tabs.t0  = uitab('Parent', utg, 'Title', '0D');
-                gui.tabs.t1d = uitab('Parent', utg, 'Title', '1D');
-%                 uicontrol('Parent', gui.tabs.t1d, 'Style', 'text',      'String', 'X:', 'Units', 'normalized', 'Position', [0 .5 .5 .5], 'HorizontalAlignment', 'right');
-%                 uicontrol('Parent', gui.tabs.t1d, 'Style', 'popupmenu', 'String', [{'Choose', 'Time'}, gui.data.data.axisNames, inputNames1D], 'Units', 'normalized', 'Position', [.5 .5 .5 .5]);
-                
-                gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
-                gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
-                
+                if gui.data.r.i.dimension(ii) == 2
+                    inputNames2D{kk} = gui.data.r.i.name{ii};
+                    kk = kk + 1;
+                end
+            end
+
+            utg = uitabgroup('Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
+            gui.tabs.t0  = uitab('Parent', utg, 'Title', '0D');
+            gui.tabs.t1d = uitab('Parent', utg, 'Title', '1D');
+            gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
+            gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
+
+            javadisable = true;
+            
+            if javadisable
                 jtabgroup = findjobj(utg);
                 jtabgroup(end).setEnabledAt(3,0);
-                
-                switch gui.data.r.plotMode
-                    case 0
-                        utg.SelectedTab = gui.tabs.t0;
+                gui.cf.Visible = 'off';
+            end
+ 
+            switch gui.data.r.plotMode
+                case 0
+                    utg.SelectedTab = gui.tabs.t0;
+                    if javadisable
                         jtabgroup(end).setEnabledAt(1,0);
                         jtabgroup(end).setEnabledAt(2,0);
-                    case 1
-                        utg.SelectedTab = gui.tabs.t1d;
+                    end
+                case 1
+                    utg.SelectedTab = gui.tabs.t1d;
+                    if javadisable
                         jtabgroup(end).setEnabledAt(2,0);
-                    case 2
-                        utg.SelectedTab = gui.tabs.t2d;
-                end
-                
-                gui.tabs.t1d.Units = 'pixels';
-                tabpos = gui.tabs.t1d.Position;
-                
-                bh = 22;
-                ts = -5;
-                os = -5; %-2*bh;
+                    end
+                case 2
+                    utg.SelectedTab = gui.tabs.t2d;
+            end
+            gui.cf.Visible = 'off';
 
-                uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
-                
-                gui.params1D.chooseList = cell(1, gui.data.r.a.num); % This will be longer, but we choose not to calculate.
-                gui.params2D.chooseList = cell(1, gui.data.r.a.num);
-                
-                for ii = 1:gui.data.r.a.num
-                    levellist = strcat(strread(num2str(gui.data.r.l.scans{ii}), '%s')', [' ' gui.data.r.a.a{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
-                    
-                    for tab = [gui.tabs.t1d gui.tabs.t2d]
+            gui.tabs.t1d.Units = 'pixels';
+            tabpos = gui.tabs.t1d.Position;
+
+            bh = 22;
+            ts = -5;
+            if javadisable
+                os = -5;
+            else
+                os = -5 - 2*bh;
+            end
+
+            uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
+
+            gui.params1D.chooseList = cell(1, gui.data.r.a.num); % This will be longer, but we choose not to calculate.
+            gui.params2D.chooseList = cell(1, gui.data.r.a.num);
+
+            for ii = 1:gui.data.r.a.num
+                levellist = strcat(strread(num2str(gui.data.r.l.scans{ii}), '%s')', [' ' gui.data.r.a.a{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
+
+                for tab = [gui.tabs.t1d gui.tabs.t2d]
 %                         uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.a.a{kk}.nameShort(), 'String', [gui.data.d.axes{ii}.name ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
-                        uicontrol(  'Parent', tab,...
-                                    'Style', 'text',...
-                                    'TooltipString', gui.data.r.a.name{ii},...
-                                    'String', [gui.data.r.l.name{ii} ': '],...
-                                    'Units', 'pixels',...
-                                    'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
-                                    'HorizontalAlignment', 'right');
+                    uicontrol(  'Parent', tab,...
+                                'Style', 'text',...
+                                'TooltipString', gui.data.r.a.name{ii},...
+                                'String', [gui.data.r.l.name{ii} ': '],...
+                                'Units', 'pixels',...
+                                'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
+                                'HorizontalAlignment', 'right');
 
-                        if tab == gui.tabs.t1d
-                            axeslist = {'X', 'Mean'};
-                        else
-                            axeslist = {'X', 'Y', 'Mean'};
-                        end
+                    if tab == gui.tabs.t1d
+                        axeslist = {'X', 'Mean'};
+                    else
+                        axeslist = {'X', 'Y', 'Mean'};
+                    end
 
-                        val = length(axeslist)+1;
+                    val = length(axeslist)+1;
 
-                        if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
-                            val = 1;
-                        elseif ii == 2 && val > 2
-                            val = 2;
-                        end
-                        
-                        choose = uicontrol( 'Parent', tab,...
-                                            'Style', 'popupmenu',...
-                                            'String', [axeslist, levellist],...
-                                            'Units', 'pixels',...
-                                            'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
-                                            'Value', val,...
-                                            'Callback', @gui.updateLayer_Callback);
-                        
-                        if tab == gui.tabs.t1d
-                            gui.params1D.chooseList{ii} = choose;
-                        else
-                            gui.params2D.chooseList{ii} = choose;
-                        end
-            
+                    if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
+                        val = 1;
+                    elseif ii == 2 && val > 2
+                        val = 2;
+                    end
+
+                    choose = uicontrol( 'Parent', tab,...
+                                        'Style', 'popupmenu',...
+                                        'String', [axeslist, levellist],...
+                                        'Units', 'pixels',...
+                                        'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
+                                        'Value', val,...
+                                        'Callback', @gui.updateLayer_Callback);
+
+                    if tab == gui.tabs.t1d
+                        gui.params1D.chooseList{ii} = choose;
+                    else
+                        gui.params2D.chooseList{ii} = choose;
+                    end
+
 %                         gui.data.r.l.axis(ii) = 0;     % The layer is an axis.
 %                         gui.data.r.l.type(ii) = ii;
 %                         gui.data.r.l.layerDim(ii) = 1;
-                    end
                 end
-                
-                inputLetters = 'XYZUVW';
-                
-                if isempty(ii)  % If there wasn't an axis loop, reset ii.
-                    ii = 0;
-                end
-                
-%                 display('adding inputs');
-                
-                for kk = 1:gui.data.r.i.num
-                    if gui.data.r.i.dimension(kk) <= length(inputLetters)
-                        jj = 0;
-                        
-                        for sizeInput = gui.data.d.inputs{kk}.kind.sizeInput
-                            if sizeInput ~= 1       % A vector, according to matlab, has size [1 N]. We don't want to count the 1.
-                                jj = jj + 1;
-                                ii = ii + 1;        % Use the ii from the axis loop.
-                    
-                                levellist = strcat('pixel  ', strread(num2str(1:sizeInput), ' %s')');  % Returns the pixels in 'pixel ##' form.
+            end
 
-                                for tab = [gui.tabs.t1d gui.tabs.t2d]
-                                    % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
-                                    uicontrol(  'Parent', tab,...
-                                                'Style', 'text',...
-                                                'TooltipString', gui.data.r.i.i{kk}.nameShort(),...
-                                                'String', [gui.data.d.inputs{kk}.name ' ' inputLetters(jj) ': '],...
-                                                'Units', 'pixels',...
-                                                'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
-                                                'HorizontalAlignment', 'right');
+            inputLetters = 'XYZUVW';
+
+            if isempty(ii)  % If there wasn't an axis loop, reset ii.
+                ii = 0;
+            end
+
+%                 display('adding inputs');
+
+            for kk = 1:gui.data.r.i.num
+                if gui.data.r.i.dimension(kk) <= length(inputLetters)
+                    jj = 0;
+
+                    for sizeInput = gui.data.d.inputs{kk}.kind.sizeInput
+                        if sizeInput ~= 1       % A vector, according to matlab, has size [1 N]. We don't want to count the 1.
+                            jj = jj + 1;
+                            ii = ii + 1;        % Use the ii from the axis loop.
+
+                            levellist = strcat('pixel  ', strread(num2str(1:sizeInput), ' %s')');  % Returns the pixels in 'pixel ##' form.
+
+                            for tab = [gui.tabs.t1d gui.tabs.t2d]
+                                % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
+                                uicontrol(  'Parent', tab,...
+                                            'Style', 'text',...
+                                            'TooltipString', gui.data.r.i.i{kk}.nameShort(),...
+                                            'String', [gui.data.d.inputs{kk}.name ' ' inputLetters(jj) ': '],...
+                                            'Units', 'pixels',...
+                                            'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
+                                            'HorizontalAlignment', 'right');
 
 %                                     uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.i.name{kk}, 'String', [gui.data.r.l.name{kk + } ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
-                                    if tab == gui.tabs.t1d
-                                        axeslist = {'X', 'Mean'};
-                                    else
-                                        axeslist = {'X', 'Y', 'Mean'};
-                                    end
+                                if tab == gui.tabs.t1d
+                                    axeslist = {'X', 'Mean'};
+                                else
+                                    axeslist = {'X', 'Y', 'Mean'};
+                                end
 
-                                    val = length(axeslist)+1;
+                                val = length(axeslist)+1;
 
-                                    if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
-                                        val = 1;
-                                    elseif ii == 2 && val > 2
-                                        val = 2;
-                                    end
+                                if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
+                                    val = 1;
+                                elseif ii == 2 && val > 2
+                                    val = 2;
+                                end
 
-                                    choose = uicontrol( 'Parent', tab,...
-                                                        'Style', 'popupmenu',...
-                                                        'String', [axeslist, levellist],...
-                                                        'Units', 'pixels',...
-                                                        'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
-                                                        'Value', val,...
-                                                        'Callback', @gui.updateLayer_Callback);
+                                choose = uicontrol( 'Parent', tab,...
+                                                    'Style', 'popupmenu',...
+                                                    'String', [axeslist, levellist],...
+                                                    'Units', 'pixels',...
+                                                    'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
+                                                    'Value', val,...
+                                                    'Callback', @gui.updateLayer_Callback);
 
-                                    if tab == gui.tabs.t1d
-                                        gui.params1D.chooseList{ii} = choose;
-                                    else
-                                        gui.params2D.chooseList{ii} = choose;
-                                    end
+                                if tab == gui.tabs.t1d
+                                    gui.params1D.chooseList{ii} = choose;
+                                else
+                                    gui.params2D.chooseList{ii} = choose;
+                                end
 
 %                                     gui.data.r.l.axis(ii) = 1;     % The layer is an input.
 %                                     gui.data.r.l.type(ii) = kk;
 %                                     gui.data.r.l.layerDim(ii) = 1;
-                                end
                             end
                         end
-                    else
-                        error('mcDataViewer: Input has too many dimensions... Too big for XYZUVW.');
                     end
-                end
-                
-                ltg = uitabgroup('Position', [0, .05, 1, .475], 'SelectionChangedFcn', @gui.lowerTabSwitch_Callback);
-                gui.tabs.gray = uitab('Parent', ltg, 'Title', 'Gray');
-                gui.tabs.rgb =  uitab('Parent', ltg, 'Title', 'RGB');
-                
-                jtabgroup = findjobj(ltg);
-                jtabgroup(end).setEnabledAt(1,0);
-                
-                gui.tabs.gray.Units = 'pixels';
-                tabpos = gui.tabs.gray.Position;
-                inputlist = cellfun(@(x)({x.name()}), gui.data.r.i.i);
-                                            
-                uicontrol(  'Parent', gui.tabs.gray,...
-                            'Style', 'text',...
-                            'String', 'Input: ',...
-                            'Units', 'pixels',...
-                            'Position', [0 tabpos(4)-bh+os+ts tabpos(3)/3 bh],...
-                            'HorizontalAlignment', 'right');
-                gui.paramsGray.choose = uicontrol(  'Parent', gui.tabs.gray,...
-                                                    'Style', 'popupmenu',...
-                                                    'String', inputlist,...
-                                                    'Units', 'pixels',...
-                                                    'Position', [tabpos(3)/3 tabpos(4)-bh+os 2*tabpos(3)/3 - bh bh],...
-                                                    'Value', 1);
-                                                
-                                                
-                gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
-                
-                gui.scale.r =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
-                gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-210], gui.g);
-                gui.scale.b =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-310], gui.b);
-                
-                gui.scanButton = uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, 1, .05], 'Callback', @gui.scanButton_Callback);
-                
-                if shouldAquire     % Expand upon this in the future
-                    gui.data.r.scanMode = 1;                      % Set as scanning
-                    gui.scanButton.String = 'Pause';
                 else
-                    if gui.data.r.scanMode == 0                   % If new
-                        gui.scanButton.String = 'Scan';
-                    elseif gui.data.r.scanMode == -1              % If paused
-                        gui.scanButton.String = 'Continue'; 
-                    elseif gui.data.r.scanMode == 2               % If finished
-                        gui.scanButton.String = 'Rescan';
-                    end
+                    error('mcDataViewer: Input has too many dimensions... Too big for XYZUVW.');
                 end
             end
-            
-            if shouldMakeManager
-                gui.cf.Visible = 'on';
-            else
+
+            ltg = uitabgroup('Position', [0, .05, 1, .475], 'SelectionChangedFcn', @gui.lowerTabSwitch_Callback);
+            gui.tabs.gray = uitab('Parent', ltg, 'Title', 'Gray');
+            gui.tabs.rgb =  uitab('Parent', ltg, 'Title', 'RGB');
+
+            if javadisable
+                jtabgroup = findjobj(ltg);
+                jtabgroup(end).setEnabledAt(1,0);
                 gui.cf.Visible = 'off';
+            end
+
+            gui.tabs.gray.Units = 'pixels';
+            tabpos = gui.tabs.gray.Position;
+            inputlist = cellfun(@(x)({x.name()}), gui.data.r.i.i);
+
+            uicontrol(  'Parent', gui.tabs.gray,...
+                        'Style', 'text',...
+                        'String', 'Input: ',...
+                        'Units', 'pixels',...
+                        'Position', [0 tabpos(4)-bh+os+ts tabpos(3)/3 bh],...
+                        'HorizontalAlignment', 'right');
+            gui.paramsGray.choose = uicontrol(  'Parent', gui.tabs.gray,...
+                                                'Style', 'popupmenu',...
+                                                'String', inputlist,...
+                                                'Units', 'pixels',...
+                                                'Position', [tabpos(3)/3 tabpos(4)-bh+os 2*tabpos(3)/3 - bh bh],...
+                                                'Value', 1);
+
+
+            gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
+
+            gui.scale.r =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
+            gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-210], gui.g);
+            gui.scale.b =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-310], gui.b);
+
+            gui.scanButton = uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, 1, .05], 'Callback', @gui.scanButton_Callback);
+
+            if shouldAquire     % Expand upon this in the future
+                gui.data.r.scanMode = 1;                      % Set as scanning
+                gui.scanButton.String = 'Pause';
+            else
+                if gui.data.r.scanMode == 0                   % If new
+                    gui.scanButton.String = 'Scan';
+                elseif gui.data.r.scanMode == -1              % If paused
+                    gui.scanButton.String = 'Continue'; 
+                elseif gui.data.r.scanMode == 2               % If finished
+                    gui.scanButton.String = 'Rescan';
+                end
             end
             
             % Data Figure/etc --------------------------------------------------------------------------------------------------------------
@@ -492,6 +498,14 @@ classdef mcDataViewer < mcSavableClass
             gui.plotData_Callback(0,0);
             gui.plotSetup();
             gui.makeProperVisibility();
+            
+            
+            if shouldMakeManager
+                gui.cf.Visible = 'on';
+            else
+                gui.cf.Visible = 'off';
+            end
+            gui.df.Visible = 'on';
             
             pause(.25);
                     
