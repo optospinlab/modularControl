@@ -29,7 +29,6 @@ classdef mcePLE < mcExperiment
             config.kind.shouldNormalize = false;        % (Not sure if this is functional.) If this variable is flagged, the measurement is subtracted from the previous and is divided by the time spent on a pixel. Not that this is done outside the measurement currently in mcData (individual calls to .measure() will not have this behavior currently)
             config.kind.sizeInput =     [1 1];          % Both the position of the peak and the FWHM of the peak are single numbers.
             
-            
             % Spectrometer
             spectrometer =  mciSpectrum.pyWinSpecConfig();
             specData =      mcData.inputConfig(spectrometer);

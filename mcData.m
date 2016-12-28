@@ -18,8 +18,9 @@ classdef mcData < mcSavableClass
         
         % d contains:
         %
+        % - d.class                 string              % Always equals 'mcData'; allows other parts of the program to distinguish it from other configs. (Change?)
         % - d.name                  string              % Name of this mcData scan. If left empty or uninitiated, it is auto-generated.
-        % - d.kind.name             string              % Always equals 'mcData' allows other parts of the program to distinguish it from other configs. (Change?)
+        % - d.kind.name             string              % Always equals 'mcData'; allows other parts of the program to distinguish it from other configs. (Change?)
         %
         % - d.axes                  cell array          % The configs for the axes. For n axes, this is 1xn.
         % - d.inputs                cell array          % The configs for the inputs. For m inputs, this is 1xm.
@@ -113,6 +114,8 @@ classdef mcData < mcSavableClass
 %             data = mcData.testConfiguration();
         end
         function data = xyzConfiguration()      % Just a test configuration.
+            data.class = 'mcData';
+            
             configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
             configPiezoY = mcaDAQ.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
             configPiezoZ = mcaDAQ.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
@@ -125,6 +128,8 @@ classdef mcData < mcSavableClass
             data.intTimes = .05;
         end
         function data = xyzConfiguration2()      % Just a test configuration.
+            data.class = 'mcData';
+            
             configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
             configPiezoY = mcaDAQ.piezoConfig(); configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
             configPiezoZ = mcaDAQ.piezoZConfig(); configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
@@ -140,6 +145,8 @@ classdef mcData < mcSavableClass
             data = mcData.scanConfiguration(axisX, axisY, input, range, range, speedX, pixels, pixels); 
         end
         function data = scanConfiguration(axisX, axisY, input, rangeX, rangeY, speedX, pixelsX, pixelsY)    % Rectangular 2D scan with arbitrary axes and input.
+            data.class = 'mcData';
+            
             if length(rangeX) == 1
                 center = axisX.getX();
                 rangeX = [center - rangeX/2 center + rangeX/2];
@@ -226,6 +233,8 @@ classdef mcData < mcSavableClass
             data.intTimes = (diff(rangeX)/speedX)/pixelsX;
         end
         function data = optimizeConfiguration(axis_, input, range, pixels, seconds)                         % Optimizes 'input' over 'range' of 'axis_'
+            data.class = 'mcData';
+            
 %             axis_
 %             input
 %             range
@@ -243,19 +252,33 @@ classdef mcData < mcSavableClass
             data.flags.shouldOptimize = true;
         end
         function data = counterConfiguration(input, length, integrationTime)    
+            data.class = 'mcData';
+            
             data.axes =     {mcAxis()};                 % This is the time axis.
             data.scans =    {1:abs(round(length))};     % range of 'scans ago'.
             data.inputs =   {input};                    % input.
             data.intTimes = integrationTime;
             data.flags.circTime = true;
         end
-        function data = testConfiguration() % Not sure what I was doing here
+        function data = singleConfiguration(input, integrationTime)    
+            data.class = 'mcData';
+            
+            data.axes =     {};
+            data.scans =    {};
+            data.inputs =   {input};                    % input.
+            data.intTimes = integrationTime;
+        end
+        function data = testConfiguration()
+            data.class = 'mcData';
+            
             data.axes =     {};
             data.scans =    {};
             data.inputs =   {mciFunction(mciFunction.testConfig())};
             data.intTimes = 1;
         end
-        function data = singleSpectrumConfiguration() % Not sure what I was doing here
+        function data = singleSpectrumConfiguration()
+            data.class = 'mcData';
+            
             data.axes =     {};
             data.scans =    {};
             data.inputs =   {mciSpectrum()};

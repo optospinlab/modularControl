@@ -66,6 +66,7 @@ classdef mcDataViewer < mcSavableClass
         function gui = mcDataViewer(varargin)
             shouldAquire = true;        % Change?
             shouldMakeManager = true;
+            shouldMakeVisible = true;
             
             switch nargin       % Update this switch statement!
                 case 0
@@ -111,11 +112,32 @@ classdef mcDataViewer < mcSavableClass
                         gui.b = mcProcessedData(gui.data);
                     end
                 case 3
-                    gui.data = varargin{1};
-                    gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data, varargin{2});
-                    gui.g = mcProcessedData(gui.data, varargin{3});
-                    gui.b = mcProcessedData(gui.data);
+                    if islogical(varargin{2})
+                        shouldMakeManager = varargin{2};
+                        
+                        if islogical(varargin{3})
+                            shouldMakeVisible = varargin{3};
+                            
+                            gui.data = varargin{1};
+                            gui.data.dataViewer = gui;
+                            gui.r = mcProcessedData(gui.data);
+                            gui.g = mcProcessedData(gui.data);
+                            gui.b = mcProcessedData(gui.data);
+                        else
+                            gui.data = varargin{1};
+                            gui.data.dataViewer = gui;
+                            gui.r = mcProcessedData(gui.data, varargin{3});
+                            gui.g = mcProcessedData(gui.data);
+                            gui.b = mcProcessedData(gui.data);
+                        end
+                        
+                    else
+                        gui.data = varargin{1};
+                        gui.data.dataViewer = gui;
+                        gui.r = mcProcessedData(gui.data, varargin{2});
+                        gui.g = mcProcessedData(gui.data, varargin{3});
+                        gui.b = mcProcessedData(gui.data);
+                    end
                 case 4
                     gui.data = varargin{1};
                     gui.data.dataViewer = gui;
@@ -158,7 +180,7 @@ classdef mcDataViewer < mcSavableClass
             gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
             gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
 
-            javadisable = true;
+            javadisable = false;
             
             if javadisable
                 jtabgroup = findjobj(utg);
@@ -499,15 +521,19 @@ classdef mcDataViewer < mcSavableClass
             gui.plotSetup();
             gui.makeProperVisibility();
             
-            
-            if shouldMakeManager
-                gui.cf.Visible = 'on';
+            if shouldMakeVisible
+                gui.df.Visible = 'on';
+                
+                if shouldMakeManager
+                    gui.cf.Visible = 'on';
+                else
+                    gui.cf.Visible = 'off';
+                end
             else
-                gui.cf.Visible = 'off';
+                gui.df.Visible = 'off';
             end
-            gui.df.Visible = 'on';
             
-            pause(.25);
+            pause(.05);
                     
             if shouldAquire
                 gui.data.aquire();
@@ -629,6 +655,15 @@ classdef mcDataViewer < mcSavableClass
                     gui.scanButton.String = 'Pause';
                     gui.data.r.scanMode = 1;
                     gui.data.aquire();
+            end
+        end
+        
+        function tf = acquire(gui)
+            if gui.data.r.scanMode == 1         % If we are already aquiring.
+                tf = false;
+            else
+                gui.scanButton_Callback(0, 0);
+                tf = true;
             end
         end
         

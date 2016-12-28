@@ -6,7 +6,7 @@
  * e.g. in the diamond room, run `mcDiamond`.
 
 ## Modularity
-`modularControl` is, as the name suggests, meant to be a modular and versitile solution to data aquisition in MATLAB.
+`modularControl` is, as the name suggests, meant to be a modular and versitile solution to data acquisition in MATLAB.
 
 #### Background
 There are two concepts that we first must introduce: behavior and identity.
@@ -58,8 +58,8 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
   4. Set `integrationTime = [time]` to the time `time` (in seconds) that we want to spend at each point. `time = .09` sounds reasonable for ~1 second X scans.
   5. Now call `data = mcData(axes_, scans, inputs, integrationTime)`. This gives an `mcData` object that is ready to scan.
  6. To scan, either
-  1. Aquire in the command line with `data.aquire()`. Note that this provides no visual input about the progress of the scan. It also blocks the MATLAB command line. The resulting data can be accessed afterward in `data.d.data`. This will be a cell array with one entry (corresponding to the one input). This one entry will be a 11x11 numeric matrix with the `ij`th index corresponding to the result at pixel `[i, j]`, i.e. the point `[scans{1}(i), scans{2}(j)]` um.
-  2. Aquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
+  1. Acquire in the command line with `data.aquire()` (typo, I know...). Note that this provides no visual input about the progress of the scan. It also blocks the MATLAB command line. The resulting data can be accessed afterward in `data.d.data`. This will be a cell array with one entry (corresponding to the one input). This one entry will be a 11x11 numeric matrix with the `ij`th index corresponding to the result at pixel `[i, j]`, i.e. the point `[scans{1}(i), scans{2}(j)]` um.
+  2. Acquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
  7. The function `mcScan` is a GUI which makes a `mcData` structure without having to go through the command line as in step 5. Run `mcScan` and simply select the appropriate axes/scans/etc using edit boxes and dropdown lists.
 
 
