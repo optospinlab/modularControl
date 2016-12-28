@@ -89,7 +89,7 @@ classdef mciSpectrum < mcInput
         % OPEN/CLOSE not neccessary
         
         % MEASURE
-        function data = MeasureEmulation(I, integrationTime)
+        function data = MeasureEmulation(~, integrationTime)
             pause(integrationTime);
             
             cosmicray = (500*rand)*(rand > .9);      % Insert cosmic ray in 10% of scans (make this scale with integrationTime?)
@@ -114,11 +114,11 @@ classdef mciSpectrum < mcInput
             fprintf(fh, 'Trigger Spectrum\n');                  % Change this?
             fclose(fh);
 
-            i = 0;
+            ii = 0;
             
             exposure = NaN;
 
-            while i < integrationTime + 60 && all(data == -1)   % Is 60 sec wiggle room enough?
+            while ii < integrationTime + 60 && all(data == -1)   % Is 60 sec wiggle room enough?
                 try
 %                     disp(['Waiting ' num2str(i)]);
                     d = dir(I.config.datafile);
@@ -131,31 +131,37 @@ classdef mciSpectrum < mcInput
                 end
 
                 pause(1);
-                i = i + 1;
+                ii = ii + 1;
+                
+%                 if ii == integrationTime
+%                     disp
+%                 end
             end
             
             if isnan(exposure)
-                questdlg(['Request for spectrum timed out; sorry. Is the exposure time greater than the expetected ' num2str(integrationTime) ' seconds?'], 'Done', 'Done');
+                mcDialog(['Request for spectrum timed out; sorry. Did you set the exposure time greater than the expected ' num2str(integrationTime) ' seconds?'], 'mciSpectrum Failed');
+                data = NaN(I.config.kind.sizeInput);
                 return;
             end
             
             if integrationTime ~= exposure && I.prevIntegrationTime ~= integrationTime
-                questdlg(['Expected exposure of ' num2str(integrationTime) ' seconds, but received ' num2str(exposure) ' second exposure. Is this correct?'], ['Unexpected Exposure'], 'Done', 'Done');
+                mcDialog(['Expected exposure of ' num2str(integrationTime) ' seconds, but received ' num2str(exposure) ' second exposure. Is this correct?'], 'Warning: Unexpected Exposure');
+                data = NaN(I.config.kind.sizeInput);
                 return;
             end
 
             if ~all(data == -1)     % If we found the spectrum....
-                i = 0;
+                ii = 0;
                 
-                while i < 20
+                while ii < 20
                     try             % ...try to move it to our save directory.
-                        movefile(I.config.datafile, ['C:\Users\Tomasz\Desktop\Stark\spec' datestr(now,'HH_MM_SS_FFF') '.SPE']);
+                        movefile(I.config.datafile, [mcInstrumentHandler.timestamp(1) '.SPE']);     % Change this to conform with the parent mcData structure?
                         break;
                     catch err
                         disp(err.message)
                     end
                     
-                    i = i + 1;
+                    ii = ii + 1;
                 end
             else                    % ...otherwise, return NaN.
                 data = NaN(I.config.kind.sizeInput);

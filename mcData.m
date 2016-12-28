@@ -693,7 +693,7 @@ classdef mcData < mcSavableClass
                     d.d.index = d.d.index + toIncriment;    % Incriment all the indices that were after a maximized index and not maximized.
                     d.d.index(toReset) = 1;                 % Reset all the indices that were maxed (except the first) to one.
 
-                    for ii = nums(toIncriment | toReset)
+                    for ii = nums((toIncriment | toReset) & nums ~= 1)
                         d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));
                     end
                 end
@@ -753,32 +753,28 @@ classdef mcData < mcSavableClass
                         data = circshift(d.d.data{ii}, round(nums == d.r.a.num));
                         
                         if len == 1
-                            data(1) =                   d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                            data(1) =                           d.r.i.i{ii}.measure(d.d.intTimes(ii));
                         else
                             w = d.r.l.weight(d.r.a.num + 1);
-                            data(1:w:(w*d.r.i.length(ii))) =  d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                            data(1:w:(w*d.r.i.length(ii))) =    d.r.i.i{ii}.measure(d.d.intTimes(ii));
                         end
                         
                         d.d.data{ii} = data;
                     end
                 end
             elseif d.r.canScanFast
-                d.r.s.Rate = 1/max(d.data.intTimes);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
+                d.r.s.Rate = 1/max(d.d.intTimes);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
                 
-                d.r.s.queueOutputData([d.data.scansInternalUnits{1}  d.data.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
+                d.r.s.queueOutputData([d.r.a.scansInternalUnits{1}  d.r.a.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
 
                 [data_, times] = d.r.s.startForeground();       % Should I startBackground() and use a listener? (Do this in the future!)
 
-                kk = 1;
-
                 for ii = 1:d.r.i.num     % Fill all of the inputs with data...
                     if d.d.inputs{ii}.kind.shouldNormalize  % If this input expects to be divided by the exposure time...
-                        d.data.data{ii}(jj:jj+d.data.lengths(1)-1) = (diff(double(data_(:, kk)))./diff(double(times)))';   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
+                        d.d.data{ii}(jj:jj+d.r.a.length(1)-1) = (diff(double(data_(:, ii)))./diff(double(times)))';   % Should measurment time be saved also? Should I do diff beforehand instead of individually?
                     else
-                        d.data.data{ii}(jj:jj+d.data.lengths(1)-1) = double(data_(1:end-1, kk))';
+                        d.d.data{ii}(jj:jj+d.r.a.length(1)-1) = double(data_(1:end-1, ii))';
                     end
-
-                    kk = kk + 1;
                 end
                 
                 if ~isempty(d.d.index)

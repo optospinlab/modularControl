@@ -131,8 +131,10 @@ classdef mcDataViewer < mcSavableClass
             % Control Figure --------------------------------------------------------------------------------------------------------------
             if true
                 gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
+                gui.cf.Visible = 'off';
                 gui.cf.Position = [100,100,300,700];
                 gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
+                gui.cf.Resize = 'off';      % Change? What if there are too many axes?
                 
                 jj = 1;
                 kk = 1;
@@ -152,20 +154,25 @@ classdef mcDataViewer < mcSavableClass
                 end
                 
                 utg = uitabgroup('Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
+                gui.tabs.t0  = uitab('Parent', utg, 'Title', '0D');
                 gui.tabs.t1d = uitab('Parent', utg, 'Title', '1D');
 %                 uicontrol('Parent', gui.tabs.t1d, 'Style', 'text',      'String', 'X:', 'Units', 'normalized', 'Position', [0 .5 .5 .5], 'HorizontalAlignment', 'right');
 %                 uicontrol('Parent', gui.tabs.t1d, 'Style', 'popupmenu', 'String', [{'Choose', 'Time'}, gui.data.data.axisNames, inputNames1D], 'Units', 'normalized', 'Position', [.5 .5 .5 .5]);
                 
                 gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
-                gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D (Disabled)');
-                gui.tabs.t0  = uitab('Parent', utg, 'Title', 'Histogram');
+                gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
                 
+                jtabgroup = findjobj(utg);
+                jtabgroup(end).setEnabledAt(3,0);
                 
                 switch gui.data.r.plotMode
                     case 0
                         utg.SelectedTab = gui.tabs.t0;
+                        jtabgroup(end).setEnabledAt(1,0);
+                        jtabgroup(end).setEnabledAt(2,0);
                     case 1
                         utg.SelectedTab = gui.tabs.t1d;
+                        jtabgroup(end).setEnabledAt(2,0);
                     case 2
                         utg.SelectedTab = gui.tabs.t2d;
                 end
@@ -173,7 +180,9 @@ classdef mcDataViewer < mcSavableClass
                 gui.tabs.t1d.Units = 'pixels';
                 tabpos = gui.tabs.t1d.Position;
                 
-                bh = 20;
+                bh = 22;
+                ts = -5;
+                os = -5; %-2*bh;
 
                 uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
                 
@@ -186,7 +195,13 @@ classdef mcDataViewer < mcSavableClass
                     for tab = [gui.tabs.t1d gui.tabs.t2d]
 %                         uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.a.a{kk}.nameShort(), 'String', [gui.data.d.axes{ii}.name ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
-                        uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.a.name{kk}, 'String', [gui.data.r.l.name{ii} ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+                        uicontrol(  'Parent', tab,...
+                                    'Style', 'text',...
+                                    'TooltipString', gui.data.r.a.name{ii},...
+                                    'String', [gui.data.r.l.name{ii} ': '],...
+                                    'Units', 'pixels',...
+                                    'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
+                                    'HorizontalAlignment', 'right');
 
                         if tab == gui.tabs.t1d
                             axeslist = {'X', 'Mean'};
@@ -202,7 +217,13 @@ classdef mcDataViewer < mcSavableClass
                             val = 2;
                         end
                         
-                        choose = uicontrol('Parent', tab, 'Style', 'popupmenu', 'String', [axeslist, levellist], 'Units', 'pixels', 'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii-2*bh tabpos(3)/3 - bh bh], 'Value', val, 'Callback', @gui.updateLayer_Callback);
+                        choose = uicontrol( 'Parent', tab,...
+                                            'Style', 'popupmenu',...
+                                            'String', [axeslist, levellist],...
+                                            'Units', 'pixels',...
+                                            'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
+                                            'Value', val,...
+                                            'Callback', @gui.updateLayer_Callback);
                         
                         if tab == gui.tabs.t1d
                             gui.params1D.chooseList{ii} = choose;
@@ -237,7 +258,13 @@ classdef mcDataViewer < mcSavableClass
 
                                 for tab = [gui.tabs.t1d gui.tabs.t2d]
                                     % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
-                                    uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.i.i{kk}.nameShort(), 'String', [gui.data.d.inputs{kk}.name ' ' inputLetters(jj) ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
+                                    uicontrol(  'Parent', tab,...
+                                                'Style', 'text',...
+                                                'TooltipString', gui.data.r.i.i{kk}.nameShort(),...
+                                                'String', [gui.data.d.inputs{kk}.name ' ' inputLetters(jj) ': '],...
+                                                'Units', 'pixels',...
+                                                'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
+                                                'HorizontalAlignment', 'right');
 
 %                                     uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.i.name{kk}, 'String', [gui.data.r.l.name{kk + } ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
 
@@ -255,7 +282,13 @@ classdef mcDataViewer < mcSavableClass
                                         val = 2;
                                     end
 
-                                    choose = uicontrol('Parent', tab, 'Style', 'popupmenu', 'String', [axeslist, levellist], 'Units', 'pixels', 'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii-2*bh tabpos(3)/3 - bh bh], 'Value', val, 'Callback', @gui.updateLayer_Callback);
+                                    choose = uicontrol( 'Parent', tab,...
+                                                        'Style', 'popupmenu',...
+                                                        'String', [axeslist, levellist],...
+                                                        'Units', 'pixels',...
+                                                        'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
+                                                        'Value', val,...
+                                                        'Callback', @gui.updateLayer_Callback);
 
                                     if tab == gui.tabs.t1d
                                         gui.params1D.chooseList{ii} = choose;
@@ -276,19 +309,34 @@ classdef mcDataViewer < mcSavableClass
                 
                 ltg = uitabgroup('Position', [0, .05, 1, .475], 'SelectionChangedFcn', @gui.lowerTabSwitch_Callback);
                 gui.tabs.gray = uitab('Parent', ltg, 'Title', 'Gray');
-                gui.tabs.rgb =  uitab('Parent', ltg, 'Title', 'RGB (Disabled)');
+                gui.tabs.rgb =  uitab('Parent', ltg, 'Title', 'RGB');
+                
+                jtabgroup = findjobj(ltg);
+                jtabgroup(end).setEnabledAt(1,0);
                 
                 gui.tabs.gray.Units = 'pixels';
                 tabpos = gui.tabs.gray.Position;
                 inputlist = cellfun(@(x)({x.name()}), gui.data.r.i.i);
                                             
-                uicontrol('Parent', gui.tabs.gray, 'Style', 'text',         'String', 'Input: ', 'Units', 'pixels', 'Position', [0 tabpos(4)-3*bh tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
-                gui.paramsGray.choose = uicontrol('Parent', gui.tabs.gray, 'Style', 'popupmenu',    'String', inputlist, 'Units', 'pixels', 'Position', [tabpos(3)/3 tabpos(4)-3*bh 2*tabpos(3)/3 - bh bh], 'Value', 1);
+                uicontrol(  'Parent', gui.tabs.gray,...
+                            'Style', 'text',...
+                            'String', 'Input: ',...
+                            'Units', 'pixels',...
+                            'Position', [0 tabpos(4)-bh+os+ts tabpos(3)/3 bh],...
+                            'HorizontalAlignment', 'right');
+                gui.paramsGray.choose = uicontrol(  'Parent', gui.tabs.gray,...
+                                                    'Style', 'popupmenu',...
+                                                    'String', inputlist,...
+                                                    'Units', 'pixels',...
+                                                    'Position', [tabpos(3)/3 tabpos(4)-bh+os 2*tabpos(3)/3 - bh bh],...
+                                                    'Value', 1);
+                                                
+                                                
+                gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
                 
-                gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 tabpos(4)-150], gui.r);
-                gui.scale.r =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 tabpos(4)-150], gui.r);
-                gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 500)/2 tabpos(4)-150], gui.g);
-                gui.scale.b =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 750)/2 tabpos(4)-150], gui.b);
+                gui.scale.r =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
+                gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-210], gui.g);
+                gui.scale.b =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-310], gui.b);
                 
                 gui.scanButton = uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, 1, .05], 'Callback', @gui.scanButton_Callback);
                 
@@ -322,7 +370,7 @@ classdef mcDataViewer < mcSavableClass
             gui.menus.menu = menu;
 
             gui.a = axes('Parent', gui.df, 'ButtonDownFcn', @gui.figureClickCallback, 'DataAspectRatioMode', 'manual', 'BoxStyle', 'full', 'Box', 'on', 'UIContextMenu', menu, 'Xgrid', 'on', 'Ygrid', 'on'); %
-%             gui.a.Layer = 'top';
+            gui.a.Layer = 'top';
 %             gui.a.XMinorTick = 'on';
 %             gui.a.YMinorTick = 'on';
             gui.a.TickDir = 'both';
@@ -453,13 +501,21 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function saveGUI_Callback(gui, ~, ~)
-            [FileName, PathName, FilterIndex] = uiputfile({'*.mat', 'Full Data File (*.mat)'; '*.png', 'Current Image (*.png)'; '*.png', 'Current Image With Axes (*.png)'}, 'Save As', [mcInstrumentHandler.getSaveFolder(0) filesep gui.data.d.info.timestamp ' ' gui.data.d.name]);
+            [FileName, PathName, FilterIndex] = uiputfile({ '*.mat', 'Full Data File (*.mat)';...
+                                                            '*.png', 'Current Image (*.png)';...
+                                                            '*.png', 'Current Image With Axes (*.png)';...
+                                                            '*.png', 'Current Image With Axes (Alternate Method) (*.png)';...
+                                                            '*.jpg', 'Current Image With Axes (*.jpg)';...
+                                                            '*.pdf', 'Current Image With Axes (*.pdf)';...
+                                                            '*.tif', 'Current Image With Axes (*.tif)';...
+                                                            '*.fig', 'Current Image As Figure (*.fig)'},...
+                                                            'Save As', [mcInstrumentHandler.getSaveFolder(0) filesep gui.data.d.info.timestamp ' ' gui.data.d.name]);
             
             if all(FileName ~= 0)
                 switch FilterIndex
-                    case 1  % .mat
+                    case 1      % .mat
                         % This case is covered below (saves in all cases).
-                    case 2  % .png
+                    case 2      % .png
                         if gui.data.r.plotMode == 0
                             warning(['mcDataViewer.saveGUI_Callback() - ' gui.data.d.name ': Cannot save an axes-less histogram. Sorry.'])
                         else
@@ -479,8 +535,10 @@ classdef mcDataViewer < mcSavableClass
 
                             imwrite(d, [PathName FileName]);
                         end
-                    case 3  % .png (axes)
+                    case 3      % .png (axes)
                         imwrite(frame2im(getframe(gui.df)), [PathName FileName]);
+                    otherwise  % etc
+                        saveas(gui.df, [PathName FileName]);
                 end
                 
                 pause(.05);                                         % Pause to give time for the file to save.
@@ -621,11 +679,9 @@ classdef mcDataViewer < mcSavableClass
             gui.scale.gray.gui.minEdit.String = gui.r.min();
             gui.scale.gray.edit_Callback(gui.scale.gray.gui.minEdit, 0);
         end
-        function openCounter_Callback(gui, ~, ~)                            % Looks like this needs debugging.
-            pixels = max(round(10/gui.data.d.intTimes(gui.r.input)), 10);
-            
+        function openCounter_Callback(gui, ~, ~)
+            pixels = max(round(20/gui.data.d.intTimes(gui.r.input)), 10);   % Aim for 20 sec of data. At least 10 pixels
             data2 = mcData(mcData.counterConfiguration(gui.data.d.inputs{gui.r.input}, pixels, gui.data.d.intTimes(gui.r.input)));
-            % input to open up (currently select gray input), length of counter scan (HARDCODED!? CHANGE!), exposureTime in seconds  (HARDCODED!? CHANGE!).
             mcDataViewer(data2, false)    % And don't show the control window when opening...
         end
         function openCounterAtPoint_Callback(gui, ~, ~, isSel, shouldGotoLayer)
@@ -774,6 +830,7 @@ classdef mcDataViewer < mcSavableClass
         end
 
         function figureClickCallback(gui, ~, event)
+            event.Button
             if event.Button == 3
                 x = event.IntersectionPoint(1);
                 y = event.IntersectionPoint(2);
@@ -785,24 +842,11 @@ classdef mcDataViewer < mcSavableClass
                         xlist = (gui.p(1).XData - x) .* (gui.p(1).XData - x);
                         xi = find(xlist == min(xlist), 1);
                         xp = gui.p(1).XData(xi);
-%                         xprv = gui.data.data.axisPrev(gui.data.r.l.layer == 1);
-                        
-%                         gui.posL
-%                         gui.posL.sel
-%                         gui.posL.sel.Visible
                         
                         unitsX = gui.data.r.l.unit{gui.data.r.l.layer == 1};
                         
                         gui.posL.sel.XData = [x x];
                         gui.posL.pix.XData = [xp xp];
-                        
-                        gui.posL.sel.XData
-                        gui.posL.sel.YData
-                        gui.posL.sel.Visible
-%                         gui.posL.prv.XData = [xprv xprv];
-                        
-%                         gui.posL.sel.YData = [-100 100];
-%                         gui.posL.pix.XData = [-100 100];
 
                         valr = gui.p(1).YData(xi);
                         
@@ -811,7 +855,6 @@ classdef mcDataViewer < mcSavableClass
                         if isnan(valr)
                             gui.menus.ctsMenu.Label = 'Value: ----- cts/sec';
                         else
-%                             gui.data.r.i.i{gui.paramsGray.choose.Value}.extUnits
                             gui.menus.ctsMenu.Label = ['Value: ' num2str(valr, 4) ' ' gui.data.r.i.i{gui.paramsGray.choose.Value}.config.kind.extUnits];
                         end
                         
@@ -825,14 +868,10 @@ classdef mcDataViewer < mcSavableClass
                         xp = gui.i.XData(xi);
                         yp = gui.i.YData(yi);
                         
-%                         prev = gui.data.data.axisPrev
-                        
                         gui.pos.sel.XData = x;
                         gui.pos.sel.YData = y;
                         gui.pos.pix.XData = xp;
                         gui.pos.pix.YData = yp;
-%                         gui.pos.prv.XData = gui.data.data.axisPrev(gui.data.r.l.layer == 1);
-%                         gui.pos.prv.YData = gui.data.data.axisPrev(gui.data.r.l.layer == 2);
                         
                         unitsX = gui.data.r.l.unit{gui.data.r.l.layer == 1};
                         unitsY = gui.data.r.l.unit{gui.data.r.l.layer == 2};
@@ -887,7 +926,7 @@ classdef mcDataViewer < mcSavableClass
         end
         function listenToAxes_Callback(gui, ~, ~)
 %             display('listening...')
-            if isvalid(gui)
+            if isvalid(gui) && gui.data.r.plotMode ~= 0 && all( gui.data.r.l.type(gui.data.r.l.layer == 1 | gui.data.r.l.layer == 2) == 0 )
                 axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
 %                 bx = axisX.name()
 
@@ -1046,6 +1085,7 @@ classdef mcDataViewer < mcSavableClass
             gui.makeProperVisibility();
             gui.shouldPlot = true;
             gui.plotSetup();
+            gui.listenToAxes_Callback(0, 0);
         end
         function lowerTabSwitch_Callback(gui, src, event)
             switch event.NewValue
