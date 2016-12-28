@@ -22,7 +22,7 @@ classdef mciSpectrum < mcInput
         function config = pyWinSpecConfig()
             config.class =              'mciSpectrum';
             
-            config.name =               'Default Spectrometer Input';
+            config.name =               'Spectrometer';
 
             config.kind.kind =          'pyWinSpectrum';
             config.kind.name =          'Default Spectrum Input';
@@ -59,6 +59,14 @@ classdef mciSpectrum < mcInput
                 scans = {1:512};    % Make general?
             end
         end
+        
+        function units = getInputScanUnits(I)
+            if isfield(I.config, 'Ne')
+                units = {'nm'};
+            else
+                units = {'pixels'};
+            end
+        end
     end
     
     % These methods overwrite the empty methods defined in mcInput. mcInput will use these. The capitalized methods are used in
@@ -84,9 +92,12 @@ classdef mciSpectrum < mcInput
         function data = MeasureEmulation(I, integrationTime)
             pause(integrationTime);
             
-            cosmicray = (1000 + 500*rand)*(rand > .9);      % Insert cosmic ray in 10% of scans (make this scale with integrationTime?)
+            cosmicray = (500*rand)*(rand > .9);      % Insert cosmic ray in 10% of scans (make this scale with integrationTime?)
+%             
+%             size(rand(1, 512))
+%             size(exp(-((1:512 - rand*512)/3).^2))
             
-            data = round(100 + 20*rand(I.config.kind.sizeInput) + cosmicray*exp(-((1:512 - rand*512)/3)^2));    % Background + cosmic ray
+            data = round(20*rand(1, 512) + cosmicray.*exp(-(((1:512) - rand*512)/3).^2) + 100);    % Background + cosmic ray
         end
         function data = Measure(I, integrationTime)
             data = -1;

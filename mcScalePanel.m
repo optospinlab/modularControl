@@ -168,8 +168,13 @@ classdef mcScalePanel < handle
         function dataChanged_Callback(panel, ~, ~)
 %             a = panel.data
 %             b = panel.data.data
-            m = panel.data.min();
-            M = panel.data.max();
+            if panel.data.parent.r.plotMode == 0
+                m = min(panel.data.parent.d.data{panel.data.input}(:));
+                M = max(panel.data.parent.d.data{panel.data.input}(:));
+            else
+                m = panel.data.min();
+                M = panel.data.max();
+            end
             
             if all(isnan(m)) || isempty(m)
                 m = 0;
@@ -225,6 +230,10 @@ classdef mcScalePanel < handle
                         xlim(panel.data.parent.dataViewer.a, [m M]);
                     case 1
                         ylim(panel.data.parent.dataViewer.a, [m M]);
+                        panel.data.parent.dataViewer.posL.sel.YData = [m M];
+                        panel.data.parent.dataViewer.posL.pix.YData = [m M];
+                        panel.data.parent.dataViewer.posL.prv.YData = [m M];
+                        panel.data.parent.dataViewer.posL.act.YData = [m M];
                     case 2
         %                 disp('here');
         %                 panel.data.parent.dataViewer.a

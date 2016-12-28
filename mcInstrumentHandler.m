@@ -70,35 +70,25 @@ classdef mcInstrumentHandler < handle
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
                 params.registeredInstruments =      [];
-                params.warningLight =               [];
+                
+                params.warningLight =               [];     % Future...
                 params.defaultVideo =               [];
                 
                 tf = false;                                         % Return whether the mcInstrumentHandler was open...
                 
                 [~, params.hostname] = system('hostname');          % A quick way to identify which system we are on.
                 
-%                 params.hostname = params.hostname(1:end-2);
+                params.hostname(params.hostname < 32 | params.hostname >= 127) = '';    % Make sure only sensible characters are used (e.g. no \0)
                 
-%                 for char = params.hostname
-%                     disp(double(char));
-%                 end
-%                 
-                
-                params.hostname(params.hostname < 32 & params.hostname >= 127) = '';
-
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
-%                 params.hostname = strrep(params.hostname, '\n', '');
-%                 params.hostname = strrep(params.hostname, '\r', '');
-%                 params.hostname = strrep(params.hostname, '\t', '');
-%                 params.hostname = strrep(params.hostname, '\0', '');
                 params.hostname = strrep(params.hostname, ':', '_');
 
                 params.mcFolder = pwd;                                              % Get the current directory
                 
-                while ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
+                while isempty(params.mcFolder) || ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
                     mcDialog('For everything to function properly, mcInstrumentHandler must know where the modularControl folder is. Press OK to select that folder.', 'Need modularControl folder');
                     
-                    params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl Folder.');
+                    params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl folder.');
                 end
 
                 mcInstrumentHandler.params(params);                 % Load persistant params with this so that we don't risk infinite recursion when we try to add the time axis (see below).
@@ -114,11 +104,11 @@ classdef mcInstrumentHandler < handle
                 
                 mcInstrumentHandler.loadParams();
                 
-                if ~isempty(params.saveDirManual)
-                    mkdir(params.saveDirManual);
+                if isempty(params.saveDirManual)
+                    mcInstrumentHandler.setSaveDir(false);
                 end
-                if ~isempty(params.saveDirBackground)
-                    mkdir(params.saveDirBackground);
+                if isempty(params.saveDirBackground)
+                    mcInstrumentHandler.setSaveDir(true);
                 end
             end
         end
@@ -157,6 +147,35 @@ classdef mcInstrumentHandler < handle
             
             mcInstrumentHandler.params(params);
         end
+        function setSaveDir(isBackground)
+            mcInstrumentHandler.open();
+            params = mcInstrumentHandler.params();
+            
+            if isBackground
+                while all(params.saveDirBackground == 0)
+                    mcDialog('Every mcData scan saves its data in the background once the scan has finished. Press OK to select which folder this background data should be saved in.', 'Need background saving folder');
+
+                    params.saveDirBackground =  uigetdir(params.mcFolder, 'Please choose the background saving folder.');
+                end
+            else
+                while all(params.saveDirManual == 0)
+                    mcDialog('When the user manually chooses to save data, they are prompted with a folder selection UI. Which directory should this UI start at?', 'Need manual saving folder');
+
+                    params.saveDirManual =  uigetdir(params.mcFolder, 'Please choose the manual saving folder.');
+                end
+            end
+            
+%             if ~isempty(params.saveDirManual) && ~exist(params.saveDirManual, 'dir')
+%                 mkdir(params.saveDirManual);
+%             end
+%             if ~isempty(params.saveDirBackground) && ~exist(params.saveDirBackground, 'dir')
+%                 mkdir(params.saveDirBackground);
+%             end
+            
+            mcInstrumentHandler.params(params);
+            
+            mcInstrumentHandler.saveParams()
+        end
         
         function setSaveFolder(isBackground, str)
             mcInstrumentHandler.open();
@@ -184,15 +203,21 @@ classdef mcInstrumentHandler < handle
             end
         end
         function [str, stamp] = timestamp(varin)
+%             name = '';
+%             if iscell(varin)
+%                 name = [' ' varin{2}];
+%                 varin = varin{1};
+%             end
+            
             if ischar(varin)                                % If varin is a string, folder = '<manualsavedir>\<string>\<yyyy_mm_dd>'
-                folder = [mcInstrumentHandler.getSaveFolder(0) varin filesep datestr(now,'yyyy_mm_dd')];
+                folder = [mcInstrumentHandler.getSaveFolder(0) filesep varin filesep datestr(now,'yyyy_mm_dd')];
             elseif isnumeric(varin) || islogical(varin)     % If varin is a number or t/f, folder = '<manualsavedir>\<yyyy_mm_dd>' or '<backgroundsavedir>\<yyyy_mm_dd>' depending upon whether varin evaluates as true or false
-                folder = [mcInstrumentHandler.getSaveFolder(varin) datestr(now,'yyyy_mm_dd')];
+                folder = [mcInstrumentHandler.getSaveFolder(varin) filesep datestr(now,'yyyy_mm_dd')];
             else
                 error('mcInstrumentHandler: timestamp varin not understood');
             end
             
-            if ~exist(folder, 'file')                       % Make this directory if it does not already exist.
+            if ~exist(folder, 'dir')                       % Make this directory if it does not already exist.
                 mkdir(folder);
             end
             

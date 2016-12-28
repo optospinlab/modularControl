@@ -29,11 +29,11 @@ classdef mcData < mcSavableClass
         %
         % - d.data                  cell array          % This is the 'meat' of this structure. Data is a 1xm cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
         %
-        % - d.info.timestamp        string              % 
-        % - d.info.fname            string              % Where the data should be saved. By default, this is in a folder 
-        % - d.info.version          numeric array       % The version of modularControl that this data was taken with.
-        % - d.info.other.axes       cell array          % Status of all the axes when the scan is started.
-        % - d.info.other.status     numeric array       % 
+        % - d.info.timestamp        string              % The file is, by default, named <d.info.timestamp d.name>.mat. This is generated every time the data is reset.
+        % - d.info.fname            string              % Where the data should be saved (in the background). This is generated every time the data is reset.
+        % - d.info.version          numeric array       % The version of modularControl that this data was taken with. This is generated every time the data is reset.
+        % - d.info.other.axes       cell array          % configs for all the axes when the scan is started.
+        % - d.info.other.status     numeric array       % status (e.g. x) of all of the above axes.
         %
         % - d.index                 numeric array       % Current 'position' of the axes in the scan.
         %
@@ -83,6 +83,7 @@ classdef mcData < mcSavableClass
         % 
         % RUNTIME-GENERATED LAYER INFO:
         % 
+        % - r.l.num                 integer
         % - r.l.layer               numeric array           % Current layer that any connected mcProcessedDatas should process.
         % - r.l.axis                numeric array           % 1 ==> mcAxis, positive nums ==> the num'th axis of an input
         % - r.l.type                numeric array           % 0 ==> mcAxis, positive nums imply the num'th input.
@@ -97,7 +98,7 @@ classdef mcData < mcSavableClass
         % 
         % - r.plotMode              integer             % e.g. 1 = '1D', 2 = '2D', ...
         % - r.isInitialized         boolean             % Is created once the initialize() function has been called.
-        % - r.scanMode              integer             % paused = 0; running = 1; 
+        % - r.scanMode              integer             % paused = -1; new = 0; running = 1; finished = 2.
         % - r.aquiring              boolean             % whether we are aquiring currently or not.
         % - r.s                     DAQ session         % Only used if all the inputs and the first axis are NIDAQ.
         % - r.canScanFast           boolean             % Variable that decides whether the above should be used.
@@ -106,7 +107,9 @@ classdef mcData < mcSavableClass
     
     methods (Static)
         function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
-            data = mcData.xyzConfiguration2();
+            data = mcData.singleSpectrumConfiguration();
+%             data = mcData.counterConfiguration(mciSpectrum(), 10, 1);
+%             data = mcData.xyzConfiguration2();
 %             data = mcData.testConfiguration();
         end
         function data = xyzConfiguration()      % Just a test configuration.
@@ -252,10 +255,16 @@ classdef mcData < mcSavableClass
             data.inputs =   {mciFunction(mciFunction.testConfig())};
             data.intTimes = 1;
         end
+        function data = singleSpectrumConfiguration() % Not sure what I was doing here
+            data.axes =     {};
+            data.scans =    {};
+            data.inputs =   {mciSpectrum()};
+            data.intTimes = 1;
+        end
     end
     
     methods
-        function d = mcData(varin)
+        function d = mcData(varin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
             switch nargin
                 case 0
                     d.d = mcData.defaultConfiguration();    % If no vars are given, assume a 10x10um piezo scan centered at zero.
@@ -367,7 +376,12 @@ classdef mcData < mcSavableClass
             % Need more checks?!
         end
         
-        function initialize(d)
+        function save(d)            % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
+            data = d.d; %#ok
+            save([d.d.info.fname ' ' d.d.name], 'data');
+        end
+        
+        function initialize(d)      % Initializes the d.r (r for runtime) variables in the mcData object.
             if ~isfield(d.r, 'isInitialized')     % If not initialized, then intialize.
                 
                 % GENERATE INPUT RUNTIME DATA ==================================================================================
@@ -432,10 +446,12 @@ classdef mcData < mcSavableClass
                         error('mcData.initialize(): Too many dimensions on this input. Not enough letters to describe each dimension.')
                     end
                     
+                    inUnits = d.r.i.i{ii}.getInputScanUnits();
+                    
                     for jj = 1:d.r.i.dimension(ii)
                         d.r.l.name =        [d.r.l.name     {[d.d.inputs{ii}.name ' ' inputLetters(jj)]}];
-                        d.r.l.nameUnit =    [d.r.l.nameUnit {[d.d.inputs{ii}.name ' ' inputLetters(jj) ' (' d.d.inputs{ii}.kind.extUnits ')']}];
-                        d.r.l.unit =        [d.r.l.unit     {d.d.inputs{ii}.kind.extUnits}];
+                        d.r.l.nameUnit =    [d.r.l.nameUnit {[d.d.inputs{ii}.name ' ' inputLetters(jj) ' (' inUnits{jj} ')']}];
+                        d.r.l.unit =        [d.r.l.unit     inUnits(jj)];
                     end
                     
                     iwAdd = ones(1, d.r.i.dimension(ii));       % Temporary variable: 'indexWeightAdd' because it will be added to d.r.l.weight.
@@ -457,6 +473,7 @@ classdef mcData < mcSavableClass
                 % Make some empty lists...
                 d.r.a.length =          zeros(1, d.r.a.num);
                 
+                d.r.a.a =               cell(1, d.r.a.num);
                 justname =              cell(1, d.r.a.num);
                 d.r.a.name =            cell(1, d.r.a.num);
                 d.r.a.nameUnit =        cell(1, d.r.a.num);
@@ -492,16 +509,20 @@ classdef mcData < mcSavableClass
                     d.r.a.scansInternalUnits{ii} = arrayfun(d.r.a.a{ii}.config.kind.ext2intConv, d.d.scans{ii});
                 end
                 
+                % GENERATE LAYER RUNTIME DATA ==================================================================================
+                
                 d.r.l.name =        [justname       d.r.l.name];
                 d.r.l.nameUnit =    [d.r.a.nameUnit d.r.l.nameUnit];
                 d.r.l.unit =        [d.r.a.unit     d.r.l.unit];
+                
+                d.r.l.num = d.r.a.num + d.r.i.numInputAxes;
                 
                 % Then, figure out how we should initially display the data, based on the total number of axes we have.
                 d.r.plotMode = max(min(2, d.r.a.num + d.r.i.numInputAxes),1);   % Plotmode takes in 0 = histogram (no axes); 1 = 1D (1 axis); ...
                 
                 % And choose which axes to initially display.
                 d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(2 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
-                n = min(d.r.plotMode, d.r.a.num);
+                n = min(d.r.plotMode, d.r.a.num + d.r.i.numInputAxes);
                 d.r.l.layer(1:n) = 1:n;                                                     % Then the first two axes are set to 1 and 2 (for 2D).
                 
                 % Then, add mcAxis info to the layer information...
@@ -509,7 +530,8 @@ classdef mcData < mcSavableClass
                 d.r.l.type =    [zeros(1, d.r.a.num) d.r.l.type];
 %                 type = d.r.l.type
 %                 d.r.l.length =  [d.r.a.length d.r.i.length];    % Not sure why this is here...
-                d.r.l.lengths =  [d.r.a.length  d.r.l.lengths];
+                d.r.l.lengths = [d.r.a.length  d.r.l.lengths];
+                d.r.l.scans =   [d.d.scans d.r.l.scans];
                 
                 % Index weight is best described by an example: If one has a 5x4x3 matrix, then incrimenting the x axis
                 %   increases the linear index (the index if the matrix was streached out) by one. Incrimenting the y axis
@@ -518,7 +540,7 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
-                for ii = 2:d.r.a.num
+                for ii = 2:(d.r.a.num + d.r.i.numInputAxes)
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 
@@ -530,8 +552,6 @@ classdef mcData < mcSavableClass
                     d.r.canScanFast = false;
                     d.d.flags.circTime = false;
                 end
-                
-                
                 
                 % MCDATA NAMING ================================================================================================
                 
@@ -560,32 +580,35 @@ classdef mcData < mcSavableClass
                 end
                 
                 % FINAL ========================================================================================================
+                
                 if ~isfield(d.d, 'index')
                     d.resetData();
+                    d.r.scanMode = 0;
+                else
+                    d.r.scanMode = -1;      % Check for finished?
                 end
+                
                 d.r.isInitialized = true;
-                
-                d.r.scanMode = 0;
-                
-                d.d.info.version = mcInstrumentHandler.version();
             end
         end
         
         function resetData(d)
             % INITIALIZE THE DATA TO NAN 
-            d.d.data =   cell([1, d.r.i.num]);      % d.r.i.num layers of data (one layer per input)
+            data =   cell([1, d.r.i.num]);      % d.r.i.num layers of data (one layer per input)
 
             for ii = 1:d.r.i.num
                 % [d.r.l.lengths(d.r.l.type == 0 | d.r.l.type == ii) 1]
-                d.d.data{ii} =      NaN([d.r.l.lengths(d.r.l.type == 0 | d.r.l.type == ii) 1]);
+                data{ii} =      NaN([d.r.l.lengths(d.r.l.type == 0 | d.r.l.type == ii) 1]);
             end
+            
+            d.d.data = data;
 
             % Make the variable that keeps track of where we are in 
             d.d.index =          ones(1, d.r.a.num);
-            d.d.currentIndex =   2;
+%             d.d.currentIndex =   2;
             
-            d.d.fnameManual =        mcInstrumentHandler.timestamp(0);
-            d.d.fnameBackground =    mcInstrumentHandler.timestamp(1);
+            d.d.info.version = mcInstrumentHandler.version();
+            [d.d.info.fname, d.d.info.timestamp] =  mcInstrumentHandler.timestamp(1);
                 
             d.r.scanMode = 0;
             
@@ -607,6 +630,8 @@ classdef mcData < mcSavableClass
                 for ii = 1:d.r.i.num
                     d.d.data{ii} = d.r.i.i{ii}.measure(d.d.intTimes(ii));
                 end
+                
+                d.r.scanMode = 2;
             else
                 nums = 1:d.r.a.num;
 
@@ -651,6 +676,7 @@ classdef mcData < mcSavableClass
                     toReset =       [true currentlyMax(1:end-1)] &  currentlyMax;
 
                     if ~d.r.aquiring                % If the scan was stopped...
+%                         display('Scan stopped...');
                         break;
                     end
 
@@ -671,14 +697,24 @@ classdef mcData < mcSavableClass
                         d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));
                     end
                 end
+                
+%                 display('Exited loop...');
 
                 if d.r.canScanFast   % Destroy the session, if a session was created.
                     release(d.r.s);
                     delete(d.r.s);
                     d.r.s = [];
                 end
-
-                if d.d.flags.shouldOptimize     % If there should be a post-scan optimization...
+                
+                d.save()
+                    
+                if d.r.scanMode == -2       % If dataviewer was quit.
+                    delete(d);
+                elseif d.r.scanMode ~= 2                % If the scan was unexpectantly stopped.
+%                     display('...set to paused...');
+                    d.r.scanMode = -1;
+%                     display('...now.');
+                elseif d.d.flags.shouldOptimize     % If there should be a post-scan optimization...
                     switch length(d.r.a.a)
                         case 1
                             [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);    % First find the peak.
@@ -697,7 +733,7 @@ classdef mcData < mcSavableClass
                         otherwise
                             disp('mcData.aquire(): Optimization on more than 2 axes not currently supported...');
                     end 
-                elseif d.r.scanMode == 2        % Should the axes goto the original values after the scan finishes?
+                elseif d.r.scanMode == 2            % Should the axes goto the original values after the scan finishes?
                     for ii = nums
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
@@ -706,19 +742,24 @@ classdef mcData < mcSavableClass
         end
         function aquire1D(d, jj)
             if length(d.d.axes) == 1 && d.d.flags.circTime    % If time happens to be the current axis and we should circshift...
-                disp('Time is only axis')
+%                 disp('Time is only axis')
                 
                 while d.r.aquiring
                     for ii = 1:d.r.i.num
                         len = max(d.r.l.weight(d.r.l.type == 0 | d.r.l.type == ii));
                         
-                        d.d.data{ii} = circshift(d.d.data{ii}, [len, 0]);
+                        nums = 1:d.r.l.num;
+                        
+                        data = circshift(d.d.data{ii}, round(nums == d.r.a.num));
                         
                         if len == 1
-                            d.d.data{ii}(1) =                   d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                            data(1) =                   d.r.i.i{ii}.measure(d.d.intTimes(ii));
                         else
-                            d.d.data{ii}(1:d.r.i.length(ii)) =  d.r.i.i{ii}.measure(d.d.intTimes(ii));
+                            w = d.r.l.weight(d.r.a.num + 1);
+                            data(1:w:(w*d.r.i.length(ii))) =  d.r.i.i{ii}.measure(d.d.intTimes(ii));
                         end
+                        
+                        d.d.data{ii} = data;
                     end
                 end
             elseif d.r.canScanFast

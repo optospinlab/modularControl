@@ -75,6 +75,11 @@ classdef (Sealed) mcaGrid < mcAxis
             a.config.grid.open();
         end
         
+        % WAIT
+        function Wait(a)
+            a.config.grid.wait();
+        end
+        
         % GOTO
         function GotoEmulation(a, x)
             a.Goto(x);

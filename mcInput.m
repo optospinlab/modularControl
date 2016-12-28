@@ -238,15 +238,15 @@ classdef mcInput < mcSavableClass
                     
                     data = NaN(I.config.kind.sizeInput);
 
-                    try
-                        if I.inEmulation
-                            data = I.MeasureEmulation(integrationTime);
-                        else
-                            data = I.Measure(integrationTime);
-                        end
-                    catch err
-                        warning(['mcInput - ' I.config.name ': ' err.message]);
+%                     try
+                    if I.inEmulation
+                        data = I.MeasureEmulation(integrationTime);
+                    else
+                        data = I.Measure(integrationTime);
                     end
+%                     catch err
+%                         warning(['mcInput - ' I.config.name ': ' err.message]);
+%                     end
 
                     I.isMeasuring = false;
 
