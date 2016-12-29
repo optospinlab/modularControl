@@ -60,6 +60,8 @@ classdef mcDataViewer < mcSavableClass
         scaleMax = [1 1 1];
         
         shouldPlot = true;  % Variable to tell the gui not to plot (e.g. when plotSetup changes are happening)
+        
+        isPersistant = false;   % Whether the mcDataViewer should stick around when it is closed with closefigure.
     end
     
     methods
@@ -156,6 +158,7 @@ classdef mcDataViewer < mcSavableClass
             gui.cf.Position = [100,100,300,700];
             gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
             gui.cf.Resize = 'off';      % Change? What if there are too many axes?
+            gui.cf.Name = ['mcData - ' gui.data.d.name];
 
             jj = 1;
             kk = 1;
@@ -512,7 +515,7 @@ classdef mcDataViewer < mcSavableClass
             gui.listeners.y = [];
             gui.resetAxisListeners();
             
-            prop = findprop(mcProcessedData, 'data');
+            prop = findprop(gui.r, 'data');
             gui.listeners.r = event.proplistener(gui.r, prop, 'PostSet', @gui.plotData_Callback);
 %             gui.listeners.g = event.proplistener(gui.g, prop, 'PostSet', @gui.plotData_Callback);
 %             gui.listeners.b = event.proplistener(gui.b, prop, 'PostSet', @gui.plotData_Callback);
@@ -599,33 +602,39 @@ classdef mcDataViewer < mcSavableClass
 %         end
         function closeRequestFcnDF(gui, ~, ~)   % Close function for the data figure (the one with the graph)
 %             gui.data.save();
-            gui.data.r.aquiring = false;
-            
-            gui.data.r.scanMode = -2;   % quit
-            
-%             while gui.data.r.scanMode == 1
-%                 display(gui.data.r.scanMode)
-%                 drawnow
-%                 pause(.5);
-%             end
-            
-            if ~isempty(gui.listeners)
-                delete(gui.listeners.x);
-                delete(gui.listeners.y);
-                delete(gui.listeners.r);
-%                 delete(gui.listeners.g);    % Should these be commented?
-%                 delete(gui.listeners.b);
+            if gui.isPersistant
+                gui.cf.Visible = 'off';
+                gui.cfToggle.State = 'off';
+                gui.df.Visible = 'off';
+            else
+                gui.data.r.aquiring = false;
+
+                gui.data.r.scanMode = -2;   % quit
+
+    %             while gui.data.r.scanMode == 1
+    %                 display(gui.data.r.scanMode)
+    %                 drawnow
+    %                 pause(.5);
+    %             end
+
+                if ~isempty(gui.listeners)
+                    delete(gui.listeners.x);
+                    delete(gui.listeners.y);
+                    delete(gui.listeners.r);
+    %                 delete(gui.listeners.g);    % Should these be commented?
+    %                 delete(gui.listeners.b);
+                end
+
+                delete(gui.cf);
+                delete(gui.df);
+
+                pause(1);                       % Remove this eventually.
+
+    %             delete(gui.data);               % This should be done gracefully.
+                gui.data = '';
+
+                delete(gui);
             end
-            
-            delete(gui.cf);
-            delete(gui.df);
-            
-            pause(1);                       % Remove this eventually.
-            
-%             delete(gui.data);               % This should be done gracefully.
-            gui.data = '';
-            
-            delete(gui);
         end
         function closeRequestFcnCF(gui, ~, ~)   % Close function for the control figure (the one with the buttons)
             gui.toggleCF_Callback(0, 0)
@@ -641,6 +650,7 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function scanButton_Callback(gui, ~, ~)
+%             mode4 = gui.data.r.scanMode
             switch gui.data.r.scanMode   % -1 = paused, 0 = new, 1 = scanning, 2 = finished
                 case {0, -1}                                % If new or paused
                     gui.scanButton.String = 'Pause';
@@ -656,6 +666,7 @@ classdef mcDataViewer < mcSavableClass
                     gui.data.r.scanMode = 1;
                     gui.data.aquire();
             end
+%             mode5 = gui.data.r.scanMode
         end
         
         function tf = acquire(gui)

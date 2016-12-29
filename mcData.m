@@ -108,7 +108,8 @@ classdef mcData < mcSavableClass
     
     methods (Static)
         function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
-            data = mcData.singleSpectrumConfiguration();
+            data = mcData.PLEConfig();
+%             data = mcData.singleSpectrumConfiguration();
 %             data = mcData.counterConfiguration(mciSpectrum(), 10, 1);
 %             data = mcData.xyzConfiguration2();
 %             data = mcData.testConfiguration();
@@ -260,6 +261,14 @@ classdef mcData < mcSavableClass
             data.intTimes = integrationTime;
             data.flags.circTime = true;
         end
+        function data = inputConfig(input, length, integrationTime)    
+            data.class = 'mcData';
+            
+            data.axes =     {mcAxis()};                 % This is the time axis.
+            data.scans =    {1:abs(round(length))};     % range of 'scans ago'.
+            data.inputs =   {input};                    % input.
+            data.intTimes = integrationTime;
+        end
         function data = singleConfiguration(input, integrationTime)    
             data.class = 'mcData';
             
@@ -284,13 +293,18 @@ classdef mcData < mcSavableClass
             data.inputs =   {mciSpectrum()};
             data.intTimes = 1;
         end
+        function data = PLEConfig()
+            data = mcData.inputConfig(mciPLE(), 10, 1);
+%             data = mcData.singleConfiguration(mciPLE(), 1);
+        end
     end
     
     methods
         function d = mcData(varin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
             switch nargin
                 case 0
-                    d.d = mcData.defaultConfiguration();    % If no vars are given, assume a 10x10um piezo scan centered at zero.
+%                     error('We shouldnt be here')
+                    d.d = mcData.defaultConfiguration();    % If no vars are given, assume a 10x10um piezo scan centered at zero (outdated).
                 case 1
                     if ischar(varin)
                         error('Unfinished loading protocol');
@@ -442,7 +456,13 @@ classdef mcData < mcSavableClass
                     c = d.d.inputs{ii};     % Get the config for the iith input.
                     
                     if isfield(c, 'class')
-                        d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config),
+%                         disp('mcData!!!')
+%                         d.d.inputs{ii}
+%                         d.d.inputs{ii}.class
+%                         c
+%                         c.class
+%                         disp('\mcData!!!')
+                        d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config.
                     else
                         error('mcData(): Config given without class. ');
                     end
@@ -451,6 +471,10 @@ classdef mcData < mcSavableClass
                     d.r.i.dimension(ii) =   sum(c.kind.sizeInput > 1);
                     d.r.i.size{ii} =        c.kind.sizeInput(c.kind.sizeInput > 1);   % Poor naming.
                     d.r.i.length(ii) =      prod(d.r.i.size{ii});
+                    
+%                     dim = d.r.i.dimension(ii)
+%                     s = d.r.i.size{ii}
+%                     l = d.r.i.length(ii)
                     
                     d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();        % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
                     d.r.i.nameUnit{ii} =        d.r.i.i{ii}.nameUnits();        %                                       ...'name (units)' form
@@ -654,6 +678,7 @@ classdef mcData < mcSavableClass
                     d.d.data{ii} = d.r.i.i{ii}.measure(d.d.intTimes(ii));
                 end
                 
+%                 disp('HERE2')
                 d.r.scanMode = 2;
             else
                 nums = 1:d.r.a.num;
@@ -684,7 +709,10 @@ classdef mcData < mcSavableClass
                 end
 
                 while d.r.aquiring
-                    d.aquire1D(d.r.l.weight(1:d.r.a.num) * (d.d.index - 1)' + 1);
+                    w = d.r.l.weight(1:d.r.a.num);
+                    w(1) = 0;
+                    
+                    d.aquire1D(w * (d.d.index - 1)' + 1);
                     
                     drawnow
 
@@ -813,10 +841,18 @@ classdef mcData < mcSavableClass
                             if d.r.i.dimension(ii) == 0
                                 d.d.data{ii}(jj+kk-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             else
-                                base = (jj+kk)*d.r.i.length(ii) - 1;  % This is a guess.
-                                d.d.data{ii}(base:base+d.r.i.length(ii)-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
+%                                 l = d.r.i.length(ii)
+                                w =     d.r.l.weight(d.r.a.num + 1);
+%                                 w2 =    d.r.l.weight(1);
+                                base = (jj+kk-2) + 1;
+%                                 size(base:w:(w*d.r.i.length(ii)+base-1))
+%                                 size(d.r.i.i{ii}.measure(d.d.intTimes(ii)))
+                                d.d.data{ii}(base:w:(w*d.r.i.length(ii)+base-1)) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             end
                         end
+                    else
+                        d.d.index(1) = kk;
+                        return;
                     end
                     d.d.index(1) = kk;
                 end

@@ -41,7 +41,7 @@ classdef mcInstrumentHandler < handle
 
     methods (Static)
         function ver = version()
-            ver = [0 44];
+            ver = [0 51];
         end
         function tf = open()
             tf = true;
@@ -159,7 +159,7 @@ classdef mcInstrumentHandler < handle
                 end
             else
                 while all(params.saveDirManual == 0)
-                    mcDialog('When the user manually chooses to save data, they are prompted with a folder selection UI. Which directory should this UI start at?', 'Need manual saving folder');
+                    mcDialog('When the user manually chooses to save data, they are prompted with a folder selection UI. Press OK to select the folder that the folder selection UI should start in.', 'Need manual saving folder');
 
                     params.saveDirManual =  uigetdir(params.mcFolder, 'Please choose the manual saving folder.');
                 end

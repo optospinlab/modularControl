@@ -33,9 +33,9 @@ classdef mcProcessedData < handle
                 pd.parent = varin{1};
             end
             
-            prop = findprop(mcData, 'd');
+            prop = findprop(pd.parent, 'd');
             pd.listener.d = event.proplistener(pd.parent, prop, 'PostSet', @pd.parentChanged_Callback);
-            prop2 = findprop(mcData, 'r');
+            prop2 = findprop(pd.parent, 'r');
             pd.listener.r = event.proplistener(pd.parent, prop2, 'PostSet', @pd.parentChanged_Callback);
         end
         

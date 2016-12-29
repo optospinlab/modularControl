@@ -76,6 +76,17 @@ classdef mcInput < mcSavableClass
                 error('Not sure how to interpret config in mcInput(config)...');
             end
             
+%             c = I.config
+%             I.getInputScans()
+%             
+%             if iscell(I.getInputScans())
+%                 I.config.sizeInput = cellfun(@length, I.getInputScans(), 'UniformOutput', true);    % This is a slight issue! Think of a better way to do this!
+%             elseif isnumeric(I.getInputScans())
+%                 I.config.sizeInput = [length(I.getInputScans()) 1];
+%             end
+%             
+%             s2 = I.config.sizeInput
+            
             params = mcInstrumentHandler.getParams();
             if ismac || params.shouldEmulate
                 I.inEmulation = true;
@@ -187,13 +198,13 @@ classdef mcInput < mcSavableClass
                     % Do something?
                     tf = true;
                 else
-                    try
+%                     try
                         I.Open();
                         tf = true;     % Return true because axis has been opened.
-                    catch err
-                        disp(['mcInput.open() - ' I.config.name ': ' err.message]);
-                        tf = false;
-                    end
+%                     catch err
+%                         disp(['mcInput.open() - ' I.config.name ': ' err.message]);
+%                         tf = false;
+%                     end
                 end
                 
                 I.isOpen = true;

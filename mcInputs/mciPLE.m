@@ -10,13 +10,13 @@ classdef mciPLE < mcInput
         %  - xMin
         %  - xMax
         %  - upPixels
-        %  - upSpeed
-        %  - downSpeed
+        %  - upTime
+        %  - downTime
         
         function config = defaultConfig()
-            config = mciPLE.PLEConfig(636, 637, 1000, 1, 4);
+            config = mciPLE.PLEConfig(0, 2, 100, 1, .25);
         end
-        function config = PLEConfig(xMin, xMax, upPixels, upSpeed, downSpeed)
+        function config = PLEConfig(xMin, xMax, upPixels, upTime, downTime)
             config.class = 'mciPLE';
             
             config.name = 'PLE with NFLaser';
@@ -37,10 +37,13 @@ classdef mciPLE < mcInput
 %             greenConfig.chn =       'ao3';
 %             config.axes.green =     mcaDAQ(greenConfig);
 
-            config.axes.red =       mcaDAQ(mcaDAQ.redConfig());
-            config.axes.green =     mcaDAQ(mcaDAQ.greenConfig());
+            config.axes.red =       mcaDAQ.redConfig();
+            config.axes.green =     mcaDAQ.greenConfig();
             
-            config.counter =        mciDAQ(mciDAQ.counterConfig());
+            config.counter =        mciDAQ.counterConfig();
+            
+%             xMin
+%             xMax
             
             % Error checks on xMin and xMax:
             if xMin > xMax
@@ -54,8 +57,8 @@ classdef mciPLE < mcInput
                 error('mciPLE.PLEConfig(): xMin == xMax! Cannot scan over zero range.');
             end
             
-            m = min(config.axes.red.extRange);
-            M = max(config.axes.red.extRange);
+            m = min(config.axes.red.kind.intRange);
+            M = max(config.axes.red.kind.intRange);
             
             if m > xMin
                 xMin = m;
@@ -76,25 +79,27 @@ classdef mciPLE < mcInput
             config.xMin =       xMin;
             config.xMax =       xMax;
             
-            % Error checks on upSpeed and Downspeed
-            if upSpeed == 0
-                error('mciPLE.PLEConfig(): upSpeed is zero! We will never get there on time...');
-            elseif upSpeed < 0
-                upSpeed = -upSpeed;
+            % Error checks on upTime and downTime
+            if upTime == 0
+                error('mciPLE.PLEConfig(): upTime is zero! We will never get there on time...');
+            elseif upTime < 0
+                upTime = -upTime;
             end
-            if downSpeed == 0
-                error('mciPLE.PLEConfig(): downSpeed is zero! We will never get there on time...');
-            elseif downSpeed < 0
-                downSpeed = -downSpeed;
+            if downTime == 0
+                error('mciPLE.PLEConfig(): downTime is zero! We will never get there on time...');
+            elseif downTime < 0
+                downTime = -downTime;
             end
             
-            config.upSpeed =    upSpeed;
-            config.downSpeed =  downSpeed;
+            config.upTime =    upTime;
+            config.downTime =  downTime;
             
             config.upPixels =   upPixels;
-            config.downPixels = round(upPixels*downSpeed/upSpeed);
+            config.downPixels = round(upPixels*downTime/upTime);
             
-            config.kind.sizeInput =    [1 upPixels + config.downPixels];
+%             s = upPixels + config.downPixels
+            config.kind.sizeInput =    [upPixels + config.downPixels, 1];
+%             config.kind
             
             config.output = [[linspace(xMin, xMax, upPixels) linspace(xMax, xMin, config.downPixels + 1)]' [zeros(1, upPixels) ones(1, config.downPixels + 1)]'];    % One extra point for diff'ing.
             config.xaxis =  linspace(xMin, xMax + (xMax - xMin)*config.downPixels/upPixels, upPixels + config.downPixels);  % x Axis with fake units
@@ -103,7 +108,7 @@ classdef mciPLE < mcInput
     
     methods
         function I = mciPLE(varin)
-            I.extra = {'xMin', 'xMax', 'upPixels', 'upSpeed'};
+            I.extra = {'xMin', 'xMax', 'upPixels', 'upTime'};
             if nargin == 0
                 I.construct(I.defaultConfig());
             else
@@ -122,9 +127,9 @@ classdef mciPLE < mcInput
     methods
         % EQ
         function tf = Eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
-            tf = I.config.axes.red      == b.config.axes.red && ... % ...then check if all of the other variables are the same.
-                 I.config.axes.green    == b.config.axes.green && ...
-                 I.config.counter       == b.config.counter;
+            tf = strcmpi(I.config.axes.red.name,    b.config.axes.red.name) && ... % ...then check if all of the other variables are the same.
+                 strcmpi(I.config.axes.green.name,  b.config.axes.green.name) && ...
+                 strcmpi(I.config.counter.name,     b.config.counter.name);
         end
         
         % NAME
@@ -138,15 +143,16 @@ classdef mciPLE < mcInput
         % OPEN/CLOSE
         function Open(I)
 %             I.config.axes.red.open();
-
             I.s = daq.createSession('ni');
             
             I.config.counter.addToSession(I.s);
             
-            I.config.axes.red.addToSession(I.s);
-            I.config.axes.green.addToSession(I.s);
+            r = mcaDAQ(I.config.axes.red);
+            r.addToSession(I.s);
+            g = mcaDAQ(I.config.axes.green);
+            g.addToSession(I.s);
             
-            I.s.Rate = 1/upspeed;
+            I.s.Rate = I.config.upPixels/I.config.upTime;
         end
         function Close(I)
 %             I.config.axes.red.close();
@@ -156,11 +162,16 @@ classdef mciPLE < mcInput
         
         % MEASURE
         function data = MeasureEmulation(I, ~)
-            data = [3+rand(1, I.config.upPixels) 10+2*rand(1, I.config.downPixels)];
+%             I.config.upPixels
+%             I.config.downPixels
+            data = [3+rand(I.config.upPixels, 1); 10+2*rand(I.config.downPixels, 1)];
+%             size(data)
+%             t = I.config.upTime + I.config.downTime
+            pause(I.config.upTime + I.config.downTime);
         end
         function data = Measure(I, ~)
             I.s.queueOutputData(I.config.output');
-%             I.config.axes.red.scanOnce(I.config.xMin, I.config.xMax, I.config.upSpeed, I.config.downSpeed)
+%             I.config.axes.red.scanOnce(I.config.xMin, I.config.xMax, I.config.upTime, I.config.downTime)
             [d, t] = startForeground(I.s);  % Fix timing?
             
             data = (diff(d)./diff(t))';

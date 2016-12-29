@@ -182,11 +182,19 @@ classdef (Sealed) mcaNFLaser < mcAxis
         
         function tf = on(a)
             % Turn the laser and lambda track on.
-            tf = a.speakWithVar('OUTPut:STATe', 1) && a.speakWithVar('OUTPut:TRACk', 1);
+            if ~a.inEmulation
+                tf = a.speakWithVar('OUTPut:STATe', 1) && a.speakWithVar('OUTPut:TRACk', 1);
+            else
+                tf = false;
+            end
         end
         function tf = off(a)
             % Turn the laser off.
-            tf = a.speakWithVar('OUTPut:STATe', 0);
+            if ~a.inEmulation
+                tf = a.speakWithVar('OUTPut:STATe', 0);
+            else
+                tf = false;
+            end
         end
         
         function time = scan(a, xMin, xMax, vFor, vRet, nScans)
