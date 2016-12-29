@@ -67,14 +67,14 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.kind =          'NIDAQdigital';
             config.kind.name =          'Laser Modulation';
             config.kind.intRange =      {0 1};
-            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.int2extConv =   @(x)(1-x);              % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(1-x);              % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      '1/0';                  % 'Internal' units.
             config.kind.extUnits =      '1/0';                  % 'External' units.
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
-            config.chn =                'Port0/Line0';
+            config.chn =                'Port0/Line2';
             config.type =               'Output';
             
             config.keyStep =            1;
@@ -94,7 +94,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.extUnits =      'V';                    % 'External' units.
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
 
-            config.dev =                'cDAQ1Mod1';
+%             config.dev =                'cDAQ1Mod1';
+            config.dev =                'Dev1';
             config.chn =                'ao3';
             config.type =               'Voltage';
             

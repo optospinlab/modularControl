@@ -14,7 +14,7 @@ classdef mciPLE < mcInput
         %  - downTime
         
         function config = defaultConfig()
-            config = mciPLE.PLEConfig(0, 2, 100, 1, .25);
+            config = mciPLE.PLEConfig(0, 2, 1000, 2, .25);
         end
         function config = PLEConfig(xMin, xMax, upPixels, upTime, downTime)
             config.class = 'mciPLE';
@@ -101,7 +101,7 @@ classdef mciPLE < mcInput
             config.kind.sizeInput =    [upPixels + config.downPixels, 1];
 %             config.kind
             
-            config.output = [[linspace(xMin, xMax, upPixels) linspace(xMax, xMin, config.downPixels + 1)]' [zeros(1, upPixels) ones(1, config.downPixels + 1)]'];    % One extra point for diff'ing.
+            config.output = [[linspace(xMin, xMax, upPixels) linspace(xMax, xMin, config.downPixels + 1)]' [ones(1, upPixels) zeros(1, config.downPixels + 1)]'];    % One extra point for diff'ing.
             config.xaxis =  linspace(xMin, xMax + (xMax - xMin)*config.downPixels/upPixels, upPixels + config.downPixels);  % x Axis with fake units
         end
     end
@@ -129,7 +129,12 @@ classdef mciPLE < mcInput
         function tf = Eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
             tf = strcmpi(I.config.axes.red.name,    b.config.axes.red.name) && ... % ...then check if all of the other variables are the same.
                  strcmpi(I.config.axes.green.name,  b.config.axes.green.name) && ...
-                 strcmpi(I.config.counter.name,     b.config.counter.name);
+                 I.config.xMin == b.config.xMin && ...
+                 I.config.xMax == b.config.xMax && ...
+                 I.config.upPixels ==   b.config.upPixels && ...
+                 I.config.downPixels == b.config.downPixels && ...
+                 I.config.upTime ==     b.config.upTime && ...
+                 I.config.downTime ==   b.config.downTime;
         end
         
         % NAME
@@ -145,7 +150,8 @@ classdef mciPLE < mcInput
 %             I.config.axes.red.open();
             I.s = daq.createSession('ni');
             
-            I.config.counter.addToSession(I.s);
+            c = mciDAQ(I.config.counter);
+            c.addToSession(I.s);
             
             r = mcaDAQ(I.config.axes.red);
             r.addToSession(I.s);
@@ -170,11 +176,14 @@ classdef mciPLE < mcInput
             pause(I.config.upTime + I.config.downTime);
         end
         function data = Measure(I, ~)
-            I.s.queueOutputData(I.config.output');
+%             I.s
+            I.s.queueOutputData(I.config.output);
 %             I.config.axes.red.scanOnce(I.config.xMin, I.config.xMax, I.config.upTime, I.config.downTime)
             [d, t] = startForeground(I.s);  % Fix timing?
             
             data = (diff(d)./diff(t))';
+            
+            I.close();  % Inefficient, but otherwise mciPLE never gives the couter up...
         end
     end
 end

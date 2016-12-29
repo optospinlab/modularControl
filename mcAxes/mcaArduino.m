@@ -1,58 +1,12 @@
 classdef (Sealed) mcaArduino < mcAxis          % ** Insert mca<MyNewAxis> name here...
-% mcaTemplate aims to explain the essentials for making a custom mcAxis.
-%
-% 1) To make a custom axis, copy and rename this file to mca<MyNewAxis> where <MyNewAxis> is a descriptive, yet brief name
-% for this type of axis (e.g. mcaDAQ for DAQ axes, mcaMicro for Newport Micrometers).
-% 2) Next, replace all of the lines starred with '**' with code appropriate for the new type.
-%
-% Keep in mind the separation between behavior (the content of the methods) and identity (the content of a.config).
-%
-% There are five (relevant) properties that are pre-defined in mcAxis that the user should be aware of:
-%       a.config    % The config structure that should only be used to define the axis identity. *No* runtime information should be stored in config (e.g. serial session).
-%       a.s         % This should be used for the persistant axis session, whether serial, NIDAQ, or etc.
-%       a.t         % An additional 'timer' session for unusual axes (see mcaMicro for use to poll the micros about the current position).
-%       a.extra     % A (currently unused) cell array which should contain the names of the essential custom variables for the config (why isn't this in a.config?).
-%       a.x         % Current position of the axis in the internal units of the 1D parameterspace.
-%       a.xt        % Target position of the axis in the internal units of the 1D parameterspace. This is useful for 'slow' axes which do not immdiately reach the destination (e.g. micrometers) for 'fast' axes (e.g. piezos), a.x should always equal a.xt.
-%
-% Syntax:
-%
-% + Initialization:
-%
-%   a = mca<MyNewAxis>()                        % Open with default configuration.
-%   a = mca<MyNewAxis>(config)                  % Open with configuration given by the struct 'config'.
-%   a = mca<MyNewAxis>('config_file.mat')       % Open with config file in 'MATLAB_PATH\configs\axisconfigs\' (not entirely functional at the moment)
-%
-%   config = mca<MyNewAxis>.<myType>Config()    % Returns a static config struture for that type (e.g. use as the config struct above).
-%   
-% + Naming:
-%
-%   str =   a.name()                            % Returns the default name. This is currently nameShort().
-%   str =   a.nameUnits()                       % Returns info about this axis in 'name (units)' form.
-%   str =   a.nameShort()                       % Returns short info about this axis in a readable form.
-%   str =   a.nameVerb()                        % Returns verbose info about this axis in a readable form.
-%
-% + Interaction:
-%
-%   tf =    a.open()                            % Opens a session of the axis (e.g. for the micrometers, a serial session); returns whether open or not.
-%   tf =    a.close()                           % Closes the session of the axis; returns whether closed or not.
-%
-%   tf =    a.inRange(x)                        % Returns true if x is in the external range of a.
-%
-%   tf =    a.goto(x)                           % If x is in range, makes sure axis is open, moves axis to x, and returns success.
-%
-%   tf =    a.read()                            % Reads the current position of the axis, returns success. This is useful for 'slow' axes like micrometers where a.xt (the target position) does not match the real position.
-%
-%   x =     a.getX(x)                           % Returns the position of the axis (a.x) in external units.
-%   x =     a.getXt(x)                          % Returns the target position of the axis (a.xt) in external units.
+% mcaArduino communicates via serial to an Arduino. Currently, it is only programmed to send '1' for
+% 'on' and '0' for 'off'. Ideally, this will be made scalable in the future.
 %
 % Also see mcAxis.
 
     methods (Static)    % The folllowing static configs are used to define the identity of axis objects. configs can also be loaded from .mat files
-        % ** Change the below so that future users know what neccessary extra variables should be included in custom configs (e.g. 'dev', 'chn', and 'type' for DAQ devices).
         % Neccessary extra vars:
-        %  - customVar1
-        %  - customVar2
+        %  - port
         
         function config = defaultConfig()               % Static config that should be used if no configuration is provided upon intialization.
             config = mcaArduino.flipMirrorConfig();
@@ -123,7 +77,7 @@ classdef (Sealed) mcaArduino < mcAxis          % ** Insert mca<MyNewAxis> name h
         function Goto(a, x)
             a.xt = a.config.kind.ext2intConv(x);
             a.x = a.xt;
-            printf(a.s, num2str(a.x));  % Send '0' or '1' to the pump...
+            fprintf(a.s, num2str(a.x));  % Send '0' or '1' to the pump...
         end
     end
 end

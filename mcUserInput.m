@@ -286,7 +286,7 @@ classdef mcUserInput < mcSavableClass
             fl.Position(2) = 670;
         end
         function openWaypoints(obj)
-            obj.wp = mcWaypoints(config.axesGroups{1}{2}, config.axesGroups{1}{3}, config.axesGroups{1}{4});
+            obj.wp = mcWaypoints(mcWaypoints.customConfig(obj.config.axesGroups{1}{2}, obj.config.axesGroups{1}{3}, obj.config.axesGroups{1}{4}));
             obj.wp.f.Position(2) = 400;
         end
         

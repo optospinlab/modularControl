@@ -140,7 +140,10 @@ classdef (Sealed) mcaNFLaser < mcAxis
         end
         function Goto(a, x)
             a.xt = x;
-            a.speakWithVar('SOURce:WAVElength', x);
+            a.speakWithVar('OUTPut:TRACk', 1);          % Turn tracking on.
+            a.speakWithVar('SOURce:WAVElength', x);     % Set the wavelength
+            pause(1);                                   % Wait a bit (remove?)
+            a.speakWithVar('OUTPut:TRACk', 0);          % Turn off tracking.
         end
     end
         
@@ -180,20 +183,17 @@ classdef (Sealed) mcaNFLaser < mcAxis
             end
         end
         
-        function tf = on(a)
+        function on(a)
             % Turn the laser and lambda track on.
             if ~a.inEmulation
-                tf = a.speakWithVar('OUTPut:STATe', 1) && a.speakWithVar('OUTPut:TRACk', 1);
-            else
-                tf = false;
+                a.speakWithVar('OUTPut:STATe', 1);
+                pause(10);  % It takes a while to warm up. It would be better to put in a beam-block.
             end
         end
-        function tf = off(a)
+        function off(a)
             % Turn the laser off.
             if ~a.inEmulation
-                tf = a.speakWithVar('OUTPut:STATe', 0);
-            else
-                tf = false;
+                a.speakWithVar('OUTPut:STATe', 0);
             end
         end
         

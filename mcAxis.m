@@ -126,7 +126,11 @@ classdef mcAxis < mcSavableClass
                 error('Not sure how to interpret config in mcAxis(config)...');
             end
             
-            a.config.kind.extRange = a.config.kind.int2extConv(a.config.kind.intRange);
+            if iscell(a.config.kind.intRange)
+                a.config.kind.extRange = cellfun(a.config.kind.int2extConv, a.config.kind.intRange, 'UniformOutput', false);
+            else
+                a.config.kind.extRange = a.config.kind.int2extConv(a.config.kind.intRange);
+            end
 %             x = a.config.kind.extRange;
             
 %             global ih
@@ -155,6 +159,10 @@ classdef mcAxis < mcSavableClass
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
+            if ~(isvalid(a) || isvalid(b))
+                tf = false; return;
+            end
+            
             if ~isprop(b, 'config')     % Make sure that b.config.kind.kind exists...
                 tf = false; return;
             else

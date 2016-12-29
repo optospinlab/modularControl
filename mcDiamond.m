@@ -195,6 +195,7 @@ classdef mcDiamond
 %                         'String', 'Y High Voltage Spectra Scan',... 
 %                         'Position', [dc.pw/6, dc.ph - ii*bh, 2*dc.pw/3, bh],... 
 %                         'Callback', @dc.YVoltageSpectra);               ii = ii + 2;
+            dc.f.Visible =      'on';
         end
         
         function galvoScan_Callback(dc,~,~)

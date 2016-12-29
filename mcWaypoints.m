@@ -74,8 +74,11 @@ classdef mcWaypoints < mcSavableClass
                         wp.config = emptyConfig();
                         wp.config.axes = varin;
                         wp.emptyWaypoints();
-                    else
+                    elseif ischar(varin)
                         wp.load(varin);
+                    elseif isstruct(varin)
+                        wp.config = varin;
+                        wp.emptyWaypoints();
                     end
             end
             
@@ -103,11 +106,11 @@ classdef mcWaypoints < mcSavableClass
             
             hold(wp.a, 'off')
             
-            wp.a.ButtonDownFcn =      @wp.windowButtonDownFcn;
-            wp.w.ButtonDownFcn =      @wp.windowButtonDownFcn;
-            wp.g.ButtonDownFcn =      @wp.windowButtonDownFcn;
-            wp.f.WindowButtonUpFcn =  @wp.windowButtonUpFcn;
-            wp.f.WindowScrollWheelFcn =     @wp.windowScrollWheelFcn;
+            wp.a.ButtonDownFcn =        @wp.windowButtonDownFcn;
+            wp.w.ButtonDownFcn =        @wp.windowButtonDownFcn;
+            wp.g.ButtonDownFcn =        @wp.windowButtonDownFcn;
+            wp.f.WindowButtonUpFcn =    @wp.windowButtonUpFcn;
+            wp.f.WindowScrollWheelFcn = @wp.windowScrollWheelFcn;
  
             % Static legend
 %             set(wp.a, 'LegendColorbarListeners', []); 
@@ -136,8 +139,8 @@ classdef mcWaypoints < mcSavableClass
             wp.menus.grid.pos =          uimenu(menuG, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); 
             wp.menus.grid.name =         uimenu(menuG, 'Label', 'Gridpoint: ~',  'Callback',       @copyLabelToClipboard); %, 'Enable', 'off');
             wp.menus.grid.goto =         uimenu(menuG, 'Label', 'Goto Gridpoint', 'Callback',      @wp.gotoGridpoint_Callback);
-            wp.menus.grid.dele =         uimenu(menuG, 'Label', 'Whitelist Gridpoint', 'Callback',    @wp.delete_Callback, 'Enable', 'off');
-            wp.menus.grid.dele =         uimenu(menuG, 'Label', 'Blacklist Gridpoint', 'Callback',    @wp.delete_Callback, 'Enable', 'off');
+            wp.menus.grid.whit =         uimenu(menuG, 'Label', 'Whitelist Gridpoint', 'Callback',    [], 'Enable', 'off');
+            wp.menus.grid.blac =         uimenu(menuG, 'Label', 'Blacklist Gridpoint', 'Callback',    [], 'Enable', 'off');
             
             wp.menus.currentPos =       [0 0];
             wp.menus.currentWay =       0;

@@ -294,7 +294,8 @@ classdef mcData < mcSavableClass
             data.intTimes = 1;
         end
         function data = PLEConfig()
-            data = mcData.inputConfig(mciPLE(), 10, 1);
+%             data = mcData.inputConfig(mciPLE(), 20, 1);
+            data = mcData.counterConfiguration(mciPLE(), 10, 1);
 %             data = mcData.singleConfiguration(mciPLE(), 1);
         end
     end
@@ -760,6 +761,9 @@ classdef mcData < mcSavableClass
                 d.save()
                     
                 if d.r.scanMode == -2       % If dataviewer was quit.
+%                     for ii = 1:d.r.i.num
+%                         d.r.i.i{ii}.close();
+%                     end
                     delete(d);
                 elseif d.r.scanMode ~= 2                % If the scan was unexpectantly stopped.
 %                     display('...set to paused...');
@@ -833,6 +837,8 @@ classdef mcData < mcSavableClass
                 end
             else
                 for kk = d.d.index(1):d.r.a.length(1)
+%                     toc
+%                     tic
                     if d.r.aquiring
                         d.r.a.a{1}.goto(d.d.scans{1}(kk));             % Goto each point...
                         d.r.a.a{1}.wait();              % ...wait for the axis to arrive (for some types)...
@@ -841,12 +847,8 @@ classdef mcData < mcSavableClass
                             if d.r.i.dimension(ii) == 0
                                 d.d.data{ii}(jj+kk-1) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             else
-%                                 l = d.r.i.length(ii)
                                 w =     d.r.l.weight(d.r.a.num + 1);
-%                                 w2 =    d.r.l.weight(1);
                                 base = (jj+kk-2) + 1;
-%                                 size(base:w:(w*d.r.i.length(ii)+base-1))
-%                                 size(d.r.i.i{ii}.measure(d.d.intTimes(ii)))
                                 d.d.data{ii}(base:w:(w*d.r.i.length(ii)+base-1)) = d.r.i.i{ii}.measure(d.d.intTimes(ii));  % ...measure.
                             end
                         end

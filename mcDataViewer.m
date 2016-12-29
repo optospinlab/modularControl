@@ -890,7 +890,7 @@ classdef mcDataViewer < mcSavableClass
         end
 
         function figureClickCallback(gui, ~, event)
-            event.Button
+%             event.Button
             if event.Button == 3
                 x = event.IntersectionPoint(1);
                 y = event.IntersectionPoint(2);
