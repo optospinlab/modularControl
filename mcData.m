@@ -618,19 +618,19 @@ classdef mcData < mcSavableClass
                 % If there isn't already a name, generate one:
                 if isempty(d.d.name)
                     for ii = 1:(d.r.i.num-1)
-                        d.d.name = [d.d.name d.d.inputs{ii}.name ', '];
+                        d.d.name = [d.d.name '[' d.d.inputs{ii}.name '], '];
                     end
 
-                    d.d.name = [d.d.name d.d.inputs{d.r.i.num}.name];
+                    d.d.name = [d.d.name '[' d.d.inputs{d.r.i.num}.name ']'];
                     
                     if ~isempty(d.r.a.a)
-                        d.d.name = [d.d.name ' vs '];
+                        d.d.name = ['[' d.d.name '] vs '];
 
                         for ii = 1:(d.r.a.num-1)
-                            d.d.name = [d.d.name d.r.l.name{ii} ', '];
+                            d.d.name = [d.d.name '[' d.r.l.name{ii} '], '];
                         end
 
-                        d.d.name = [d.d.name d.r.l.name{d.r.a.num}];
+                        d.d.name = [d.d.name '[' d.r.l.name{d.r.a.num} ']'];
                     end
                 end
                 
