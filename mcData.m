@@ -295,7 +295,7 @@ classdef mcData < mcSavableClass
         end
         function data = PLEConfig()
 %             data = mcData.inputConfig(mciPLE(), 20, 1);
-            data = mcData.counterConfiguration(mciPLE(), 10, 1);
+            data = mcData.counterConfiguration(mciPLE(), 20, 1);
 %             data = mcData.singleConfiguration(mciPLE(), 1);
         end
     end
@@ -490,6 +490,8 @@ classdef mcData < mcSavableClass
                     d.r.l.scans =   [d.r.l.scans    d.r.i.i{ii}.getInputScans()];
                     d.r.l.lengths = [d.r.l.lengths  d.r.i.size{ii}];                    % Will this be a cell?
                     
+%                     ll = d.r.l.lengths;
+                    
                     if d.r.i.dimension(ii) > length(inputLetters)
                         error('mcData.initialize(): Too many dimensions on this input. Not enough letters to describe each dimension.')
                     end
@@ -542,7 +544,9 @@ classdef mcData < mcSavableClass
                         error('mcData(): Config given without class. ');
                     end
                     
+%                     s = d.d.scans{ii}
                     d.r.a.length(ii) =      length(d.d.scans{ii});
+%                     l = d.r.a.length(ii)
                     
                     justname{ii} =          d.d.axes{ii}.name;
                     d.r.a.name{ii} =        d.r.a.a{ii}.nameShort();
@@ -581,6 +585,9 @@ classdef mcData < mcSavableClass
                 d.r.l.lengths = [d.r.a.length  d.r.l.lengths];
                 d.r.l.scans =   [d.d.scans d.r.l.scans];
                 
+%                 ll = d.r.l.lengths
+%                 s = d.r.l.scans
+                
                 % Index weight is best described by an example: If one has a 5x4x3 matrix, then incrimenting the x axis
                 %   increases the linear index (the index if the matrix was streached out) by one. Incrimenting the y axis
                 %   increases the linear index by 5. And incrimenting the z axis increases the linear index by 20 = 5*4. So the
@@ -588,7 +595,7 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
-                for ii = 2:(d.r.a.num + d.r.i.numInputAxes)
+                for ii = 2:(d.r.a.num + d.r.i.numInputAxes) % Not sure about this line!!!
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 

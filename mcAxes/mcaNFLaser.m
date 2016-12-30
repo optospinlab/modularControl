@@ -1,6 +1,8 @@
 classdef (Sealed) mcaNFLaser < mcAxis
 % mcaNFLaser is for controlling the New Focus red laser via serial.
 %
+% WARNING: This axis has penchant for crashing MATLAB. Use cautiously.
+%
 % Also see mcaTemplate and mcAxis.
 %
 % Status: Working, but slow. Mostly uncommented.

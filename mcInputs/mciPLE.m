@@ -14,7 +14,7 @@ classdef mciPLE < mcInput
         %  - downTime
         
         function config = defaultConfig()
-            config = mciPLE.PLEConfig(0, 2, 1000, 2, .25);
+            config = mciPLE.PLEConfig(0, 3, 240, 10, 1);
         end
         function config = PLEConfig(xMin, xMax, upPixels, upTime, downTime)
             config.class = 'mciPLE';
@@ -100,8 +100,11 @@ classdef mciPLE < mcInput
 %             s = upPixels + config.downPixels
             config.kind.sizeInput =    [upPixels + config.downPixels, 1];
 %             config.kind
+
+            config.scansPerBin = 16;        % Bins per scan
+            b = config.scansPerBin;
             
-            config.output = [[linspace(xMin, xMax, upPixels) linspace(xMax, xMin, config.downPixels + 1)]' [ones(1, upPixels) zeros(1, config.downPixels + 1)]'];    % One extra point for diff'ing.
+            config.output = [[linspace(xMin, xMax, b*upPixels) linspace(xMax, xMin, b*config.downPixels + 1)]' [ones(1, b*upPixels) zeros(1, b*config.downPixels) 0]'];    % One extra point for diff'ing.
             config.xaxis =  linspace(xMin, xMax + (xMax - xMin)*config.downPixels/upPixels, upPixels + config.downPixels);  % x Axis with fake units
         end
     end
@@ -158,7 +161,12 @@ classdef mciPLE < mcInput
             g = mcaDAQ(I.config.axes.green);
             g.addToSession(I.s);
             
-            I.s.Rate = I.config.upPixels/I.config.upTime;
+            if ~isfield(I.config, 'scansPerBin')
+                I.config.scansPerBin = 1;
+            end
+            
+            r = I.config.scansPerBin*I.config.upPixels/I.config.upTime;
+            I.s.Rate = I.config.scansPerBin*I.config.upPixels/I.config.upTime;
         end
         function Close(I)
 %             I.config.axes.red.close();
@@ -181,7 +189,17 @@ classdef mciPLE < mcInput
 %             I.config.axes.red.scanOnce(I.config.xMin, I.config.xMax, I.config.upTime, I.config.downTime)
             [d, t] = startForeground(I.s);  % Fix timing?
             
-            data = (diff(d)./diff(t))';
+            data1 = (diff(d)./diff(t))';
+            
+            l = length(data1);
+            
+            data = zeros(1, I.config.upPixels + I.config.downPixels);
+            
+            for ii = 1:I.config.scansPerBin
+                data = data + data1(ii:I.config.scansPerBin:l);
+            end
+            
+            data(I.config.upPixels + 1) = NaN;
             
             I.close();  % Inefficient, but otherwise mciPLE never gives the couter up...
         end

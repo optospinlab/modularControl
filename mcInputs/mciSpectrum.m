@@ -133,9 +133,11 @@ classdef mciSpectrum < mcInput
                 pause(1);
                 ii = ii + 1;
                 
-%                 if ii == integrationTime
-%                     disp
-%                 end
+                if ii == integrationTime
+                    disp(['mciSpectrum: The integration time of ' num2str(integrationTime) ' seconds has elapsed. Waiting for one more minute.']);
+                elseif mod(integrationTime + 60 - ii, 10) == 0   % If divisible by 10...
+                    disp(['mciSpectrum: Waiting for ' num2str(integrationTime + 60 - ii) ' more seconds.']);
+                end
             end
             
             if isnan(exposure)
@@ -145,9 +147,9 @@ classdef mciSpectrum < mcInput
             end
             
             if integrationTime ~= exposure && I.prevIntegrationTime ~= integrationTime
-                mcDialog(['Expected exposure of ' num2str(integrationTime) ' seconds, but received ' num2str(exposure) ' second exposure. Is this correct?'], 'Warning: Unexpected Exposure');
-                data = NaN(I.config.kind.sizeInput);
-                return;
+                warning(['mciSpectrum: Expected exposure of ' num2str(integrationTime) ' seconds, but received ' num2str(exposure) ' second exposure.']);
+%                 data = NaN(I.config.kind.sizeInput);
+%                 return;
             end
 
             if ~all(data == -1)     % If we found the spectrum....

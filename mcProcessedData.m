@@ -104,6 +104,10 @@ classdef mcProcessedData < handle
                     for ii = nums(toMean)
                         d = mean(d, ii);
                     end
+                    
+%                     pd.parent.r.l.layer
+%                     pd.parent.r.l.lengths
+%                     relevant
 
                     final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 3;   % If relevant and not singleton or meaned.
 

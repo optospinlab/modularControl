@@ -10,7 +10,7 @@ classdef mciDaughter < mcInput
         %  - var
         
         function config = defaultConfig()               % Static config that should be used if no configuration is provided upon intialization.
-            error('mciDaughter.defaultConfig(): This mcInput has no config.')
+            config = mciDaughter.daughterConfig(mcAxis(), 'x', [1 1], 'scans ago'); % Fake...
         end
         function config = daughterConfig(parent, var, expectedSize, units)
             config.class = 'mciDaughter';
@@ -19,15 +19,21 @@ classdef mciDaughter < mcInput
             config.kind.name =          'Daughter of mcInstrument';
             config.kind.shouldNormalize = false;
             
-            config.kind.intUnits =      units;
+            config.kind.extUnits =      units;
             config.kind.sizeInput =     expectedSize; %[1 1];
             
             % Parent error checking.
-            if ~isfield(parent.config, 'class')
-                error('mciDaughter.daughterConfig(): Parent must have field config.class.');    % Change? This only makes sense if we are dealing with registered instruments (mcAxes and mcInputs). Generalize to all classes?
-            end
+%             if isfield(parent, 'config')
+%                 c = class(parent);
+%                 parent = parent.config;
+%                 parent.class = c;
+%             end
             
-            config.parent = parent.config;
+%             if ~isfield(parent, 'class')
+%                 error('mciDaughter.daughterConfig(): Parent must have field config.class.');    % Change? This only makes sense if we are dealing with registered instruments (mcAxes and mcInputs). Generalize to all classes?
+%             end
+            
+            config.parent = parent;
             
             % Var error checking.
             if ~ischar(var)
@@ -67,19 +73,21 @@ classdef mciDaughter < mcInput
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
         function tf = Eq(I, b)          % Compares two mciDaughters
             tf = strcmpi(I.config.parent.name,  b.config.parent.name) &&... % Change? Do this properly with the eq method of the class, instead of the config struct?
-                 strcmp(I.config.var,  b.config.var);
+                 strcmp(I.config.var,  b.config.var) && false;  % Remove!
         end
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
         function Open(I)                % Do whatever neccessary to initialize the input.
-            c = I.config.parent;
+            I.s = I.config.parent;  % Temporary Fix...
             
-            if isfield(c, 'class')
-                I.s = eval([c.class '(c)']);    % Make the parent...
-                I.s.open();                     % ...and open it.
-            else
-                error('mcData(): Config given without class.');
-            end
+%             c = I.config.parent;
+            
+%             if isfield(c, 'class')
+%                 I.s = eval([c.class '(c)']);    % Make the parent...
+%                 I.s.open();                     % ...and open it.
+%             else
+%                 error('mcData(): Config given without class.');
+%             end
         end
         function Close(~)               % Do whatever neccessary to deinitialize the input.
             % Do nothing. The parent should not be closed because it might be doing something somewhere else.
@@ -91,6 +99,12 @@ classdef mciDaughter < mcInput
         end
         function data = Measure(I, ~)
             % How to incorperate integrationTime? Have a prevTime property in mcInput to compare with?
+%             I.s
+%             I.s.name
+%             I.s.prevOpt
+%             ['I.s.' I.config.var]
+%             eval(['I.s.' I.config.var])
+%             I.config.var
             data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
         end
     end

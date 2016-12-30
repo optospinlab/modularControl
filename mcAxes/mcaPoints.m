@@ -10,18 +10,43 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
 
     properties
         axes_ = {};
+        additionalAxes = {};
+        shouldOptimize = [];
+        
+        prevOpt = [];
+        rollingMeanDiff = [];
     end
 
     methods (Static)    % The folllowing static configs are used to define the identity of axis objects. configs can also be loaded from .mat files
         %  - A
         
         function config = defaultConfig()               % Static config that should be used if no configuration is provided upon intialization.
-            config = mcaPoints.customConfig();
+            config = mcaPoints.blankConfig();
+        end
+        function config = blankConfig()
+            config.class =              'mcaPoints';
+            
+            config.A =      [];
+            config.axes =   {};
+            
+            config.name =               'Blank mcaPoints';
+
+            config.kind.kind =          'brightspot';
+            config.kind.name =          'Bright spots found from 2D data';
+            config.kind.intRange =      [];
+            config.kind.int2extConv =   @(x)(x);
+            config.kind.ext2intConv =   @(x)(x);
+            config.kind.intUnits =      'point';
+            config.kind.extUnits =      'point';
+            config.kind.base =          NaN;
+            
+            config.keyStep =            1;
+            config.joyStep =            1;
         end
         function config = brightSpotConfig(d)
             config.class =              'mcaPoints';
             
-            config.name =               ['Points Found in' d.name];
+            config.name =               ['Points Found in ' d.name];
             
             config.src =                d;
             
@@ -35,18 +60,21 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 error(['mcaPoints(): Expected a 2D data structure. Found ' num2str(length(d.axes)) ' dimensions.']);
             end
             
-            s = wiener2(d.data, [3 3]);
+            s = wiener2(d.data{1}, [3 3]);
 
-            figure;
+%             figure;
+            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), .9), strel('diamond',1));
+            % Don't hardcode quantile!!!
+            
+            %             figure; imagesc(bw);
+            r = regionprops(bw, s, 'WeightedCentroid', 'MaxIntensity');
 
-            r = regionprops(imclearborder(imregionalmax(s)) & s > quantile(s(:), .75), s, 'Centroid', 'MaxIntensity');
-
-            c = cat(1, r.Centroid);
+            c = cat(1, r.WeightedCentroid);
 
             [~, sorted] = sort(cat(1, r.MaxIntensity), 'descend');
 
-            xind = c(sorted,1);
-            yind = c(sorted,2);
+            xind = round(c(sorted,1));
+            yind = round(c(sorted,2));
 
             xvals = d.scans{1}(xind);
             yvals = d.scans{2}(yind);
@@ -54,21 +82,29 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             unitx = abs(d.scans{1}(2) - d.scans{1}(1));     % Make sure length is greater than 1?
             unity = abs(d.scans{2}(2) - d.scans{2}(1));
 
-            nums = 1:length(xvals);
+            config.nums = 1:length(xvals);
+            
+            halfsquarewid = zeros(size(xvals));
 
-            for ii = nums
+            for ii = config.nums
                 taxi = abs(xind - xind(ii)) + abs(yind - yind(ii));
-                halfsquarewid(ii) = ceil(min(taxi(taxi ~= 0))/4) + .5;
+                halfsquarewid(ii) = ceil(min(taxi(taxi ~= 0))/4) + 1.5;
             end
             
-            config.A =      0;
-            config.axes =   d.axes;
+            limit = .75;    % Don't hardcode!!!
+            
+            config.A =      [xvals; yvals; min(halfsquarewid*unitx, limit); min(halfsquarewid*unity, limit)];
+            
+            config.axes =   d.axes(2:-1:1);
+            
+%             a1 = d.axes{1}
+%             a2 = d.axes{2}
             
             config.data = d;
 
             config.kind.kind =          'brightspot';
             config.kind.name =          'Bright spots found from 2D data';
-            config.kind.intRange =      [1 length(xind)];
+            config.kind.intRange =      num2cell(1:length(xind));
             config.kind.int2extConv =   @(x)(x);
             config.kind.ext2intConv =   @(x)(x);
             config.kind.intUnits =      'point';
@@ -82,13 +118,36 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
     
     methods             % Initialization method (this is what is called to make an axis object).
         function a = mcaPoints(varin)
-            a.extra = {'A', 'axes'};
             if nargin == 0
                 a.construct(a.defaultConfig());
             else
                 a.construct(varin);
             end
-            config.num = length(config.axes);
+            
+            a.extra = {'A', 'axes'};
+            
+            for ii = 1:length(a.config.axes)
+                c = a.config.axes{ii};
+                a.axes_{ii} = eval([c.class '(c)']);
+            end
+            
+            if ~isfield(a.config, 'shouldOptimize')
+                a.config.shouldOptimize = [];
+            else
+                c = a.config.shouldOptimize;
+                a.shouldOptimize = eval([c.class '(c)']);
+            end
+            if ~isfield(a.config, 'additionalAxes')
+                a.config.additionalAxes = {};
+                a.additionalAxes = {};
+            else
+                for ii = 1:length(a.config.additionalAxes)
+                    c = a.config.additionalAxes{ii};
+                    a.additionalAxes{ii} = eval([c.class '(c)']);
+                end
+            end
+            
+            a.rollingMeanDiff =  NaN(2, 10);
             
             a = mcInstrumentHandler.register(a);
         end
@@ -98,7 +157,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
     methods
         % NAME ---------- The following functions define the names that the user should use for this axis.
         function str = NameShort(a)     % 'short' name, suitable for UIs/etc.
-            str = [a.config.name ' (with ' num2str(config.num) ' axes)'];
+            str = [a.config.name ' (' num2str(length(a.config.axes)) ' axes)'];
         end
         function str = NameVerb(a)      % 'verbose' name, suitable to explain the identity to future users.
             str = [a.config.name ' ( ' ')'];
@@ -112,12 +171,12 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).
         function Open(a)                % Do whatever neccessary to initialize the axis.
             for ii = 1:length(a.config.axes)
-                a.config.axes{ii}.open();
+                a.axes_{ii}.open();
             end
         end
         function Close(a)               % Do whatever neccessary to deinitialize the axis.
             for ii = 1:length(a.config.axes)
-                a.config.axes{ii}.close();
+                a.axes_{ii}.close();
             end
         end
         
@@ -128,12 +187,74 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             a.Goto(x);
         end
         function Goto(a, x)
-            X = 1:max(a.config.kind.intRange) == x;
+            a.x = x;
+            a.xt = a.x;
             
-            Y = a.A * X';
+            X = a.config.nums == x;
+            
+            Y = a.config.A * X';
+            
+            n = length(a.axes_);
+            
+            if ~isempty(a.config.shouldOptimize)
+                m = mean(a.rollingMeanDiff, 2);
+                
+                y = Y;
+                
+                if ~isnan(m)
+                    Y(1:n) = Y(1:n) + m;
+                end
+            end
             
             for ii = 1:length(a.axes_)
                 a.axes_{ii}.goto(Y(ii));
+            end
+            
+            if ~isempty(a.config.shouldOptimize)
+                for ii = 1:n
+                    a.prevOpt(x, ii, 1) = y(ii);
+                    
+                    d = mcData(mcData.optimizeConfiguration(a.axes_{ii},...
+                                                            a.shouldOptimize,...
+                                                            Y(length(a.axes_) + ii),...
+                                                            200,... % Should not be hardcoded!
+                                                            5));    % Should not be hardcoded!
+                    disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
+                    d.aquire();
+                    disp('...Finished.');
+                    
+                    a.prevOpt(x, ii, 2) = a.axes_{ii}.getX();
+                    a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
+                    
+                    a.rollingMeanDiff(ii, 1) = a.prevOpt(x, ii, 3);
+                end
+                
+                for jj = 1:length(a.additionalAxes)
+                    ii = ii + 1;
+                    
+                    a.prevOpt(x, ii, 1) = a.additionalAxes{jj}.getX();
+                    
+                    d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
+                                                            a.shouldOptimize,...
+                                                            5,...   % Should not be hardcoded!
+                                                            200,... % Should not be hardcoded!
+                                                            5));    % Should not be hardcoded!
+                                                        
+                    disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
+                    d.aquire();
+                    disp('...Finished.');
+                    
+                    a.prevOpt(x, ii, 2) = a.additionalAxes{jj}.getX();
+                    a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
+                end
+                
+                p = a.prevOpt;
+                
+                save('temp.mat', 'p');
+                
+%                 a.prevOpt = 0;
+                
+                a.rollingMeanDiff = circshift(a.rollingMeanDiff, [0 1]);
             end
         end
     end
@@ -141,26 +262,37 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
     methods
         % EXTRA --------- Any additional functionality this axis should have (remove if there is none).
         function makePlot(a)
-            figure
+            a.open();
             
-            axes
-            xlabel(
+            figure;
             
-            imagesc(a.config.src.scans{1}, a.config.src.scans{2}, d);
-            daspect([1 1 1])
+            ax = axes;
+            
+            xlabel(a.axes_{1}.nameUnits());
+            ylabel(a.axes_{2}.nameUnits());
+            
+            imagesc(a.config.src.scans{1}, a.config.src.scans{2}, a.config.src.data{1});
+            
+            ax.YDir = 'normal';
+            
+            daspect([1 1 1]);
 
             hold all;
+                    
+            s = size(a.config.A);
+            shouldPlotBox = s(1) == 4;
 
-            nums = 1:length(xvals);
-
-            for ii = nums
-                text(xvals(ii), yvals(ii), num2str(ii), 'VerticalAlignment', 'middle', 'HorizontalAlignment', 'center', 'color', 'red')
-
-                taxi = abs(xind - xind(ii)) + abs(yind - yind(ii));
-
-                halfsquarewid = ceil(min(taxi(taxi ~= 0))/4) + .5;
-
-                plot(unitx * halfsquarewid * [1 1 -1 -1 1] + xvals(ii), unity * halfsquarewid * [1 -1 -1 1 1] + yvals(ii), 'red')
+            for ii = a.config.nums
+                text(   a.config.A(1,ii), a.config.A(2,ii), num2str(ii),...
+                        'VerticalAlignment', 'middle',...
+                        'HorizontalAlignment', 'center',...
+                        'color', 'red');
+                
+                if shouldPlotBox
+                    plot(   a.config.A(3,ii) * [1 1 -1 -1 1] + a.config.A(1,ii),...
+                            a.config.A(4,ii) * [1 -1 -1 1 1] + a.config.A(2,ii),...
+                            'red');
+                end
             end
         end
     end

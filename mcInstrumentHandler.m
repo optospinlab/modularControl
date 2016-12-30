@@ -121,7 +121,7 @@ classdef mcInstrumentHandler < handle
         function str = getConfigFolder()
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
-            str = ['configs' filesep params.hostname filesep];
+            str = [params.mcFolder filesep 'configs' filesep params.hostname filesep];
         end
         
         function saveParams()
@@ -408,6 +408,23 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             fcn = params.globalWindowKeyPressFcn;
+        end
+        
+        % RESET DAQ
+        function resetDAQ()
+            instruments = mcInstrumentHandler.getInstruments();
+            
+            disp('Resetting DAQ devices:');
+            
+            for ii = 1:length(instruments)
+                if strcmpi(instruments{ii}.config.kind.kind(1:2), 'ni')
+                    disp(['    Closing ' instruments{ii}.config.name]);
+                    instruments{ii}.close();
+                end
+            end
+            
+            daqreset();
+            disp('Reset DAQ.');
         end
         
         % FIGURE

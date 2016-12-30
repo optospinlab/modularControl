@@ -54,6 +54,8 @@ classdef mcAxis < mcSavableClass
             config = mcAxis.timeConfig();
         end
         function config = timeConfig()
+            config.class =              'mcAxis';
+            
             config.name =               'Time';
 
             config.kind.kind =          'Time';
@@ -347,6 +349,8 @@ classdef mcAxis < mcSavableClass
                 
             if strcmpi(a.config.kind.kind, 'grid')  % If it is a virtual grid axis...
                 a.config.grid.wait();               % ...then use the virtual grid wait() function.
+            elseif  strcmpi(a.config.kind.kind, 'time')
+                % Do nothing.
             else
                 while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
                     a.read();

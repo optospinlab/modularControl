@@ -687,9 +687,17 @@ classdef mcDataViewer < mcSavableClass
                     axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
 
                     if isSel        % If the user wants to go to the selected position
-                        axisX.goto(gui.posL.sel.XData(1));
+                        if gui.data.r.plotMode == 1
+                            axisX.goto(gui.posL.sel.XData(1));
+                        else
+                            axisX.goto(gui.pos.sel.XData(1));
+                        end
                     else            % If the user wants to go to the selected pixel
-                        axisX.goto(gui.posL.pix.XData(1));
+                        if gui.data.r.plotMode == 1
+                            axisX.goto(gui.posL.pix.XData(1));
+                        else
+                            axisX.goto(gui.pos.pix.XData(1));
+                        end
                     end
                 end
             end
@@ -701,9 +709,9 @@ classdef mcDataViewer < mcSavableClass
                     axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
 
                     if isSel        % If the user wants to go to the selected position
-                        axisY.goto(gui.posL.sel.YData(1));
+                        axisY.goto(gui.pos.sel.YData(1));
                     else            % If the user wants to go to the selected pixel
-                        axisY.goto(gui.posL.pix.YData(1));
+                        axisY.goto(gui.pos.pix.YData(1));
                     end
                 end
             end

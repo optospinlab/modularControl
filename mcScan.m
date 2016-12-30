@@ -106,10 +106,10 @@ classdef mcScan < mcSavableClass
 %                         'Enable', 'off');
                     
             tabpos = gui.tab1.Position;
-            gui.addAxisButton.Position = [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-1*gui.ph + 5, gui.pw-10, gui.ph-10];
+            gui.addAxisButton.Position = [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-2*gui.ph + 5, gui.pw-10, gui.ph-10];
             
             tabpos = gui.tab2.Position;
-            gui.addInputButton.Position = [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-1*gui.ph + 5, gui.pw-10, gui.ph-10];
+            gui.addInputButton.Position = [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-2*gui.ph + 5, gui.pw-10, gui.ph-10];
                     
 %             tabpos = gui.tab3.Position;
 %             saveButton.Position = [tabpos(3)/2-gui.pw/2 + 5, tabpos(4)-1*gui.ph + 5, gui.pw/2-10, gui.ph-10];
@@ -123,6 +123,8 @@ classdef mcScan < mcSavableClass
             gui.alignPanels();
             
             pause(.1);
+            
+            gui.f.Visible = 'on';
         end
         
 %         function sizeChangedFcn(gui,~,~)
@@ -358,13 +360,13 @@ classdef mcScan < mcSavableClass
                 
 %             if ~isempty(gui.scanAxes)
                 for ii = 1:length(gui.scanAxes)
-                    gui.scanAxes{ii}.panel.Position = [tabpos(3)/2-gui.pw/2, tabpos(4)-(ii+1)*gui.ph, gui.pw, gui.ph];
+                    gui.scanAxes{ii}.panel.Position = [tabpos(3)/2-gui.pw/2, tabpos(4)-(ii+2)*gui.ph, gui.pw, gui.ph];
                 end
 %             end
 %                 
 %             if ~isempty(gui.scanInputs)
                 for ii = 1:length(gui.scanInputs)
-                    gui.scanInputs{ii}.panel.Position = [tabpos(3)/2-gui.pw/2, tabpos(4)-(ii+1)*gui.ph, gui.pw, gui.ph];
+                    gui.scanInputs{ii}.panel.Position = [tabpos(3)/2-gui.pw/2, tabpos(4)-(ii+2)*gui.ph, gui.pw, gui.ph];
                 end
 %             end
         end
@@ -610,7 +612,7 @@ classdef mcScan < mcSavableClass
                 proceed = false;
             end
             
-            params.integrationTime =    cellfun(@(x)(double(x.integrationTime)), gui.scanInputs);
+            params.intTimes =    cellfun(@(x)(double(x.integrationTime)), gui.scanInputs);
             
             params
             
