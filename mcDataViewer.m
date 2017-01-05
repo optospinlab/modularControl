@@ -394,7 +394,7 @@ classdef mcDataViewer < mcSavableClass
             % Data Figure/etc --------------------------------------------------------------------------------------------------------------
             gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
             hToolbar = findall(gui.df, 'tag', 'FigureToolBar');
-            gui.cfToggle = uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @gui.toggleCF_Callback, 'CData', iconRead(fullfile('icons','control_figure.png')), 'State', gui.cf.Visible);
+            gui.cfToggle = uitoggletool(hToolbar, 'TooltipString', 'Control Figure', 'ClickedCallback', @gui.toggleCF_Callback, 'CData', iconRead(fullfile('icons','control_figure.png')), 'State', gui.cf.Visible);
 
             gui.df.CloseRequestFcn = @gui.closeRequestFcnDF;
             menu = uicontextmenu;
@@ -545,20 +545,37 @@ classdef mcDataViewer < mcSavableClass
         
         function saveGUI_Callback(gui, ~, ~)
             [FileName, PathName, FilterIndex] = uiputfile({ '*.mat', 'Full Data File (*.mat)';...
-                                                            '*.png', 'Current Image (*.png)';...
-                                                            '*.png', 'Current Image With Axes (*.png)';...
-                                                            '*.png', 'Current Image With Axes (Alternate Method) (*.png)';...
-                                                            '*.jpg', 'Current Image With Axes (*.jpg)';...
-                                                            '*.pdf', 'Current Image With Axes (*.pdf)';...
-                                                            '*.tif', 'Current Image With Axes (*.tif)';...
-                                                            '*.fig', 'Current Image As Figure (*.fig)'},...
+                                                            '*.mat', 'Currently Displayed Data (*.mat)';...
+                                                            '*.png', 'Currently Displayed Image (*.png)';...
+                                                            '*.png', 'Currently Displayed Image With Axes (*.png)';...
+                                                            '*.png', 'Currently Displayed Image With Axes (Alternate Method) (*.png)';...
+                                                            '*.jpg', 'Currently Displayed Image With Axes (*.jpg)';...
+                                                            '*.pdf', 'Currently Displayed Image With Axes (*.pdf)';...
+                                                            '*.tif', 'Currently Displayed Image With Axes (*.tif)';...
+                                                            '*.fig', 'Currently Displayed Image As Figure (*.fig)'},...
                                                             'Save As', [mcInstrumentHandler.getSaveFolder(0) filesep gui.data.d.info.timestamp ' ' gui.data.d.name]);
             
             if all(FileName ~= 0)
                 switch FilterIndex
                     case 1      % .mat
                         % This case is covered below (saves in all cases).
-                    case 2      % .png
+                    case 2      % .mat 2
+                        data.r = gui.r.data;        %#ok
+                        
+                        if gui.isRGB
+                            data.g = gui.b.data;    %#ok
+                            data.b = gui.b.data;    %#ok
+                        else
+                            data.g = [];            %#ok
+                            data.b = [];            %#ok
+                        end
+                        
+                        % Add axes!
+                        
+%                         data
+                        
+                        save([PathName FileName], 'data');      % Make sure that the extension is three characters?
+                    case 3      % .png
                         if gui.data.r.plotMode == 0
                             warning(['mcDataViewer.saveGUI_Callback() - ' gui.data.d.name ': Cannot save an axes-less histogram. Sorry.'])
                         else
@@ -578,7 +595,7 @@ classdef mcDataViewer < mcSavableClass
 
                             imwrite(d, [PathName FileName]);
                         end
-                    case 3      % .png (axes)
+                    case 4      % .png (axes)
                         imwrite(frame2im(getframe(gui.df)), [PathName FileName]);
                     otherwise  % etc
                         saveas(gui.df, [PathName FileName]);
@@ -587,7 +604,10 @@ classdef mcDataViewer < mcSavableClass
                 pause(.05);                                         % Pause to give time for the file to save.
                 
                 data = gui.data.d;                                  %#ok % Always save the .mat file, even if the user doesn't specify... (change?)
-                save([PathName FileName(1:end-3) 'mat'], 'data');   % Make sure that the extension is three characters?
+                
+%                 data
+                
+                save([PathName FileName(1:end-4) ' (full).mat'], 'data');   % Make sure that the extension is three characters?
                 
                 pause(.05);                                         % Pause again
             else

@@ -6,7 +6,7 @@
  * e.g. in the diamond room, run `mcDiamond`.
 
 ## Modularity
-`modularControl` is, as the name suggests, meant to be a modular and versitile solution to data acquisition in MATLAB.
+`modularControl` is, as the name suggests, intended to be a modular and versitile solution to data acquisition in MATLAB.
 
 #### Background
 There are two concepts that we first must introduce: behavior and identity.
@@ -29,6 +29,29 @@ This separation of behavior and identity means that this code is inherently modu
 
 ## What's Up With `mca`, `mci`, etc?:
 `mca<Classname>`, `mci<Classname>`, and `mce<Classname>` are subclasses of `mcAxis`, `mcInput`, and `mcExperiment`, respectively. All the `mca`s and `mci`s are `mcAxes` and `mcInputs`, respectively, and so on. The reason for this specification is that `mcaDAQ`s and `mcaMicro`s, despite their common functionality (e.g. each `.goto(x)`), behave very differently. Attempting to contain the behavior of every `mcAxis` inside a single `mcAxis` class became difficult as the number of necessary behaviors increased. Instead, `mcAxis` and `mcInput` spawn a set of subclass `mca`s and `mci`s that define the specific functionality. How is this done? Each `mca` and `mci` must 'fill in' functionality via the capitalized version of each function. For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`, the method that the user calls. `.measure()` is defined in the `mcInput` superclass, along with an empty version of `.Measure()`, which is 'filled in' by the subclass `mciDAQ`.
+
+## What's Up With `config.kind` In `mcAxes` and `mcInputs`:
+`config.kind` is a rather-ambiguous structure in every `mcAxis` and `mcInput`. It was put in for organizational purposes. It contains the following fields:
+
+#### In Both `mcAxis` and `mcInput`:
+* `config.kind.kind`, the programatic name of the kind (sorry, this was due to C++ habits);
+* `config.kind.name`, the explanatory name of the kind (e.g. for a later user);
+
+#### In `mcAxis`, Specifically:
+* `config.kind.intUnits`, a string representing the units that the axis uses internally (e.g. for piezos, this is volts);
+* `config.kind.extUnits`, a string representing the units that the user should use (e.g. for piezos, this is microns);
+* `config.kind.int2extConv`, conversion from internal to external units (e.g. for piezos, 0V -> -25um, 10V -> 25um);
+* `config.kind.ext2intConv`, conversion from external to internal units, this should be the inverse of `int2extConv`, but is currently not error checked (check randomly in the future?);
+* `config.kind.intRange`, the range of the axis in external units (this is generated using the conversions);
+* `config.kind.extRange`, the range of the axis in external units (this is generated from `intRange` using the conversions);
+* `config.kind.base`,	the value (in internal units) that the axis should seek at startup;
+
+#### In `mcInput`, Specifically:
+* `config.kind.extUnits`, the appropriate units (no internal units are neccessary here);
+* `config.kind.shouldNormalize`, whether or not the measurement should be divided by the time taken to measure (e.g. where absolute counts are meaningless unless the time taken to collect is present; this is currently only used with `mciDAQ` devices);
+* `config.kind.sizeInput`, the expected size of the input (this allows other parts of the program to allocate space for the `mcInput` before the measurement has been taken; for numbers, this is set to `[1 1]`; for a vector like a spectrum, this could be [512 1]).
+
+It is meant to unify mcInstruments of similar, but not identical identity. For instance, all MadCity Labs piezos have the same `config.kind` because they all have the same range and convert between units with the same conversions. The only difference is the special variables (`dev` and `chn` in this case).
 
 ## Example
 Suppose that we want to do an XY scan on the counter with the X piezo and the Y micrometer.
@@ -54,7 +77,7 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
  5. Suppose that we want to do a 11x11 pixel scan from 10um to 20um with the x piezo and 20um to 30um with the y micrometer. We will use `mcData`.
   1. Set `axes_ = {piezo, micro}`. This gives `mcData` the axes we want to scan over. Note that it is also sufficient to set `axes_ = {configP, configM}` as long as `configP.class = mcaDAQ` and `configM.class = mcaMicro`. If you want to really be obscene, `axes_ = {piezo, configM}` is also valid.
   2. Set `scans = {linspace(10, 20, 11), linspace(20, 30, 11)}`. These vectors contain all of the points that we will scan over, with the `i`th index of this cell array corresponding to the axis of the `i`th index of the cell array `axes_`. Note that one can input pretty crazy vectors whose entries are not-neccessarily equally spaced (although this is not reccommended because the 2D imaging method assumes equal spacing; the 1D imaging method, however, should display correctly).
-  3. Set `inputs = {count}`. This gives `mcData` the input that we want to measure at each point of the scan. Note specifically that more inputs can be added as additional entries of the cell array (naturally). As with axes, using the `config` instead of the `mcInput` object is sufficient.
+  3. Set `inputs = {count}`. This gives `mcData` the input that we want to measure at each point of the scan. Note specifically that more `mcInput`s can be added as additional entries of the cell array (naturally). As with axes, using the `config` instead of the `mcInput` object is sufficient.
   4. Set `integrationTime = [time]` to the time `time` (in seconds) that we want to spend at each point. `time = .09` sounds reasonable for ~1 second X scans.
   5. Now call `data = mcData(axes_, scans, inputs, integrationTime)`. This gives an `mcData` object that is ready to scan.
  6. To scan, either
@@ -62,6 +85,30 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
   2. Acquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
  7. The function `mcScan` is a GUI which makes a `mcData` structure without having to go through the command line as in step 5. Run `mcScan` and simply select the appropriate axes/scans/etc using edit boxes and dropdown lists.
 
+## Future (Incomplete List)
+
+### High Priority:
+
+* Make sure loading and saving configs/data is functional.
+* Make sure that `mcData` works in all situations (e.g. different configurations of axes and inputs).
+* Finish `mcExperiment` stuff.
+* Commenting!
+
+### Low Priority:
+
+* 3D and Scatter modes for `mcDataViewer`.
+* Sine scan on all `mcAxes` (useful for alignment).
+* Fix current position updating in mcWaypoints (currently disabled for performance).
+* Streamline the grid-creation process.
+* Fix cross-platform UI issues, especially in `mcScan` and `mcData` (`uitabgroup` issues).
+* Make tabbing in `mcUserInput` go to the next textbox, instead of button.
+* Make sure the `mcAxis` and `mcInput` error-check properly.
+* Make `mcAxis` recognize `NaN` as the 'don't do anything' base.
+* Finish `uicontrol` registration to turn off controls when the assigned axis is in use.
+* Add exposure adjustment(/etc) controls to `mcVideo`.
+* Properly debug (e.g. PID loop settings) image feedback in `mcVideo`.
+* Make a GUI for loaded instruments (`uitable`?).
+* Add ungrouped axis controls to `mcUserInput`.
 
 
 

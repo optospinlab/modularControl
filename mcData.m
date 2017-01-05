@@ -624,7 +624,7 @@ classdef mcData < mcSavableClass
                     d.d.name = [d.d.name '[' d.d.inputs{d.r.i.num}.name ']'];
                     
                     if ~isempty(d.r.a.a)
-                        d.d.name = ['[' d.d.name '] vs '];
+                        d.d.name = [d.d.name ' vs '];
 
                         for ii = 1:(d.r.a.num-1)
                             d.d.name = [d.d.name '[' d.r.l.name{ii} '], '];
