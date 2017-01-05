@@ -161,7 +161,13 @@ classdef mcAxis < mcSavableClass
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
-            if ~(isvalid(a) || isvalid(b))
+%             a
+%             b
+%             
+%             isvalid(a)
+%             isvalid(b)
+            
+            if ~(isvalid(a) && isvalid(b))
                 tf = false; return;
             end
             

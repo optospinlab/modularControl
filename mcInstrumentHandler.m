@@ -285,8 +285,8 @@ classdef mcInstrumentHandler < handle
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcAxis')                 % If an instrument is an axis...
-                    axes_{ii} =     instrument{1};              % ...Then append its information.
+                if isa(instrument{1}, 'mcAxis') && isvalid(instrument{1})   % If an instrument is an axis...
+                    axes_{ii} =     instrument{1};                          % ...Then append its information.
                     names{ii} =     instrument{1}.nameShort();
                     configs{ii} =   instrument{1}.config;
                     states(ii) =    instrument{1}.getX();
@@ -303,8 +303,8 @@ classdef mcInstrumentHandler < handle
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcInput')                % If an instrument is a axis...
-                    inputs{ii} = instrument{1};                 % ...Then append its information.
+                if isa(instrument{1}, 'mcInput') && isvalid(instrument{1})  % If an instrument is a axis...
+                    inputs{ii} = instrument{1};                             % ...Then append its information.
                     names{ii} = instrument{1}.nameShort();
                     ii = ii + 1;
                 end

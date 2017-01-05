@@ -4,6 +4,10 @@ classdef (Sealed) mcaAPT < mcAxis
 %
 % Also see mcAxis.
 
+    properties
+        f = [];     % Figure.
+    end
+
     methods (Static)    % The folllowing static configs are used to define the identity of axis objects. configs can also be loaded from .mat files
         % Neccessary extra vars:
         %  - control
@@ -47,7 +51,7 @@ classdef (Sealed) mcaAPT < mcAxis
             config.kind.name =          'Thorlabs APT Stepper Rotator (Calibrated 1/4/17)';
             config.kind.intRange =      [0 360];                            % How to handle looping from 360 -> 0?
             config.kind.int2extConv =   @(x)( 90*(0.5566 * (x - 0.05941))/(2*pi) );
-            config.kind.ext2intConv =   @(x)( 0.05941 + x*(2*pi)/(90*c) );
+            config.kind.ext2intConv =   @(x)( 0.05941 + x*(2*pi)/(90*0.5566) );
             config.kind.intUnits =      'uncalibrated degrees';
             config.kind.extUnits =      'degrees';
             config.kind.base =          0;
@@ -91,8 +95,8 @@ classdef (Sealed) mcaAPT < mcAxis
         
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).
         function Open(a)                    % Do whatever neccessary to initialize the axis.
-            f = figure('Resize', 'off', 'Visible', 'off');                      % Don't show the controller...
-            a.s = actxcontrol(a.config.control, [[0 0], f.Position(3:4)], f);   % Initialize the activeX object.
+            a.f = figure('Resize', 'off', 'Visible', 'on');                         % Don't show the controller...
+            a.s = actxcontrol(a.config.control, [[0 0], a.f.Position(3:4)], a.f);   % Initialize the activeX object.
             
             a.s.HWSerialNum = a.config.SN;  % Set the serial number to be the device we are looking for
             
@@ -103,6 +107,7 @@ classdef (Sealed) mcaAPT < mcAxis
         end
         function Close(a)                   % Do whatever neccessary to deinitialize the axis.
             a.s.StopCtrl;
+            close(a.f);
         end
         
         % READ ---------- For 'slow' axes that take a while to reach the target position (a.xt), define a way to determine the actual position (a.x). These do *not* have to be defined for 'fast' axes.
@@ -121,7 +126,7 @@ classdef (Sealed) mcaAPT < mcAxis
         function Goto(a, x)
             a.xt = a.config.kind.ext2intConv(x);    % Set the target position a.xt (in internal units) to the user's desired x (in internal units).
             
-            a.s.SetAbsMovePos(  a.config.chn, x);
+            a.s.SetAbsMovePos(  a.config.chn, a.xt);
             a.s.MoveAbsolute(   a.config.chn, true);
         end
     end
