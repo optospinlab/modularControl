@@ -164,8 +164,8 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
         end
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use a.extra for this?)
-        function tf = Eq(~, ~)
-            tf = false; % Don't care; two point axes cannot distrub each other (unlike, e.g. two DAQ axes with the same info).
+        function tf = Eq(a, b)
+            tf = strcmpi(a.config.name, b.config.name);
         end
         
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).

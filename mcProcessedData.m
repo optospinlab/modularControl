@@ -84,6 +84,9 @@ classdef mcProcessedData < handle
                 case {2, '2D'}
                     selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
                     selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2);
+%                     in = pd.input
+%                     l = pd.parent.r.l.layer
+%                     t = pd.parent.r.l.type
                     
                     if isempty(selTypeX) || isempty(selTypeY)
                         warning('mcProcessedData(): Layer has not updated properly...');

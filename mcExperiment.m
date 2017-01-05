@@ -5,20 +5,21 @@ classdef mcExperiment < mcInput
 
     properties
         f = [];     % figure
-        t = [];     % uitable
-        pcb = [];   % proceed checkbox
-        % pb = [];  % proceed button
         
-        proceeding = false;
+        proceeding = false;     % Whether or not we should proceed to the next step in the experiment.
         
-        num = 0;
+        num = 0;                % The step that we are currently on.
         
-        objects = {};
+        objects = {};           % Cell array to store the objects that result from the mcAxis/mcInput/mcData configs in e.config.
+        
+        % Cell array to hold the UIControl elements.
         doneboxes = {};
         proceedboxes = {};
         names = {};
         push1 = {};
         push2 = {};
+        
+        fname = [];
     end
 
     methods (Static)
@@ -81,8 +82,8 @@ classdef mcExperiment < mcInput
         end
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
-        function tf = Eq(~, ~)          % Compares two mcExperiments
-            tf = false;                 % Don't care.
+        function tf = Eq(I, b)          % Compares two mcExperiments
+            tf = strcmp(I.config.name, b.config.name);                 % Don't care.
         end
 
         % OPEN/CLOSE ---- Opens/closes the GUI for the experiment.
@@ -306,13 +307,19 @@ classdef mcExperiment < mcInput
         end
     end
     
+    % Saving
     methods
-        function crf(e, ~, ~)   % Close request function
-            if ~isvalid(e)
-                closereq
+        function save(e, name)
+            for ii = 1:length(e.objects)
+                if isa(e.objects{ii}, 'mcData')
+                    e.objects.save([mcInstrumentHandler.getSaveFolder(1) filesep fname filsep name]);
+                end
             end
         end
-        
+    end
+    
+    % Fill-in methods
+    methods
         function Step(e)    % Proceed with the iith step of the experiment e. Overwrite this in mce subclasses.
             disp(['Step ' num2str(e.config.current) ' -> ' num2str(e.config.current + 1)]);
 %             switch ii
@@ -324,8 +331,16 @@ classdef mcExperiment < mcInput
 %             end
         end
         
-        function data = Analysis(e)
+        function data = Analysis(~)
             data = NaN;
+        end
+    end
+    
+    methods
+        function crf(e, ~, ~)   % Close request function
+            if ~isvalid(e)
+                closereq
+            end
         end
         
         function push1_Callback(e, ~, ~, ii)

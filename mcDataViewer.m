@@ -183,7 +183,7 @@ classdef mcDataViewer < mcSavableClass
             gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
             gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
 
-            javadisable = false;
+            javadisable = true;
             
             if javadisable
                 jtabgroup = findjobj(utg);
@@ -289,7 +289,7 @@ classdef mcDataViewer < mcSavableClass
                             jj = jj + 1;
                             ii = ii + 1;        % Use the ii from the axis loop.
 
-                            levellist = strcat('pixel  ', strread(num2str(1:sizeInput), ' %s')');  % Returns the pixels in 'pixel ##' form.
+                            levellist = strcat('pixel #', strread(num2str(1:sizeInput), '%s')');  % Returns the pixels in 'pixel ##' form.
 
                             for tab = [gui.tabs.t1d gui.tabs.t2d]
                                 % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
@@ -355,6 +355,10 @@ classdef mcDataViewer < mcSavableClass
             gui.tabs.gray.Units = 'pixels';
             tabpos = gui.tabs.gray.Position;
             inputlist = cellfun(@(x)({x.name()}), gui.data.r.i.i);
+            
+            if gui.data.r.plotMode > 1 && gui.data.r.l.type(gui.data.r.l.layer == 2) > 0  % If we are in 2D, and using an input axis,
+                gui.r.input = gui.data.r.l.type(gui.data.r.l.layer == 2);     % Then the selected input must be that input axis.
+            end
 
             uicontrol(  'Parent', gui.tabs.gray,...
                         'Style', 'text',...
@@ -367,7 +371,7 @@ classdef mcDataViewer < mcSavableClass
                                                 'String', inputlist,...
                                                 'Units', 'pixels',...
                                                 'Position', [tabpos(3)/3 tabpos(4)-bh+os 2*tabpos(3)/3 - bh bh],...
-                                                'Value', 1);
+                                                'Value', gui.r.input);
 
 
             gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);

@@ -16,7 +16,7 @@ classdef mciDaughter < mcInput
             config.class = 'mciDaughter';
 
             config.kind.kind =          'daughter';
-            config.kind.name =          'Daughter of mcInstrument';
+            config.kind.name =          ['Daughter of ' parent.name '(.' var ')'];
             config.kind.shouldNormalize = false;
             
             config.kind.extUnits =      units;
@@ -78,16 +78,16 @@ classdef mciDaughter < mcInput
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
         function Open(I)                % Do whatever neccessary to initialize the input.
-            I.s = I.config.parent;  % Temporary Fix...
+%             I.s = I.config.parent;  % Temporary Fix...
             
-%             c = I.config.parent;
+            c = I.config.parent;
             
-%             if isfield(c, 'class')
-%                 I.s = eval([c.class '(c)']);    % Make the parent...
-%                 I.s.open();                     % ...and open it.
-%             else
-%                 error('mcData(): Config given without class.');
-%             end
+            if isfield(c, 'class')
+                I.s = eval([c.class '(c)']);    % Make the parent...
+                I.s.open();                     % ...and open it.
+            else
+                error('mcData(): Config given without class.');
+            end
         end
         function Close(~)               % Do whatever neccessary to deinitialize the input.
             % Do nothing. The parent should not be closed because it might be doing something somewhere else.
@@ -99,7 +99,7 @@ classdef mciDaughter < mcInput
         end
         function data = Measure(I, ~)
             % How to incorperate integrationTime? Have a prevTime property in mcInput to compare with?
-%             I.s
+            in = I.s
 %             I.s.name
 %             I.s.prevOpt
 %             ['I.s.' I.config.var]

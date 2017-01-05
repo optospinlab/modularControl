@@ -106,6 +106,7 @@ classdef mcData < mcSavableClass
         % - r.timeIsAxis            boolean             % Flagged if time is the last axis (not currently used).
     end
     
+    % Configs
     methods (Static)
         function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
             data = mcData.PLEConfig();
@@ -300,6 +301,7 @@ classdef mcData < mcSavableClass
         end
     end
     
+    % Core Functionality
     methods
         function d = mcData(varin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
             switch nargin
@@ -414,15 +416,10 @@ classdef mcData < mcSavableClass
             % Need more checks?!
         end
         
-        function save(d)            % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
-            data = d.d; %#ok
-            save([d.d.info.fname ' ' d.d.name], 'data');
-        end
-        
         function initialize(d)      % Initializes the d.r (r for runtime) variables in the mcData object.
             if ~isfield(d.r, 'isInitialized')     % If not initialized, then intialize.
                 
-                % GENERATE INPUT RUNTIME DATA ==================================================================================
+                % GENERATE INPUT RUNTIME DATA (r.i) ============================================================================
                 
                 % First, figure out how many inputs we have.
                 d.r.i.num =             length(d.d.inputs);
@@ -457,12 +454,6 @@ classdef mcData < mcSavableClass
                     c = d.d.inputs{ii};     % Get the config for the iith input.
                     
                     if isfield(c, 'class')
-%                         disp('mcData!!!')
-%                         d.d.inputs{ii}
-%                         d.d.inputs{ii}.class
-%                         c
-%                         c.class
-%                         disp('\mcData!!!')
                         d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config.
                     else
                         error('mcData(): Config given without class. ');
@@ -472,10 +463,6 @@ classdef mcData < mcSavableClass
                     d.r.i.dimension(ii) =   sum(c.kind.sizeInput > 1);
                     d.r.i.size{ii} =        c.kind.sizeInput(c.kind.sizeInput > 1);   % Poor naming.
                     d.r.i.length(ii) =      prod(d.r.i.size{ii});
-                    
-%                     dim = d.r.i.dimension(ii)
-%                     s = d.r.i.size{ii}
-%                     l = d.r.i.length(ii)
                     
                     d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();        % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
                     d.r.i.nameUnit{ii} =        d.r.i.i{ii}.nameUnits();        %                                       ...'name (units)' form
@@ -489,8 +476,6 @@ classdef mcData < mcSavableClass
                     d.r.l.type =    [d.r.l.type     ones(1, d.r.i.dimension(ii))*ii];   % To identify which input the above belongs to, the index is tagged with the number of the axis.
                     d.r.l.scans =   [d.r.l.scans    d.r.i.i{ii}.getInputScans()];
                     d.r.l.lengths = [d.r.l.lengths  d.r.i.size{ii}];                    % Will this be a cell?
-                    
-%                     ll = d.r.l.lengths;
                     
                     if d.r.i.dimension(ii) > length(inputLetters)
                         error('mcData.initialize(): Too many dimensions on this input. Not enough letters to describe each dimension.')
@@ -515,7 +500,7 @@ classdef mcData < mcSavableClass
                 d.r.i.numInputAxes = sum(d.r.i.dimension);
                 
 
-                % GENERATE AXIS RUNTIME DATA ===================================================================================
+                % GENERATE AXIS RUNTIME DATA (r.a) =============================================================================
                 
                 % Again, first figure out how many axes we have.
                 d.r.a.num =         length(d.d.axes);
@@ -561,7 +546,7 @@ classdef mcData < mcSavableClass
                     d.r.a.scansInternalUnits{ii} = arrayfun(d.r.a.a{ii}.config.kind.ext2intConv, d.d.scans{ii});
                 end
                 
-                % GENERATE LAYER RUNTIME DATA ==================================================================================
+                % GENERATE LAYER RUNTIME DATA (r.l) ============================================================================
                 
                 d.r.l.name =        [justname       d.r.l.name];
                 d.r.l.nameUnit =    [d.r.a.nameUnit d.r.l.nameUnit];
@@ -580,13 +565,8 @@ classdef mcData < mcSavableClass
                 % Then, add mcAxis info to the layer information...
                 d.r.l.axis =    [ones( 1, d.r.a.num) d.r.l.axis];
                 d.r.l.type =    [zeros(1, d.r.a.num) d.r.l.type];
-%                 type = d.r.l.type
-%                 d.r.l.length =  [d.r.a.length d.r.i.length];    % Not sure why this is here...
                 d.r.l.lengths = [d.r.a.length  d.r.l.lengths];
                 d.r.l.scans =   [d.d.scans d.r.l.scans];
-                
-%                 ll = d.r.l.lengths
-%                 s = d.r.l.scans
                 
                 % Index weight is best described by an example: If one has a 5x4x3 matrix, then incrimenting the x axis
                 %   increases the linear index (the index if the matrix was streached out) by one. Incrimenting the y axis
@@ -595,7 +575,7 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
-                for ii = 2:(d.r.a.num + d.r.i.numInputAxes) % Not sure about this line!!!
+                for ii = 2:(d.r.a.num)% + d.r.i.numInputAxes) % Not sure about this line!!!
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 
@@ -868,7 +848,24 @@ classdef mcData < mcSavableClass
             end
         end
     end
+    
+    % Additional Functionality
+    methods
+        function save(d)                % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
+            data = d.d; %#ok
+            save([d.d.info.fname ' ' d.d.name], 'data');
+        end
+        
+        function str = indexName()      % Brief name corresponding to current index (the point in axis-space that is currently being measured)
+            d.index
+        end
+        
+        function str = indexNameVerb()  % More elaborate version of the above.
+            
+        end
+    end
 end
+
 
 
 

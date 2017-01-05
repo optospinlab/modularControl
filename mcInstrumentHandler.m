@@ -29,6 +29,7 @@ classdef mcInstrumentHandler < handle
         % No properties.
     end
 
+    % Private methods
     methods (Static, Access=private)
         function val = params(newval)
             persistent params;      % Apparently, this persistent workaround is the best way to get one instance of a variable for an entire class.
@@ -39,43 +40,70 @@ classdef mcInstrumentHandler < handle
         end
     end
 
+    % Public methods
     methods (Static)
-        function ver = version()
-            ver = [0 51];
+        function ver = version()    % Gives the version of modularControl. Will set to [1 0] upon first stable release.
+            ver = [0 55];           % Commit number.
         end
         function tf = open()
             tf = true;
             
-            params = mcInstrumentHandler.params();
+            params = mcInstrumentHandler.params();      % This line gets the class-wide variable stored in the above private method. This would be called a 
             
-            if ~isfield(params, 'open')
-                disp('Opening mcInstrumentHandler');
+            if ~isfield(params, 'open')                 % If this is the first time modularControl has been opened on this instance of matlab (or mcInstrumentHandler has been edited).
+                
+                % Ridiculous introduction.
+                disp('Welcome to:')
+                disp(' ')
+                disp('    ============================')
+                disp('     ||    modularControl    ||')
+                disp('    ============================')
+                disp(' ')
+                disp('Sensational quote of the day:')
+                disp(' ')
+                
+                quotes = {  'WHEN IN DOUBT, AUTOMATE.',...
+                            'Beware of the gremlins.',...
+                            'Never, ever, alow physicists around animals.',...
+                            'Pain is a conserved quantity. Concentrate the pain now for a painfree day!',...
+                            'Never trust Ed.',...
+                            'That doesn''t look like anything to me...',...
+                            'For health and happiness, join the Fu Lab Running Group!'  };
+                        
+                q = randi(length(quotes));
+                
+                disp(['    "' quotes{q} '"']);  % An amusing Easter egg...
+                
+                % Reset everything (should I also clear all and close all?)
                 delete(instrfind)
-%                 clear all
-%                 close all
                 if ~ismac       % Change eventually...
                     daqreset
                 end
                 
+                % This is neccessary for spooky undocumented java stuff.
                 if ~usejava('swing')
                     error('mcInstrumentHandler: Java Swing import failed. Not sure what to do if this happens.');
                 end
                 
+                % Set some vars
                 params.open =                       true;
                 
-                params.instruments =                {};
-                params.shouldEmulate =              false;
-                params.saveDirManual =              '';
+                params.instruments =                {};         % Stores the mcAxes and mcInputs (separate these for simplicity?)
+                params.shouldEmulate =              false;      % Whether or not the axes and inputs should initialize in emulation. Makes this more accessable in the future?
+                
+                params.saveDirManual =              '';         % Empty string, to be loaded from .mat or chosen by GUI. Described in detail below.
                 params.saveDirBackground =          '';
+                
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
                 params.registeredInstruments =      [];
                 
-                params.warningLight =               [];     % Future...
-                params.defaultVideo =               [];
+                params.warningLight =               [];         % (Future...) Stores the axis that controls a light to warn when data is being taken.
+                params.defaultVideo =               [];         % 
                 
                 tf = false;                                         % Return whether the mcInstrumentHandler was open...
                 
+                % Figure out what system we are on (e.g. diamond room computer, etc.)
                 [~, params.hostname] = system('hostname');          % A quick way to identify which system we are on.
                 
                 params.hostname(params.hostname < 32 | params.hostname >= 127) = '';    % Make sure only sensible characters are used (e.g. no \0)
@@ -83,7 +111,8 @@ classdef mcInstrumentHandler < handle
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
                 params.hostname = strrep(params.hostname, ':', '_');
 
-                params.mcFolder = pwd;                                              % Get the current directory
+                % Find the modularControl folder (neccessary for saving configs).
+                params.mcFolder = pwd;      % First, guess that our current directory is the modularControl folder
                 
                 while isempty(params.mcFolder) || ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
                     mcDialog('For everything to function properly, mcInstrumentHandler must know where the modularControl folder is. Press OK to select that folder.', 'Need modularControl folder');
@@ -91,6 +120,7 @@ classdef mcInstrumentHandler < handle
                     params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl folder.');
                 end
 
+                
                 mcInstrumentHandler.params(params);                 % Load persistant params with this so that we don't risk infinite recursion when we try to add the time axis (see below).
                 
                 params.instruments = {mcAxis(mcAxis.timeConfig())}; % Initialize with only time (which is special)
