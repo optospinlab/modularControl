@@ -262,6 +262,15 @@ classdef mcData < mcSavableClass
             data.intTimes = integrationTime;
             data.flags.circTime = true;
         end
+        function data = sineConfiguration(axis_, range, pixels, period)    
+            data.class = 'mcData';
+            
+            data.axes =     {axis_, mcAxis()};
+            data.scans =    {range*.5*sin(linspace(0, 2*pi, pixels)) + axis_.getX(), 1:10};
+            data.inputs =   {mciDAQ(mciDAQ.counterConfig)};
+            data.intTimes = period/pixels;
+            data.flags.circTime = true;
+        end
         function data = inputConfig(input, length, integrationTime)    
             data.class = 'mcData';
             
@@ -575,7 +584,7 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
-                for ii = 2:(d.r.a.num)% + d.r.i.numInputAxes) % Not sure about this line!!!
+                for ii = 2:(d.r.a.num + d.r.i.numInputAxes) % Not sure about this line!!!
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 
@@ -720,10 +729,10 @@ classdef mcData < mcSavableClass
                     end
 
                     if d.d.flags.circTime && toIncriment(end)     % If we have run out of bounds and need to circshift...
-                        disp('Time is axis and overrun!');
+%                         disp('Time is axis and overrun!');
 
                         for ii = 1:d.r.i.num        % ...for every input, circshift the data forward one 'time' forward.
-                            d.d.data{ii} = circshift(d.d.data{ii}, [0, max(d.l.weight(d.r.l.type == 0 | d.r.l.type == ii))]);
+                            d.d.data{ii} = circshift(d.d.data{ii}, [0, max(d.r.l.weight(d.r.l.type == 0 | d.r.l.type == ii))]);
                         end
 
                         toIncriment(end) = false;   % and pretend that the time axis does not need to be incrimented.

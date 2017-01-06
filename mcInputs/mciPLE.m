@@ -100,7 +100,9 @@ classdef mciPLE < mcInput
 %             s = upPixels + config.downPixels
             config.kind.sizeInput =    [upPixels + config.downPixels, 1];
 %             config.kind
+            
 
+            disp('Please note that 16 scans will be taken at each pixel (undocumented feature)');
             config.scansPerBin = 16;        % Bins per scan
             b = config.scansPerBin;
             

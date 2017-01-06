@@ -43,6 +43,27 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             config.keyStep =            1;
             config.joyStep =            1;
         end
+        function config = promptBrightSpotConfig()
+            fname = '';
+            
+            while ~exist(fname, 'file')
+                [FileName, PathName] = uigetfile('*.mat', 'Select the (2D) mcData .mat file to find bright spots upon.');
+                if isnumeric(FileName)
+                    fname = '';
+                else
+                    fname = [PathName FileName];
+%                     fname
+                end
+            end
+            
+            d = load(fname);
+            
+            if ~isfield(d, 'data')
+                error('mcaPoints.promptBrightSpotConfig(): Given .mat file does not contain the struct data; is not compatible.')
+            end
+            
+            config = mcaPoints.brightSpotConfig(d.data);
+        end
         function config = brightSpotConfig(d)
             config.class =              'mcaPoints';
             
@@ -73,8 +94,8 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
 
             [~, sorted] = sort(cat(1, r.MaxIntensity), 'descend');
 
-            xind = round(c(sorted,1));
-            yind = round(c(sorted,2));
+            xind = round(c(sorted,2));
+            yind = round(c(sorted,1));
 
             xvals = d.scans{1}(xind);
             yvals = d.scans{2}(yind);
@@ -95,7 +116,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             config.A =      [xvals; yvals; min(halfsquarewid*unitx, limit); min(halfsquarewid*unity, limit)];
             
-            config.axes =   d.axes(2:-1:1);
+            config.axes =   d.axes(1:2); %(2:-1:1);
             
 %             a1 = d.axes{1}
 %             a2 = d.axes{2}
@@ -271,7 +292,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             xlabel(a.axes_{1}.nameUnits());
             ylabel(a.axes_{2}.nameUnits());
             
-            imagesc(a.config.src.scans{1}, a.config.src.scans{2}, a.config.src.data{1});
+            imagesc(a.config.src.scans{1}, a.config.src.scans{2}, a.config.src.data{1}');
             
             ax.YDir = 'normal';
             

@@ -158,7 +158,7 @@ classdef mcDataViewer < mcSavableClass
             gui.cf.Position = [100,100,300,700];
             gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
             gui.cf.Resize = 'off';      % Change? What if there are too many axes?
-            gui.cf.Name = ['mcData - ' gui.data.d.name];
+            gui.cf.Name = [gui.data.d.name];
 
             jj = 1;
             kk = 1;

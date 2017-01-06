@@ -109,6 +109,7 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
 * Properly debug (e.g. PID loop settings) image feedback in `mcVideo`.
 * Make a GUI for loaded instruments (`uitable`?).
 * Add ungrouped axis controls to `mcUserInput`.
+* Fix mcData return to position when unpausing scan.
 
 
 
