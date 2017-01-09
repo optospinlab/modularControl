@@ -54,7 +54,7 @@ classdef mcProcessedData < handle
 %             pd.parent.r == pd
 %             pd
 %             pd.parent.dataViewer.r
-            if pd.parent.dataViewer.isRGB || pd.parent.dataViewer.r == pd
+            if (pd.parent.dataViewer.isRGB || pd.parent.dataViewer.r == pd) && pd.parent.dataViewer.shouldPlot
                 switch pd.parent.r.plotMode
                     case {0, 'histogram'}
                         % Do nothing.

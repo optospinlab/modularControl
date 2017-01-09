@@ -177,7 +177,7 @@ classdef mcDataViewer < mcSavableClass
 %                 end
 %             end
             
-            utg = uitabgroup('Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
+            utg = uitabgroup('Parent', gui.cf, 'Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
             gui.tabs.t0  = uitab('Parent', utg, 'Title', '0D');
             gui.tabs.t1d = uitab('Parent', utg, 'Title', '1D');
             gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
@@ -345,7 +345,7 @@ classdef mcDataViewer < mcSavableClass
                 end
             end
 
-            ltg = uitabgroup('Position', [0, .05, 1, .475], 'SelectionChangedFcn', @gui.lowerTabSwitch_Callback);
+            ltg = uitabgroup('Parent', gui.cf, 'Position', [0, .05, 1, .475], 'SelectionChangedFcn', @gui.lowerTabSwitch_Callback);
             gui.tabs.gray = uitab('Parent', ltg, 'Title', 'Gray');
             gui.tabs.rgb =  uitab('Parent', ltg, 'Title', 'RGB');
 
@@ -547,6 +547,8 @@ classdef mcDataViewer < mcSavableClass
             end
             
             pause(.05);
+            
+            gui.listenToAxes_Callback();
                     
             if shouldAquire
                 gui.data.aquire();
@@ -658,7 +660,7 @@ classdef mcDataViewer < mcSavableClass
                 delete(gui.cf);
                 delete(gui.df);
 
-                pause(1);                       % Remove this eventually.
+                pause(.1);                       % Remove this eventually.
 
     %             delete(gui.data);               % This should be done gracefully.
                 gui.data = '';
@@ -1116,22 +1118,47 @@ classdef mcDataViewer < mcSavableClass
                         layer(layer == 2 & ~changed) = 3;
                     end
                     
-                    if sum(changed == 1) && gui.data.r.l.type(changed) > 0 && gui.data.r.l.layer(changed) < 3    % If an input axis was changed to X or Y,
-                        otherAxis = ~changed & layer < 3;
+%                     if sum(changed == 1) && gui.data.r.l.type(changed) > 0 && gui.data.r.l.layer(changed) < 3    % If an input axis was changed to X or Y,
+%                         otherAxis = ~changed & layer < 3;
+%                         
+%                         if gui.data.r.l.type(otherAxis) > 0                                 % If the other axis (Y or X) is an input axis...
+%                             if gui.data.r.l.type(changed) ~= gui.data.r.l.type(otherAxis)   % ...from a different input...
+%                                 % Next check if the changed input axis is compatible with 2D
+%                                 if gui.data.r.l.type(1) == 0        % If there is an mcAxis availible...
+%                                     layer(1) = layer(otherAxis);    % ...then, set that axis to X or Y (whatever the incompatible input axis is)...
+%                                     layer(otherAxis) = 3;           % ...and set the incompatible input axis to mean.
+%                                 elseif sum(gui.data.r.l.type == gui.data.r.l.type(changed)) > 1     % Otherwise, if this is greater than a 1D input,
+%                                     layer(find(gui.data.r.l.type == gui.data.r.l.type(changed) & ~changed, 1)) = layer(otherAxis);  % Do the same as above, except with the lowest compatible input axis.
+%                                     layer(otherAxis) = 3;
+%                                 else
+%                                     error('2D incompatible with this input. Fix not implemented.');
+%                                 end
+%                             end
+%                         end
+%                     end
                         
-                        if gui.data.r.l.type(otherAxis) > 0                                 % If the other axis (Y or X) is an input axis...
-                            if gui.data.r.l.type(changed) ~= gui.data.r.l.type(otherAxis)   % ...from a different input...
-                                % Next check if the changed input axis is compatible with 2D
-                                if gui.data.r.l.type(1) == 0        % If there is an mcAxis availible...
-                                    layer(1) = layer(otherAxis);    % ...then, set that axis to X or Y (whatever the incompatible input axis is)...
-                                    layer(otherAxis) = 3;           % ...and set the incompatible input axis to mean.
-                                elseif sum(gui.data.r.l.type == gui.data.r.l.type(changed)) > 1     % Otherwise, if this is greater than a 1D input,
-                                    layer(find(gui.data.r.l.type == gui.data.r.l.type(changed) & ~changed, 1)) = layer(otherAxis);  % Do the same as above, except with the lowest compatible input axis.
-                                    layer(otherAxis) = 3;
-                                else
-                                    error('2D incompatible with this input. Fix not implemented.');
-                                end
+                    if any(layer(~relevant) < 3)        % If any non-relevant axes are X or Y,
+                        if sum(relevant) >= 2           % And if there are enough axes to replace the non-relavant X and/or Y,
+                            if any(layer(~relevant) == 1)   % If the X axis is not relevant,
+                                x = find(relevant & layer ~= 2, 1, 'first');   % Find the first relevant and non-y axis. Unless there was a horrible bug, we can find a non-empty x.
+
+                                layer(layer == 1) = 3;      % Set X to mean
+                                layer(x) = 1;
                             end
+
+                            if any(layer(~relevant) == 2)   % If the Y axis is not relevant,
+                                y = find(relevant & layer ~= 1, 1, 'first');   % Find the first relevant and non-y axis. Unless there was a horrible bug, we can find a non-empty y.
+
+                                layer(layer == 2) = 3;      % Set X to mean
+                                layer(y) = 2;
+                            end
+
+                            for ii = 1:length(layer)
+                                gui.params2D.chooseList{ii}.Value = layer(ii);
+                            end
+                        else
+                            warning('2D incompatible with this input.');
+                            input = max(gui.data.r.l.type(layer == 1 || layer == 2));
                         end
                     end
                     
@@ -1145,7 +1172,7 @@ classdef mcDataViewer < mcSavableClass
             end
             
             gui.r.input = input;
-            in = gui.r.input
+%             in = gui.r.input
             gui.data.r.l.layer = layer;
             
             if any(layer ~= layerPrev) || gui.data.r.plotMode == 0
@@ -1193,7 +1220,7 @@ classdef mcDataViewer < mcSavableClass
                         end
                     case 2
 %                         layerPrev
-%                         layer = cellfun(@(x)(x.Value), gui.params2D.chooseList)
+                        layer = cellfun(@(x)(x.Value), gui.params2D.chooseList);
 %                         type = gui.data.r.l.type
 %                         input
 %                         relevant
@@ -1238,6 +1265,8 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function upperTabSwitch_Callback(gui, src, event)
+            gui.shouldPlot = false;
+            
             switch event.NewValue
                 case gui.tabs.t1d
                     gui.data.r.plotMode = 1;
@@ -1254,6 +1283,7 @@ classdef mcDataViewer < mcSavableClass
 %                         gui.data.r.plotMode = 3;
                     end
                 case gui.tabs.t0
+                    gui.shouldPlot = true;
                     gui.data.r.plotMode = 0;
                     gui.plotData_Callback(0,0);
             end
@@ -1264,9 +1294,9 @@ classdef mcDataViewer < mcSavableClass
 %                 gui.menus.menu.Enable = 'off';
 %             end
             
+            gui.shouldPlot = true;
             gui.updateLayer_Callback(0, 0);
             gui.makeProperVisibility();
-            gui.shouldPlot = true;
             gui.plotSetup();
             gui.listenToAxes_Callback(0, 0);
         end

@@ -309,8 +309,8 @@ classdef mcData < mcSavableClass
 %             data.inputs{1}.config
 %             data.inputs{2}.config
 %             data.inputs{3}.config
-            
-            pause(5);
+%             
+%             pause(5);
             
             data.intTimes = [1 1 1];
         end
@@ -627,12 +627,16 @@ classdef mcData < mcSavableClass
                 
                 % If there isn't already a name, generate one:
                 if isempty(d.d.name)
-                    for ii = 1:(d.r.i.num-1)
-                        d.d.name = [d.d.name '[' d.d.inputs{ii}.name '], '];
-                    end
+                    if d.r.i.num > 5
+                        for ii = 1:(d.r.i.num-1)
+                            d.d.name = [d.d.name '[' d.d.inputs{ii}.name '], '];
+                        end
 
-                    d.d.name = [d.d.name '[' d.d.inputs{d.r.i.num}.name ']'];
-                    
+                        d.d.name = [d.d.name '[' d.d.inputs{d.r.i.num}.name ']'];
+                    else
+                        d.d.name = ['[' num2str(d.r.i.num) ' inputs]'];
+                    end
+                        
                     if ~isempty(d.r.a.a)
                         d.d.name = [d.d.name ' vs '];
 
@@ -778,9 +782,10 @@ classdef mcData < mcSavableClass
                 d.save()
                     
                 if d.r.scanMode == -2       % If dataviewer was quit.
-%                     for ii = 1:d.r.i.num
-%                         d.r.i.i{ii}.close();
-%                     end
+                    for ii = nums
+                        d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
+                    end
+                    
                     delete(d);
                 elseif d.r.scanMode ~= 2                % If the scan was unexpectantly stopped.
 %                     display('...set to paused...');

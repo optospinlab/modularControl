@@ -566,13 +566,13 @@ classdef mcUserInput < mcSavableClass
                                     'String', axis_.getX(),...
                                     'Value',  axis_.getX(),...
                                     'Position', [pp+pw/3, y, pw/4, bh],...
-                                    'Callback', {@toggle_Callback, axis_.config.kind.extRange},...
+                                    'Callback', {@toggle_Callback, @axis_.goto, axis_.config.kind.extRange},...
                                     'tooltipString', axis_.nameRange());
                 get = uicontrol(    'Parent', parent,...
                                     'Style', 'push',...
                                     'String', 'Get',...
                                     'Position', [2*pp+pw/3 + pw/4, y, pw/6, bh],...
-                                    'Callback', {@setToggleWithValue_Callback, @()(~~axis_.getX()), edit});
+                                    'Callback', {@setEditWithValue_Callback, @()(~~axis_.getX()), edit});
 %                 goto = uicontrol(   'Parent', parent,...
 %                                     'Style', 'push',...
 %                                     'String', 'Goto',...
@@ -684,8 +684,11 @@ function limit_Callback(src, ~, range)
     src.Value = val;
 end
 
-function toggle_Callback(src, ~, range)
-
+function toggle_Callback(src, ~, func, range)
+    src.Enable = 'off';
+    drawnow;
+    src.Enable = 'on';
+    func(range(src.Value + 1));
 end
 
 function setEditWithValue_Callback(src, ~, val, edit)
@@ -706,6 +709,16 @@ function evalFuncWithEditValue_Callback(src, ~, func, edit)
     func(str2double(edit.String));
 end
 
-
-
+            
+function sendEditsToTopOfUIStack(obj)
+    for child = obj.Children
+        if isfield(child, 'Style')
+            if strcmpi(child.Style, 'edit')
+                uistack(child, 'top');
+            end
+        else
+            sendEditsToTopOfUIStack(obj);       % Recurse.
+        end
+    end
+end
 
