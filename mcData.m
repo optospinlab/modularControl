@@ -109,7 +109,7 @@ classdef mcData < mcSavableClass
     % Configs
     methods (Static)
         function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
-            data = mcData.PLEConfig();
+            data = mcData.testConfiguration();
 %             data = mcData.singleSpectrumConfiguration();
 %             data = mcData.counterConfiguration(mciSpectrum(), 10, 1);
 %             data = mcData.xyzConfiguration2();
@@ -290,10 +290,29 @@ classdef mcData < mcSavableClass
         function data = testConfiguration()
             data.class = 'mcData';
             
-            data.axes =     {};
-            data.scans =    {};
-            data.inputs =   {mciFunction(mciFunction.testConfig())};
-            data.intTimes = 1;
+            data.axes =     {mcAxis()};
+            data.scans =    {1:10};
+            c1 = mciFunction.randConfig(); c1.name = 'Test 1';
+            c2 = mciFunction.testConfig(); c2.name = 'Test 2';
+            c3 = mciFunction.testConfig(); c3.name = 'Test 3';
+            
+            data.inputs =   {mciFunction(c1), mciFunction(c2), mciFunction(c3)};
+            
+%             c1
+%             c2
+%             c3
+%             
+%             data.inputs{1}
+%             data.inputs{2}
+%             data.inputs{3}
+%             
+%             data.inputs{1}.config
+%             data.inputs{2}.config
+%             data.inputs{3}.config
+            
+            pause(5);
+            
+            data.intTimes = [1 1 1];
         end
         function data = singleSpectrumConfiguration()
             data.class = 'mcData';
@@ -456,8 +475,10 @@ classdef mcData < mcSavableClass
                 d.r.l.name =            [];
                 d.r.l.nameUnit =        [];
                 d.r.l.unit =            [];
+                
+                % See above for the definitions of these variables.
                     
-                inputLetters = 'XYZUVW';
+                inputLetters = 'XYZUVW';    % Figure out what we should call the ith input axis (the 1st is called X, the second Y, ... )
 
                 for ii = 1:d.r.i.num        % Now fill the empty lists
                     c = d.d.inputs{ii};     % Get the config for the iith input.
@@ -567,7 +588,7 @@ classdef mcData < mcSavableClass
                 d.r.plotMode = max(min(2, d.r.a.num + d.r.i.numInputAxes),1);   % Plotmode takes in 0 = histogram (no axes); 1 = 1D (1 axis); ...
                 
                 % And choose which axes to initially display.
-                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(2 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
+                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(1 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
                 n = min(d.r.plotMode, d.r.a.num + d.r.i.numInputAxes);
                 d.r.l.layer(1:n) = 1:n;                                                     % Then the first two axes are set to 1 and 2 (for 2D).
                 
@@ -584,7 +605,7 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
-                for ii = 2:(d.r.a.num + d.r.i.numInputAxes) % Not sure about this line!!!
+                for ii = 2:(d.r.a.num + 1) % Not sure about this line!!!        % replace? d.r.i.numInputAxes
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 

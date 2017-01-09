@@ -62,8 +62,8 @@ classdef mciFunction < mcInput
     %   more-complex methods defined in mcInput.
     methods
         % EQ
-        function tf = Eq(I, b)      % Check if a foriegn object (b) is equal to this input object (I).
-            tf = isequal(I.config.fnc,  b.config.fnc);
+        function tf = Eq(~, ~)      % Check if a foriegn object (b) is equal to this input object (I).
+            tf = false;     % Function inputs are benign.   %isequal(I.config.fnc,  b.config.fnc);
         end
         
         % NAME

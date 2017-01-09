@@ -73,6 +73,7 @@ classdef mcInstrumentHandler < handle
                 q = randi(length(quotes));
                 
                 disp(['    "' quotes{q} '"']);  % An amusing Easter egg...
+                disp(' ')
                 
                 % Reset everything (should I also clear all and close all?)
                 delete(instrfind)
@@ -485,8 +486,8 @@ classdef mcInstrumentHandler < handle
             if strcmp(toolBarMode, 'saveopen')
                 t = uitoolbar(f, 'tag', 'FigureToolBar');
                 
-                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open_new.png')));
-                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open.png')));
+                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadGUI_Callback,    'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open_new.png')));
+%                 uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open.png')));
                 
 %                 uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile(params.mcFolder, 'icons','file_save_as.png')));
                 uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', iconRead(fullfile(params.mcFolder, 'icons','file_save.png')));

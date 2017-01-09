@@ -80,7 +80,7 @@ classdef mciDaughter < mcInput
         function Open(I)                % Do whatever neccessary to initialize the input.
 %             I.s = I.config.parent;  % Temporary Fix...
             
-            c = I.config.parent;
+            c = I.config.parent
             
             if isfield(c, 'class')
                 I.s = eval([c.class '(c)']);    % Make the parent...
@@ -88,6 +88,8 @@ classdef mciDaughter < mcInput
             else
                 error('mcData(): Config given without class.');
             end
+            
+            in = I.s
         end
         function Close(~)               % Do whatever neccessary to deinitialize the input.
             % Do nothing. The parent should not be closed because it might be doing something somewhere else.
@@ -98,7 +100,11 @@ classdef mciDaughter < mcInput
             data = I.Measure(integrationTime);
         end
         function data = Measure(I, ~)
-            % How to incorperate integrationTime? Have a prevTime property in mcInput to compare with?
+            % How to incorporate integrationTime? Have a prevTime property in mcInput to compare with?
+            I.isOpen
+            
+            I.config.parent.config
+            
             in = I.s
 %             I.s.name
 %             I.s.prevOpt

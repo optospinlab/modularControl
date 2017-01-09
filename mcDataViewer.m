@@ -159,24 +159,24 @@ classdef mcDataViewer < mcSavableClass
             gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
             gui.cf.Resize = 'off';      % Change? What if there are too many axes?
             gui.cf.Name = [gui.data.d.name];
-
-            jj = 1;
-            kk = 1;
-
-            inputNames1D = {};
-            inputNames2D = {};
-
-            for ii = 1:gui.data.r.i.num
-                if gui.data.r.i.dimension(ii) == 1
-                    inputNames1D{jj} = gui.data.r.i.name{ii};
-                    jj = jj + 1;
-                end
-                if gui.data.r.i.dimension(ii) == 2
-                    inputNames2D{kk} = gui.data.r.i.name{ii};
-                    kk = kk + 1;
-                end
-            end
-
+            
+%             jj = 1;
+%             kk = 1;
+% 
+%             inputNames1D = {};
+%             inputNames2D = {};
+% 
+%             for ii = 1:gui.data.r.i.num
+%                 if gui.data.r.i.dimension(ii) == 1
+%                     inputNames1D{jj} = gui.data.r.i.name{ii};   %ok
+%                     jj = jj + 1;
+%                 end
+%                 if gui.data.r.i.dimension(ii) == 2
+%                     inputNames2D{kk} = gui.data.r.i.name{ii};   %ok
+%                     kk = kk + 1;
+%                 end
+%             end
+            
             utg = uitabgroup('Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
             gui.tabs.t0  = uitab('Parent', utg, 'Title', '0D');
             gui.tabs.t1d = uitab('Parent', utg, 'Title', '1D');
@@ -216,16 +216,19 @@ classdef mcDataViewer < mcSavableClass
             if javadisable
                 os = -5;
             else
-                os = -5 - 2*bh;
+                os = -5 - 2*bh;     %#ok
             end
 
             uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
 
+            cp = .6;    % Choose position, the x value (normalized to [0 1]) where the choose box starts
+            cw = .4;    % Choose width, the width of the choose box. should be less than or equal to 1 - cp.
+            
             gui.params1D.chooseList = cell(1, gui.data.r.a.num); % This will be longer, but we choose not to calculate.
             gui.params2D.chooseList = cell(1, gui.data.r.a.num);
 
             for ii = 1:gui.data.r.a.num
-                levellist = strcat(strread(num2str(gui.data.r.l.scans{ii}), '%s')', [' ' gui.data.r.a.a{ii}.config.kind.extUnits]);  % Returns the numbers in scans in '##.## unit' form.
+                levellist = strcat(strread(num2str(gui.data.r.l.scans{ii}), '%s')', [' ' gui.data.r.a.a{ii}.config.kind.extUnits]);  %#ok Returns the numbers in scans in '##.## unit' form.
 
                 for tab = [gui.tabs.t1d gui.tabs.t2d]
 %                         uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.a.a{kk}.nameShort(), 'String', [gui.data.d.axes{ii}.name ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
@@ -235,7 +238,7 @@ classdef mcDataViewer < mcSavableClass
                                 'TooltipString', gui.data.r.a.name{ii},...
                                 'String', [gui.data.r.l.name{ii} ': '],...
                                 'Units', 'pixels',...
-                                'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
+                                'Position', [0 tabpos(4)-bh*ii+os+ts cp*tabpos(3) bh],...
                                 'HorizontalAlignment', 'right');
 
                     if tab == gui.tabs.t1d
@@ -244,7 +247,7 @@ classdef mcDataViewer < mcSavableClass
                         axeslist = {'X', 'Y', 'Mean'};
                     end
 
-                    val = length(axeslist)+1;
+                    val = length(axeslist);
 
                     if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
                         val = 1;
@@ -256,7 +259,7 @@ classdef mcDataViewer < mcSavableClass
                                         'Style', 'popupmenu',...
                                         'String', [axeslist, levellist],...
                                         'Units', 'pixels',...
-                                        'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
+                                        'Position', [cp*tabpos(3) tabpos(4)-bh*ii+os cw*tabpos(3) bh],...
                                         'Value', val,...
                                         'Callback', @gui.updateLayer_Callback);
 
@@ -289,16 +292,16 @@ classdef mcDataViewer < mcSavableClass
                             jj = jj + 1;
                             ii = ii + 1;        % Use the ii from the axis loop.
 
-                            levellist = strcat('pixel #', strread(num2str(1:sizeInput), '%s')');  % Returns the pixels in 'pixel ##' form.
+                            levellist = strcat('pixel #', strread(num2str(1:sizeInput), '%s')');  %#ok Returns the pixels in 'pixel ##' form.
 
                             for tab = [gui.tabs.t1d gui.tabs.t2d]
                                 % Make the text in the form 'input_name X' where X can be any letter in inputLetters.
                                 uicontrol(  'Parent', tab,...
                                             'Style', 'text',...
-                                            'TooltipString', gui.data.r.i.i{kk}.nameShort(),...
+                                            'TooltipString', [inputLetters(jj) ' axis of ' gui.data.r.i.i{kk}.nameShort()],...
                                             'String', [gui.data.d.inputs{kk}.name ' ' inputLetters(jj) ': '],...
                                             'Units', 'pixels',...
-                                            'Position', [0 tabpos(4)-bh*ii+os+ts 2*tabpos(3)/3 bh],...
+                                            'Position', [0 tabpos(4)-bh*ii+os+ts cp*tabpos(3) bh],...
                                             'HorizontalAlignment', 'right');
 
 %                                     uicontrol('Parent', tab, 'Style', 'text', 'TooltipString', gui.data.r.i.name{kk}, 'String', [gui.data.r.l.name{kk + } ': '], 'Units', 'pixels', 'Position', [0 tabpos(4)-bh*ii-2*bh 2*tabpos(3)/3 bh], 'HorizontalAlignment', 'right');
@@ -309,7 +312,7 @@ classdef mcDataViewer < mcSavableClass
                                     axeslist = {'X', 'Y', 'Mean'};
                                 end
 
-                                val = length(axeslist)+1;
+                                val = length(axeslist);
 
                                 if ii == 1 && val > 1       % Sets the first and second axes (or inputs) to be the X and Y axes, while the rest are on the first layer
                                     val = 1;
@@ -321,7 +324,7 @@ classdef mcDataViewer < mcSavableClass
                                                     'Style', 'popupmenu',...
                                                     'String', [axeslist, levellist],...
                                                     'Units', 'pixels',...
-                                                    'Position', [2*tabpos(3)/3 tabpos(4)-bh*ii+os tabpos(3)/3 - bh bh],...
+                                                    'Position', [cp*tabpos(3) tabpos(4)-bh*ii+os cw*tabpos(3) bh],...
                                                     'Value', val,...
                                                     'Callback', @gui.updateLayer_Callback);
 
@@ -338,7 +341,7 @@ classdef mcDataViewer < mcSavableClass
                         end
                     end
                 else
-                    error('mcDataViewer: Input has too many dimensions... Too big for XYZUVW.');
+                    error('mcDataViewer: Input has too many dimensions... Too big for inputletters ''XYZUVW''. Fix?');
                 end
             end
 
@@ -358,6 +361,7 @@ classdef mcDataViewer < mcSavableClass
             
             if gui.data.r.plotMode > 1 && gui.data.r.l.type(gui.data.r.l.layer == 2) > 0  % If we are in 2D, and using an input axis,
                 gui.r.input = gui.data.r.l.type(gui.data.r.l.layer == 2);     % Then the selected input must be that input axis.
+%                 INPUT = gui.r.input
             end
 
             uicontrol(  'Parent', gui.tabs.gray,...
@@ -371,7 +375,8 @@ classdef mcDataViewer < mcSavableClass
                                                 'String', inputlist,...
                                                 'Units', 'pixels',...
                                                 'Position', [tabpos(3)/3 tabpos(4)-bh+os 2*tabpos(3)/3 - bh bh],...
-                                                'Value', gui.r.input);
+                                                'Value', gui.r.input,...
+                                                'Callback', @gui.updateInput_Callback);
 
 
             gui.scale.gray =    mcScalePanel(gui.tabs.gray, [(tabpos(3) - 250)/2 os+tabpos(4)-110], gui.r);
@@ -397,6 +402,7 @@ classdef mcDataViewer < mcSavableClass
             
             % Data Figure/etc --------------------------------------------------------------------------------------------------------------
             gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
+            gui.df.GraphicsSmoothing = 'on';
             hToolbar = findall(gui.df, 'tag', 'FigureToolBar');
             gui.cfToggle = uitoggletool(hToolbar, 'TooltipString', 'Control Figure', 'ClickedCallback', @gui.toggleCF_Callback, 'CData', iconRead(fullfile('icons','control_figure.png')), 'State', gui.cf.Visible);
 
@@ -485,30 +491,30 @@ classdef mcDataViewer < mcSavableClass
             gui.a.YDir = 'normal';
             
             % Menu Setup --------------------------------------------------------------------------------------------------------------
-            gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value: ~~.~~ --',                'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
-            gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
-            gui.menus.posMenu = uimenu(menu, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',  'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value: ~~.~~ --',                    'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.pixMenu = uimenu(menu, 'Label', 'Pixel: [ ~~.~~ --, ~~.~~ -- ]',      'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
+            gui.menus.posMenu = uimenu(menu, 'Label', 'Position: [ ~~.~~ --, ~~.~~ -- ]',   'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
             
             mGoto = uimenu(menu, 'Label', 'Goto');
-                mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0, 0});
-                mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1, 0});
-                mgPixL= uimenu(mGoto, 'Label', 'Selected Pixel And Layer',    'Callback', {@gui.gotoPostion_Callback, 0, 1});
-                mgPosL= uimenu(mGoto, 'Label', 'Selected Position And Layer', 'Callback', {@gui.gotoPostion_Callback, 1, 1});
+                mgPix = uimenu(mGoto, 'Label', 'Selected Pixel',    'Callback', {@gui.gotoPostion_Callback, 0, 0});                             %#ok
+                mgPos = uimenu(mGoto, 'Label', 'Selected Position', 'Callback', {@gui.gotoPostion_Callback, 1, 0});                             %#ok
+                mgPixL= uimenu(mGoto, 'Label', 'Selected Pixel And Layer',    'Callback', {@gui.gotoPostion_Callback, 0, 1});                   %#ok
+                mgPosL= uimenu(mGoto, 'Label', 'Selected Position And Layer', 'Callback', {@gui.gotoPostion_Callback, 1, 1});                   %#ok
                 
             mNorm = uimenu(menu, 'Label', 'Normalization'); %, 'Enable', 'off');
-                mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',    {@gui.minmax_Callback, 0});
-                mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',   {@gui.minmax_Callback, 1});
+                mnMin = uimenu(mNorm, 'Label', 'Set as Minimum', 'Callback',    {@gui.minmax_Callback, 0});                                     %#ok
+                mnMax = uimenu(mNorm, 'Label', 'Set as Maximum',  'Callback',   {@gui.minmax_Callback, 1});                                     %#ok
                 panel = gui.scale.gray;
-                mnNorm= uimenu(mNorm, 'Label', 'Normalize All Layers', 'Callback',    @panel.normalize_Callback);
-                mnNormT=uimenu(mNorm, 'Label', 'Normalize This Layer', 'Callback',    @gui.normalizeThis_Callback);
+                mnNorm= uimenu(mNorm, 'Label', 'Normalize All Layers', 'Callback',    @panel.normalize_Callback);                               %#ok
+                mnNormT=uimenu(mNorm, 'Label', 'Normalize This Layer', 'Callback',    @gui.normalizeThis_Callback);                             %#ok
                 
             mCount = uimenu(menu, 'Label', 'Counter'); %, 'Enable', 'off');
-                mcOpen =    uimenu(mCount, 'Label', 'Open', 'Callback',     @gui.openCounter_Callback);
+                mcOpen =    uimenu(mCount, 'Label', 'Open', 'Callback',     @gui.openCounter_Callback);                                         %#ok
                 mcOpenAt =  uimenu(mCount, 'Label', 'Open at...');
-                    mcoaPix = uimenu(mcOpenAt, 'Label', 'Selected Pixel',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 0});
-                    mcoaPos = uimenu(mcOpenAt, 'Label', 'Selected Position', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 0});
-                    mcoaPixL= uimenu(mcOpenAt, 'Label', 'Selected Pixel And Layer',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 1});
-                    mcoaPosL= uimenu(mcOpenAt, 'Label', 'Selected Position And Layer', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 1});
+                    mcoaPix = uimenu(mcOpenAt, 'Label', 'Selected Pixel',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 0});             %#ok
+                    mcoaPos = uimenu(mcOpenAt, 'Label', 'Selected Position', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 0});             %#ok
+                    mcoaPixL= uimenu(mcOpenAt, 'Label', 'Selected Pixel And Layer',    'Callback', {@gui.openCounterAtPoint_Callback, 0, 1});   %#ok
+                    mcoaPosL= uimenu(mcOpenAt, 'Label', 'Selected Position And Layer', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 1});   %#ok
             
             % Finishing --------------------------------------------------------------------------------------------------------------
             hold(gui.a, 'off');         % Why does hold need to be off?
@@ -1052,8 +1058,9 @@ classdef mcDataViewer < mcSavableClass
         
         function updateLayer_Callback(gui, src, ~)
             layerPrev = gui.data.r.l.layer;
+            input = gui.r.input;
             
-            relevant = gui.data.r.l.type == 0 | gui.data.r.l.type == gui.r.input;
+            relevant = gui.data.r.l.type == 0 | gui.data.r.l.type == gui.r.input;   % RGB case?
             
 %             other = cellfun(@(x)(x.Value), gui.params1D.chooseList(~relevant));
             
@@ -1071,7 +1078,7 @@ classdef mcDataViewer < mcSavableClass
                         changed = cellfun(@(x)(x == src), gui.params1D.chooseList);
                         
                         if any(changed & ~relevant)
-                            gui.r.input = max(gui.data.r.l.type(changed & ~relevant));  % max prevents crash in case of fringe errors.
+                            input = max(gui.data.r.l.type(changed & ~relevant));    % max prevents crash in case of fringe errors.
                         end
                         
                         layer(layer == 1 & ~changed) = 2;
@@ -1112,9 +1119,8 @@ classdef mcDataViewer < mcSavableClass
                     if sum(changed == 1) && gui.data.r.l.type(changed) > 0 && gui.data.r.l.layer(changed) < 3    % If an input axis was changed to X or Y,
                         otherAxis = ~changed & layer < 3;
                         
-                        % If the other axis (Y or X) is an input axis from a different input...
-                        if gui.data.r.l.type(otherAxis) ~= 0
-                            if gui.data.r.l.type(changed) ~= gui.data.r.l.type(otherAxis)
+                        if gui.data.r.l.type(otherAxis) > 0                                 % If the other axis (Y or X) is an input axis...
+                            if gui.data.r.l.type(changed) ~= gui.data.r.l.type(otherAxis)   % ...from a different input...
                                 % Next check if the changed input axis is compatible with 2D
                                 if gui.data.r.l.type(1) == 0        % If there is an mcAxis availible...
                                     layer(1) = layer(otherAxis);    % ...then, set that axis to X or Y (whatever the incompatible input axis is)...
@@ -1123,7 +1129,7 @@ classdef mcDataViewer < mcSavableClass
                                     layer(find(gui.data.r.l.type == gui.data.r.l.type(changed) & ~changed, 1)) = layer(otherAxis);  % Do the same as above, except with the lowest compatible input axis.
                                     layer(otherAxis) = 3;
                                 else
-                                    error('2D incompatible with this layer input. Fix not implemented.');
+                                    error('2D incompatible with this input. Fix not implemented.');
                                 end
                             end
                         end
@@ -1138,11 +1144,96 @@ classdef mcDataViewer < mcSavableClass
                     layer = layerPrev;
             end
             
+            gui.r.input = input;
+            in = gui.r.input
             gui.data.r.l.layer = layer;
             
             if any(layer ~= layerPrev) || gui.data.r.plotMode == 0
                 gui.shouldPlot = false;
                 gui.plotSetup();
+            end
+        end
+        
+        function updateInput_Callback(gui, src, ~)
+            if gui.isRGB
+                error('RGB NotImplemented');
+            else
+                layerPrev = gui.data.r.l.layer;
+                inputPrev = gui.r.input;
+            
+                input =     src.Value;
+                
+                relevant =  gui.data.r.l.type == 0 | gui.data.r.l.type == input;
+            
+                % Make sure the this choice of input is compatible with the current layer...
+                switch gui.data.r.plotMode
+                    case 1
+                        layer = cellfun(@(x)(x.Value), gui.params1D.chooseList);
+                        
+                        if any(layer == 1 & ~relevant)  % If the axis that is the x axis is not relevant (i.e. is not an input axis of the selected input or an mcAxis axis),
+                            x = find(gui.data.r.l.type == input, 1, 'first');
+                            
+                            if isempty(x)
+                                x = find(gui.data.r.l.type == 0, 1, 'first');
+                            end
+                            
+                                
+                            if isempty(x)
+                                warning('2D incompatible with this input.');
+                                src.Value = inputPrev;
+                                input =     inputPrev;
+                            end
+                            
+                            layer(layer == 1) = 2;  % Set the old X axis to mean;
+                            layer(x) = 1;           % Set the found input axis to X;
+                            
+                            for ii = 1:length(layer)
+                                gui.params1D.chooseList{ii}.Value = layer(ii);
+                            end
+                        end
+                    case 2
+%                         layerPrev
+%                         layer = cellfun(@(x)(x.Value), gui.params2D.chooseList)
+%                         type = gui.data.r.l.type
+%                         input
+%                         relevant
+                        
+                        if any(layer(~relevant) < 3)        % If any non-relevant axes are X or Y,
+                            if sum(relevant) >= 2           % And if there are enough axes to replace the non-relavant X and/or Y,
+                                if any(layer(~relevant) == 1)   % If the X axis is not relevant,
+                                    x = find(relevant & layer ~= 2, 1, 'first');   % Find the first relevant and non-y axis. Unless there was a horrible bug, we can find a non-empty x.
+                                    
+                                    layer(layer == 1) = 3;      % Set X to mean
+                                    layer(x) = 1;
+                                end
+                                
+                                if any(layer(~relevant) == 2)   % If the Y axis is not relevant,
+                                    y = find(relevant & layer ~= 1, 1, 'first');   % Find the first relevant and non-y axis. Unless there was a horrible bug, we can find a non-empty y.
+                                    
+                                    layer(layer == 2) = 3;      % Set X to mean
+                                    layer(y) = 2;
+                                end
+                            
+                                for ii = 1:length(layer)
+                                    gui.params2D.chooseList{ii}.Value = layer(ii);
+                                end
+                            else
+                                warning('2D incompatible with this input.');
+                                src.Value = inputPrev;
+                                input =     inputPrev;
+                            end
+                        end
+                    otherwise
+                        layer = layerPrev;
+                end       
+                
+                gui.r.input = input;
+                gui.data.r.l.layer = layer;
+            
+                if any(layer ~= layerPrev) || input ~= inputPrev
+                    gui.shouldPlot = false;
+                    gui.plotSetup();
+                end
             end
         end
         

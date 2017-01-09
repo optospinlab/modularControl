@@ -3,7 +3,7 @@ function PLESetupTemp()
 %     c = mcaPoints.brightSpotConfig(data);
 %     c.shouldOptimize = mciDAQ.counterConfig;
 %     c.additionalAxes = {mcaDAQ.piezoZConfig};
-    a = mcAxis %mcaPoints();
+    a = mcaDAQ; %mcAxis %mcaPoints();
     
     numScans =  20;
     
