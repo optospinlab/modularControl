@@ -7,7 +7,7 @@ function PLESetupTemp()
     
     numScans =  20;
     
-    e = mcePLE(mcePLE.customConfig(numScans));
+    e = mcePLE.customConfig(numScans);
     lenPLE =    240;
     
     c1 = mciDaughter.daughterConfig(a, 'prevOpt(1,3)', [1 1], 'um');    c1.name = 'X Offset';
@@ -37,7 +37,7 @@ function PLESetupTemp()
     
     d.axes =    {a};
     d.scans =   {1:10}; %a.config.nums};
-    d.inputs =  {i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11};
+    d.inputs =  {mcePLE(e), i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11};
     d.intTimes = NaN(size(d.inputs)); %, NaN, NaN, NaN];
     
     dv = mcDataViewer(mcData(d));

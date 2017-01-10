@@ -161,12 +161,6 @@ classdef mcAxis < mcSavableClass
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
-%             a
-%             b
-%             
-%             isvalid(a)
-%             isvalid(b)
-            
             if ~(isvalid(a) && isvalid(b))
                 tf = false; return;
             end
@@ -312,18 +306,22 @@ classdef mcAxis < mcSavableClass
         function tf = goto(a, x)    % If x is in range, makes sure axis is open, moves axis to x, and returns success.
             tf = true;
             
-            if a.inRange(x)
-                if a.open()
-                    if a.inEmulation
-                        a.GotoEmulation(x);
+            if isnan(x)
+                tf = false;
+            else
+                if a.inRange(x)
+                    if a.open()
+                        if a.inEmulation
+                            a.GotoEmulation(x);
+                        else
+                            a.Goto(x);
+                        end
                     else
-                        a.Goto(x);
+                        tf = false;
                     end
                 else
                     tf = false;
                 end
-            else
-                tf = false;
             end
         end
         

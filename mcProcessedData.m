@@ -74,7 +74,7 @@ classdef mcProcessedData < handle
                         d = pd.parent.d.data{pd.input};
 
                         for ii = nums(toMean)
-                            d = mean(d, ii);
+                            d = nanmean(d, ii);
                         end
 
                         final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 2;   % If relevant and not singleton or meaned.
@@ -112,7 +112,7 @@ classdef mcProcessedData < handle
                         d = pd.parent.d.data{pd.input};
 
                         for ii = nums(toMean)
-                            d = mean(d, ii);
+                            d = nanmean(d, ii);
                         end
 
     %                     pd.parent.r.l.layer

@@ -183,9 +183,9 @@ classdef mcDataViewer < mcSavableClass
             gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
             gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
 
-            javadisable = true;
+            javaenable = true;
             
-            if javadisable
+            if javaenable
                 jtabgroup = findjobj(utg);
                 jtabgroup(end).setEnabledAt(3,0);
                 gui.cf.Visible = 'off';
@@ -194,13 +194,13 @@ classdef mcDataViewer < mcSavableClass
             switch gui.data.r.plotMode
                 case 0
                     utg.SelectedTab = gui.tabs.t0;
-                    if javadisable
+                    if javaenable
                         jtabgroup(end).setEnabledAt(1,0);
                         jtabgroup(end).setEnabledAt(2,0);
                     end
                 case 1
                     utg.SelectedTab = gui.tabs.t1d;
-                    if javadisable
+                    if javaenable
                         jtabgroup(end).setEnabledAt(2,0);
                     end
                 case 2
@@ -213,7 +213,7 @@ classdef mcDataViewer < mcSavableClass
 
             bh = 22;
             ts = -5;
-            if javadisable
+            if javaenable
                 os = -5;
             else
                 os = -5 - 2*bh;     %#ok
@@ -349,7 +349,7 @@ classdef mcDataViewer < mcSavableClass
             gui.tabs.gray = uitab('Parent', ltg, 'Title', 'Gray');
             gui.tabs.rgb =  uitab('Parent', ltg, 'Title', 'RGB');
 
-            if javadisable
+            if javaenable
                 jtabgroup = findjobj(ltg);
                 jtabgroup(end).setEnabledAt(1,0);
                 gui.cf.Visible = 'off';
@@ -626,8 +626,35 @@ classdef mcDataViewer < mcSavableClass
                 disp('No file given...');
             end
         end
-        function loadGUI_Callback(gui, ~, ~)
+        function loadGUI_Callback(~, ~, ~)
+            [FileName, PathName] = uigetfile({'*.mat','MAT-files (*.mat)'; '*.*',  'All Files (*.*)'}, 'Pick a saved mcData .mat to load in a new window...', mcInstrumentHandler.getSaveFolder(0));
             
+            if isequal(FileName,0)
+                disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
+            else
+                c = load([PathName FileName]);
+                
+                if isfield(c, 'data')
+                    answer = 'yes';
+                
+                    if any(c.data.info.version ~= mcInstrumentHandler.version())
+                        str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
+                                ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
+                                '. This could potentially lead to version-conflict errors. Proceed anyway?'];
+                            
+                        answer = questdlg(str, 'Warning, Version Mismatch!', 'Yes', 'No', 'Yes');
+                    end
+                    
+                    switch lower(answer)
+                        case 'yes'
+                            mcDataViewer(mcData(c.data), false)    % And don't show the control window when opening...
+                        case 'no'
+                            disp('mcDataViewer.loadGUI_Callback(): File was not loaded due to version conflict...');
+                    end
+                else
+                    disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
+                end
+            end
         end
 %         function save(gui)                      % Overwrites the mcSavableClass file...
 %             
@@ -1060,9 +1087,10 @@ classdef mcDataViewer < mcSavableClass
         
         function updateLayer_Callback(gui, src, ~)
             layerPrev = gui.data.r.l.layer;
-            input = gui.r.input;
+            inputPrev = gui.r.input;
+            input =     gui.r.input;
             
-            relevant = gui.data.r.l.type == 0 | gui.data.r.l.type == gui.r.input;   % RGB case?
+            relevant =  gui.data.r.l.type == 0 | gui.data.r.l.type == gui.r.input;  % RGB case?
             
 %             other = cellfun(@(x)(x.Value), gui.params1D.chooseList(~relevant));
             
@@ -1172,7 +1200,11 @@ classdef mcDataViewer < mcSavableClass
             end
             
             gui.r.input = input;
-%             in = gui.r.input
+            
+            if input ~= inputPrev
+                gui.paramsGray.choose.Value = input;
+            end
+            
             gui.data.r.l.layer = layer;
             
             if any(layer ~= layerPrev) || gui.data.r.plotMode == 0

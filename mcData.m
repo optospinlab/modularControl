@@ -627,7 +627,7 @@ classdef mcData < mcSavableClass
                 
                 % If there isn't already a name, generate one:
                 if isempty(d.d.name)
-                    if d.r.i.num > 5
+                    if d.r.i.num < 5
                         for ii = 1:(d.r.i.num-1)
                             d.d.name = [d.d.name '[' d.d.inputs{ii}.name '], '];
                         end
@@ -639,12 +639,16 @@ classdef mcData < mcSavableClass
                         
                     if ~isempty(d.r.a.a)
                         d.d.name = [d.d.name ' vs '];
+                        
+                        if d.r.a.num < 5
+                            for ii = 1:(d.r.a.num-1)
+                                d.d.name = [d.d.name '[' d.r.l.name{ii} '], '];
+                            end
 
-                        for ii = 1:(d.r.a.num-1)
-                            d.d.name = [d.d.name '[' d.r.l.name{ii} '], '];
+                            d.d.name = [d.d.name '[' d.r.l.name{d.r.a.num} ']'];
+                        else
+                            d.d.name = ['[' num2str(d.r.a.num) ' axes]'];
                         end
-
-                        d.d.name = [d.d.name '[' d.r.l.name{d.r.a.num} ']'];
                     end
                 end
                 

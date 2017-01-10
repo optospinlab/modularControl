@@ -125,7 +125,7 @@ classdef mcExperiment < mcInput
                         'FontWeight', 'bold',...
                         'HorizontalAlign', 'left',...
                         'String', 'Command',...
-                        'TooltipString', sprintf('Buttons to interact with each step:\n\n + Aquire/Goto/etc starts the step\n + Redo returns to the step'),...
+                        'TooltipString', sprintf('Buttons to interact with each step:\n\n + Aquire / Goto / etc starts the step\n + Redo returns to the step'),...
                         'Position', [t2, p + (e.num+1)*bh, bw, bh]);
             uicontrol(  'Parent', e.f,...
                         'Style', 'text',...
@@ -154,7 +154,7 @@ classdef mcExperiment < mcInput
             e.push2 =           cell(1, e.num);
             e.proceedboxes =    cell(1, e.num);
             
-            e.config.classes =  cell(1, e.num);
+            e.config.classes =  cell(1, e.num); 'classes!'
             
             for ii = 1:e.num
                 e.doneboxes{ii} =   uicontrol(  'Parent', e.f,...
@@ -246,6 +246,8 @@ classdef mcExperiment < mcInput
         
         % MEASURE ------- The 'meat' of the input: the funtion that actually does the measurement and 'inputs' the data. Ignore integration time (with ~) if there should not be one.
         function data = Measure(e, ~)
+            e
+            e.config
             while e.config.current <= e.num
                 e.proceeding = e.proceedboxes{e.config.current}.Value;
                 e.refreshStep();
@@ -256,29 +258,28 @@ classdef mcExperiment < mcInput
                 switch lower(e.config.classes{e.config.current}(1:3))
                     case {'mcd', 'mci'}
                         e.objects{e.config.current}.df.Visible = 'on';  % Make the data figue visible,
-                        figure(e.f);    % But resore focus to the mcExperiment panel, so that we can tell whether the data figure should be closed (don't close if the data figure is selected).
+                        figure(e.f);    % But resore focus to the mcExperiment panel, so that we can tell whether the data figure should be hidden after the scan finishes (don't close if the data figure is selected).
                         
-                        e.objects{e.config.current}.data.r.scanMode = 0;    % Take a new scan (future: check for half-finished).
+                        if e.objects{e.config.current}.data.r.scanMode ~= -1    % If the scan isn't paused,
+                            e.objects{e.config.current}.data.resetData();       % Reset the data to take a new scan.
+                        end
                         
-%                         while e.objects{e.config.current}.data.r.scanMode ~= 2
                         e.objects{e.config.current}.acquire();
                         
-%                         mode1 = e.objects{e.config.current}.data.r.scanMode
-                        
-                        waitfor(e.objects{e.config.current}.data.r, 'scanMode');
-                        
-%                         mode2 = e.objects{e.config.current}.data.r.scanMode
+                        waitfor(e.objects{e.config.current}.data.r, 'scanMode');    % Wait for the status of the scan to change (e.g. to 2 = finished or -1 = paused).
                         
                         drawnow
                         pause(.1);  % Remove?
                         
-%                         if e.objects{e.config.current}.data.r.scanMode ~= 2
-%                             e.config.current = e.config.current - 1;
-                        if ~(gcf == e.objects{e.config.current}.cf || gcf == e.objects{e.config.current}.df)
-                            e.objects{e.config.current}.cf.Visible = 'off';
-                            e.objects{e.config.current}.cfToggle.State = 'off';
-                            
-                            e.objects{e.config.current}.df.Visible = 'off';
+                        if e.objects{e.config.current}.data.r.scanMode ~= 2     % If the scan didn't finish, stay on this step.
+                            e.config.current = e.config.current - 1;
+                        else                                                    % If the scan did finish, hide the figure if it isn't currently selected.
+                            if ~(gcf == e.objects{e.config.current}.cf || gcf == e.objects{e.config.current}.df)
+                                e.objects{e.config.current}.cf.Visible = 'off';
+                                e.objects{e.config.current}.cfToggle.State = 'off';
+
+                                e.objects{e.config.current}.df.Visible = 'off';
+                            end
                         end
                     case 'mca'
                         if ischar(e.config.steps{e.config.current}{3})
@@ -312,7 +313,7 @@ classdef mcExperiment < mcInput
         function save(e, name)
             for ii = 1:length(e.objects)
                 if isa(e.objects{ii}, 'mcData')
-                    e.objects.save([mcInstrumentHandler.getSaveFolder(1) filesep fname filsep name]);
+                    e.objects.save([mcInstrumentHandler.getSaveFolder(1) filesep e.fname filsep name]);
                 end
             end
         end
@@ -336,6 +337,7 @@ classdef mcExperiment < mcInput
         end
     end
     
+    % UI methods
     methods
         function crf(e, ~, ~)   % Close request function
             if ~isvalid(e)

@@ -43,7 +43,7 @@ classdef mcInstrumentHandler < handle
     % Public methods
     methods (Static)
         function ver = version()    % Gives the version of modularControl. Will set to [1 0] upon first stable release.
-            ver = [0 55];           % Commit number.
+            ver = [0 61];           % Commit number.
         end
         function tf = open()
             tf = true;
@@ -72,7 +72,7 @@ classdef mcInstrumentHandler < handle
                         
                 q = randi(length(quotes));
                 
-                disp(['    "' quotes{q} '"']);  % An amusing Easter egg...
+                disp(['    "' quotes{q} '"'])  % An amusing Easter egg...
                 disp(' ')
                 
                 % Reset everything (should I also clear all and close all?)
@@ -106,11 +106,16 @@ classdef mcInstrumentHandler < handle
                 
                 % Figure out what system we are on (e.g. diamond room computer, etc.)
                 [~, params.hostname] = system('hostname');          % A quick way to identify which system we are on.
-                
+
                 params.hostname(params.hostname < 32 | params.hostname >= 127) = '';    % Make sure only sensible characters are used (e.g. no \0)
-                
+
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
                 params.hostname = strrep(params.hostname, ':', '_');
+                
+%                 if ismac
+%                     disp(['Note: Finding a consistant computer name for a mac has proven difficult. Configs will be saved under the name of "macOS", instead of the probably-inconsistant ' params.hostname])
+%                     params.hostname = 'macOS';
+%                 end
 
                 % Find the modularControl folder (neccessary for saving configs).
                 params.mcFolder = pwd;      % First, guess that our current directory is the modularControl folder
@@ -315,33 +320,32 @@ classdef mcInstrumentHandler < handle
         % INSTRUMENT REGISTRATION
         function obj2 = register(obj)
             mcInstrumentHandler.open();
-%             if ~isfield(obj, 'config')
-%                 error('All instruments must have a config field');
-%             else
-%                 if ~isfield(obj.config, 'kind')
-%                     error('All instruments must have a config.kind field');
-%                 else
-%                     if ~isfield(obj.config.kind, 'kind')
-%                         error('All instruments must have a config.kind.kind field');
-%                     end
-%                 end
-%             end
             
             obj2 = obj;
             
             params = mcInstrumentHandler.params();
             
-            for instrument = params.instruments
-                if (isa(instrument{1}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(instrument{1}, 'mcInput') && isa(obj, 'mcInput'))
-                    if instrument{1} == obj
-                        obj2 = instrument{1};
-%                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
-                        return;
+            ii = 1;
+            
+            while ii <= length(params.instruments)
+                if isvalid(params.instruments{ii})
+                    if (isa(params.instruments{ii}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(params.instruments{ii}, 'mcInput') && isa(obj, 'mcInput'))
+                        if params.instruments{ii} == obj
+                            obj2 = params.instruments{ii};
+    %                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
+                            return;
+                        end
                     end
+                else
+                    params.instruments(ii) = [];
+                    ii = ii - 1;
                 end
+                
+                ii = ii + 1;
             end
             
-            params.instruments{length(params.instruments) + 1} = obj2;
+            params.instruments{end + 1} = obj2;
+            
             if isa(obj2, 'mcAxis') && ~strcmpi(obj2.config.kind.kind, 'manual')
                 obj2.read();
                 obj2.goto(obj2.getX());

@@ -6,8 +6,6 @@ classdef mcePLE < mcExperiment
 %   e = mcePLE(config)
 %   e.measure()
 %
-%
-%
 % Also see mcExperiment and mcInput.
 
     properties
@@ -39,7 +37,7 @@ classdef mcePLE < mcExperiment
 
             config.kind.kind =          'ple';
             config.kind.name =          'PLE';
-            config.kind.intUnits =      'GHz';          % Outputs the FWHM of the PLE peak in GHz. Outputs NaN if no peak is found
+            config.kind.extUnits =      'GHz';          % Outputs the FWHM of the PLE peak in GHz. Outputs NaN if no peak is found
             config.kind.shouldNormalize = false;        % (Not sure if this is functional.) If this variable is flagged, the measurement is subtracted from the previous and is divided by the time spent on a pixel. Not that this is done outside the measurement currently in mcData (individual calls to .measure() will not have this behavior currently)
             config.kind.sizeInput =     [1 1];          % Both the position of the peak and the FWHM of the peak are single numbers.
             
@@ -63,13 +61,13 @@ classdef mcePLE < mcExperiment
             greenDigital =  mcaDAQ.greenConfig();
             greenOD2 =      mcaDAQ.greenConfig();   greenOD2.name = 'Green OD2';    greenOD2.chn = 'Port0/Line2';
             
-            I = mciPLE();
+            PLE = mciPLE.defaultConfig();
             
             config.numScans = numScans;
-            config.upPixels = I.config.upPixels;
+            config.upPixels = PLE.upPixels;
             
             % PLE input
-            scansPLE =      mcData.inputConfig(I, numScans, 1);    % (Fake integrationTime)
+            scansPLE =      mcData.inputConfig(PLE, numScans, 1);    % (Fake integrationTime)
             
             sl = 30;    % (seconds) = Spectrum Length
             
@@ -78,9 +76,9 @@ classdef mcePLE < mcExperiment
                                     {'Green OD0',           greenOD2,       0,          'Make sure the OD2 filter is down.'};...
 %                                     {'Green On',            greenDigital,   1,          'Turn the green on so we can take a spectrum.'};...
                                     {'Spec Mirror Down',    mirror,         0,          'Move the SPCM mirror down so that we can take a spectrum.'};...
-                                    {'Spectrum',            spectrometer,   sl,         'Take a spectrum so that we know where to align the red laser.'};...
+                                    {'Spectrum',            spectrometer,   sl,         'Take a spectrum to determine whether we should see an NV with PLE.'};...
 %                                     {'Green Off',           greenDigital,   0,          'For posterity, turn the green off while we play around with the red.'};...
-%                                     {'Red On',              redSerial,      'on()',     'Turn the red laser on so we can use it.'};...
+                                    {'Red On',              redSerial,      'on()',     'Turn the red laser on so we can use it.'};...
 %                                     {'Align Red',           redSerial,      637.2,      'Set the wavelength of the red laser to be on the ZPL.'};...
 %                                     {'Red at -3V',          redAnalog,      -Inf,       'Offset -3V from the basepoint so we can verify the scan will pass through the ZPL.'};...
 %                                     {'-3V Spectrum',        spectrometer,   sl,         'Take a spectrum at -3V.'};...
@@ -93,8 +91,8 @@ classdef mcePLE < mcExperiment
                                     {'Green OD0',           greenOD2,       0,          'Make sure the OD2 filter is down.'};...
 %                                     {'Pause (.5s)',         'pause',        .5,          'Pause to make sure everything has time to flip.'};...
 %                                     {'Green OD0',           greenOD2,       0,          'Remove the OD2 filter.'};...
-%                                     {'Red Off',             redSerial,      'off()',    'Turn the red off'}  
-                                    };
+                                    {'Red Off',             redSerial,      'off()',    'Turn the red off'}  
+                                };
                                 
             config.current =    1;                          % Current step
             config.autoProDef = true;                       % Default value for the autoproceed checkboxes.
@@ -133,6 +131,7 @@ classdef mcePLE < mcExperiment
         function data = Analysis(e)
             %
             e.aPLE =            e.objects{6}.d.data;
+            data =              e.aPLE;
             e.aSpec =           e.objects{3}.d.data;
 
             %
