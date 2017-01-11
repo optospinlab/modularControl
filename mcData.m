@@ -791,6 +791,8 @@ classdef mcData < mcSavableClass
                     end
                     
                     delete(d);
+                elseif d.r.scanMode == 0                % If the data was reset mid-scan,
+                    d.resetData();                      % Reset again to make sure that the last scan wasn't saved (improve this?).
                 elseif d.r.scanMode ~= 2                % If the scan was unexpectantly stopped.
 %                     display('...set to paused...');
                     d.r.scanMode = -1;

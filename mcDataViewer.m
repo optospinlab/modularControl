@@ -385,20 +385,21 @@ classdef mcDataViewer < mcSavableClass
             gui.scale.g =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-210], gui.g);
             gui.scale.b =       mcScalePanel(gui.tabs.rgb,  [(tabpos(3) - 250)/2 os+tabpos(4)-310], gui.b);
 
-            gui.scanButton = uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, 1, .05], 'Callback', @gui.scanButton_Callback);
+            gui.scanButton =    uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, .75, .05],   'Callback', @gui.scanButton_Callback);
+            gui.resetButton =   uicontrol('Parent', gui.cf, 'String', 'Reset', 'Style', 'push', 'Units', 'normalized', 'Position', [.75, 0, .25, .05], 'Callback', @gui.resetButton_Callback);
 
-            if shouldAquire     % Expand upon this in the future
-                gui.data.r.scanMode = 1;                      % Set as scanning
-                gui.scanButton.String = 'Pause';
-            else
-                if gui.data.r.scanMode == 0                   % If new
-                    gui.scanButton.String = 'Scan';
-                elseif gui.data.r.scanMode == -1              % If paused
-                    gui.scanButton.String = 'Continue'; 
-                elseif gui.data.r.scanMode == 2               % If finished
-                    gui.scanButton.String = 'Rescan';
-                end
+%             if shouldAquire     % Expand upon this in the future
+%                 gui.data.r.scanMode = 1;                      % Set as scanning
+%                 gui.scanButton.String = 'Pause';
+%             else
+            if gui.data.r.scanMode == 0                   % If new
+                gui.scanButton.String = 'Start';
+            elseif gui.data.r.scanMode == -1              % If paused
+                gui.scanButton.String = 'Continue'; 
+            elseif gui.data.r.scanMode == 2               % If finished
+                gui.scanButton.String = 'Rescan';
             end
+%             end
             
             % Data Figure/etc --------------------------------------------------------------------------------------------------------------
             gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
@@ -551,7 +552,8 @@ classdef mcDataViewer < mcSavableClass
             gui.listenToAxes_Callback();
                     
             if shouldAquire
-                gui.data.aquire();
+                gui.scanButton_Callback(gui, 0, 0);
+%                 gui.data.aquire();
             end
         end
         
@@ -726,6 +728,11 @@ classdef mcDataViewer < mcSavableClass
                     gui.data.aquire();
             end
 %             mode5 = gui.data.r.scanMode
+        end
+        function resetButton_Callback(gui, ~, ~)
+            gui.data.r.scanMode = 0;
+            gui.data.resetData();
+            gui.scanButton.String = 'Start';
         end
         
         function tf = acquire(gui)
