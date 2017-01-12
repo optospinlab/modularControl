@@ -42,6 +42,7 @@ classdef mcDataViewer < mcSavableClass
         menus = [];
         tabs = [];
         scanButton = [];
+        resetButton = [];
         scale = [];
         
         listeners = [];
@@ -552,7 +553,7 @@ classdef mcDataViewer < mcSavableClass
             gui.listenToAxes_Callback();
                     
             if shouldAquire
-                gui.scanButton_Callback(gui, 0, 0);
+                gui.scanButton_Callback(0, 0);
 %                 gui.data.aquire();
             end
         end
@@ -731,6 +732,7 @@ classdef mcDataViewer < mcSavableClass
         end
         function resetButton_Callback(gui, ~, ~)
             gui.data.r.scanMode = 0;
+            gui.data.r.aquiring = false;
             gui.data.resetData();
             gui.scanButton.String = 'Start';
         end

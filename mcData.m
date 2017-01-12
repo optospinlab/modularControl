@@ -783,15 +783,16 @@ classdef mcData < mcSavableClass
                     d.r.s = [];
                 end
                 
-                d.save()
+%                 mode = d.r.scanMode
                     
-                if d.r.scanMode == -2       % If dataviewer was quit.
+                if d.r.scanMode == -2       % If dataviewer was quit midscan.
                     for ii = nums
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
                     
                     delete(d);
                 elseif d.r.scanMode == 0                % If the data was reset mid-scan,
+%                     'reset!'
                     d.resetData();                      % Reset again to make sure that the last scan wasn't saved (improve this?).
                 elseif d.r.scanMode ~= 2                % If the scan was unexpectantly stopped.
 %                     display('...set to paused...');
@@ -821,6 +822,8 @@ classdef mcData < mcSavableClass
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
                 end
+                
+                d.save();
             end
         end
         function aquire1D(d, jj)
