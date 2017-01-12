@@ -51,77 +51,88 @@ classdef mcProcessedData < handle
         end
         
         function process(pd)
-            switch pd.parent.r.plotMode
-                case {0, 'histogram'}
-                    % Do nothing.
-                    pd.parent.dataViewer.plotData_Callback(0,0);
-                case {1, '1D'}
-                    selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
-                    
-                    if ~(selTypeX == 0 || selTypeX == pd.input)
-                        error('mcProcessedData.proccess(): mcDataViewer should prevent this from happening')
-                    end
-                    
-                    relevant =      pd.parent.r.l.type == 0 | pd.parent.r.l.type == pd.input;
-                    
-                    nums =          1:length(pd.parent.r.l.layer);
-                    toMean =        relevant & pd.parent.r.l.layer == 2;
-                    
-                    d = pd.parent.d.data{pd.input};
-                    
-                    for ii = nums(toMean)
-                        d = mean(d, ii);
-                    end
+%             pd.parent.r == pd
+%             pd
+%             pd.parent.dataViewer.r
+            if (pd.parent.dataViewer.isRGB || pd.parent.dataViewer.r == pd) && pd.parent.dataViewer.shouldPlot
+                switch pd.parent.r.plotMode
+                    case {0, 'histogram'}
+                        % Do nothing.
+                        pd.parent.dataViewer.plotData_Callback(0,0);
+                    case {1, '1D'}
+                        selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
 
-                    final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 2;   % If relevant and not singleton or meaned.
+                        if ~(selTypeX == 0 || selTypeX == pd.input)
+                            error('mcProcessedData.proccess(): mcDataViewer should prevent this from happening')
+                        end
 
-                    d = squeeze(d); % Remove singleton dimensions (whether natural or meaned).
-                    
-                    nums =          1:length(final);
-                    axisXindex = nums(pd.parent.r.l.layer(final) == 1);
-                    
-                    pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 2, axisXindex) );
-                case {2, '2D'}
-                    selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
-                    selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2);
-                    
-                    if isempty(selTypeX) || isempty(selTypeY)
-                        warning('mcProcessedData(): Layer has not updated properly...');
-                        return;
-                    end
-                    
-                    if ~(selTypeX == 0 || selTypeX == pd.input) || ~(selTypeY == 0 || selTypeY == pd.input)
-                        error('mcProcessedData.proccess(): mcDataViewer should prevent this from happening')
-                    end
-                    
-                    relevant =      pd.parent.r.l.type == 0 | pd.parent.r.l.type == pd.input;
-                    
-                    nums =          1:length(pd.parent.r.l.layer);
-                    toMean =        relevant & pd.parent.r.l.layer == 3;
-                    
-                    d = pd.parent.d.data{pd.input};
-                    
-                    for ii = nums(toMean)
-                        d = mean(d, ii);
-                    end
-                    
-%                     pd.parent.r.l.layer
-%                     pd.parent.r.l.lengths
-%                     relevant
+                        relevant =      pd.parent.r.l.type == 0 | pd.parent.r.l.type == pd.input;
 
-                    final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 3;   % If relevant and not singleton or meaned.
+                        nums =          1:length(pd.parent.r.l.layer);
+                        toMean =        relevant & pd.parent.r.l.layer == 2;
 
-                    d = squeeze(d); % Remove singleton dimensions (whether natural or meaned).
-                    
-                    nums =          1:length(final);
-                    axisXindex = nums(pd.parent.r.l.layer(final) == 1);
-                    axisYindex = nums(pd.parent.r.l.layer(final) == 2);
-                    
-                    pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 3, axisXindex, axisYindex) );
-                case {3, '3D'}
-                    error('3D NotImplemented');
-                otherwise
-                    error('Plotmode not recognized...');
+                        d = pd.parent.d.data{pd.input};
+
+                        for ii = nums(toMean)
+                            d = nanmean(d, ii);
+                        end
+
+                        final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 2;   % If relevant and not singleton or meaned.
+
+                        d = squeeze(d); % Remove singleton dimensions (whether natural or meaned).
+
+                        nums =          1:length(final);
+                        axisXindex = nums(pd.parent.r.l.layer(final) == 1);
+
+                        pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 2, axisXindex) );
+                    case {2, '2D'}
+                        selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
+                        selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2);
+%                         in = pd.input
+%                         l = pd.parent.r.l.layer
+%                         t = pd.parent.r.l.type
+
+                        if isempty(selTypeX) || isempty(selTypeY)
+                            warning('mcProcessedData(): Layer has not updated properly...');
+                            return;
+                        end
+
+%                         tx = selTypeX == 0 || selTypeX == pd.input
+%                         ty = selTypeY == 0 || selTypeY == pd.input
+
+                        if ~(selTypeX == 0 || selTypeX == pd.input) || ~(selTypeY == 0 || selTypeY == pd.input)
+                            error('mcProcessedData.proccess(): mcDataViewer should prevent this from happening')
+                        end
+
+                        relevant =      pd.parent.r.l.type == 0 | pd.parent.r.l.type == pd.input;
+
+                        nums =          1:length(pd.parent.r.l.layer);
+                        toMean =        relevant & pd.parent.r.l.layer == 3;
+
+                        d = pd.parent.d.data{pd.input};
+
+                        for ii = nums(toMean)
+                            d = nanmean(d, ii);
+                        end
+
+    %                     pd.parent.r.l.layer
+    %                     pd.parent.r.l.lengths
+    %                     relevant
+
+                        final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 3;   % If relevant and not singleton or meaned.
+
+                        d = squeeze(d); % Remove singleton dimensions (whether natural or meaned).
+
+                        nums =          1:length(final);
+                        axisXindex = nums(pd.parent.r.l.layer(final) == 1);
+                        axisYindex = nums(pd.parent.r.l.layer(final) == 2);
+
+                        pd.data = d( getIndex(pd.parent.r.l.lengths(final), pd.parent.r.l.layer(final) - 3, axisXindex, axisYindex) );
+                    case {3, '3D'}
+                        error('3D NotImplemented');
+                    otherwise
+                        error('Plotmode not recognized...');
+                end
             end
         end
     end

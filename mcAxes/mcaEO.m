@@ -1,3 +1,4 @@
+
 classdef (Sealed) mcaEO < mcAxis
 % mcaEO controls the (Edmonds Optics?) Z objective peizo in Brynn's microscope (untested!).
 %
@@ -98,7 +99,3 @@ classdef (Sealed) mcaEO < mcAxis
         end
     end
 end
-
-
-
-

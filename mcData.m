@@ -106,9 +106,10 @@ classdef mcData < mcSavableClass
         % - r.timeIsAxis            boolean             % Flagged if time is the last axis (not currently used).
     end
     
+    % Configs
     methods (Static)
         function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
-            data = mcData.PLEConfig();
+            data = mcData.testConfiguration();
 %             data = mcData.singleSpectrumConfiguration();
 %             data = mcData.counterConfiguration(mciSpectrum(), 10, 1);
 %             data = mcData.xyzConfiguration2();
@@ -261,6 +262,15 @@ classdef mcData < mcSavableClass
             data.intTimes = integrationTime;
             data.flags.circTime = true;
         end
+        function data = sineConfiguration(axis_, range, pixels, period)    
+            data.class = 'mcData';
+            
+            data.axes =     {axis_, mcAxis()};
+            data.scans =    {range*.5*sin(linspace(0, 2*pi, pixels)) + axis_.getX(), 1:10};
+            data.inputs =   {mciDAQ(mciDAQ.counterConfig)};
+            data.intTimes = period/pixels;
+            data.flags.circTime = true;
+        end
         function data = inputConfig(input, length, integrationTime)    
             data.class = 'mcData';
             
@@ -280,10 +290,29 @@ classdef mcData < mcSavableClass
         function data = testConfiguration()
             data.class = 'mcData';
             
-            data.axes =     {};
-            data.scans =    {};
-            data.inputs =   {mciFunction(mciFunction.testConfig())};
-            data.intTimes = 1;
+            data.axes =     {mcAxis()};
+            data.scans =    {1:10};
+            c1 = mciFunction.randConfig(); c1.name = 'Test 1';
+            c2 = mciFunction.testConfig(); c2.name = 'Test 2';
+            c3 = mciFunction.testConfig(); c3.name = 'Test 3';
+            
+            data.inputs =   {mciFunction(c1), mciFunction(c2), mciFunction(c3)};
+            
+%             c1
+%             c2
+%             c3
+%             
+%             data.inputs{1}
+%             data.inputs{2}
+%             data.inputs{3}
+%             
+%             data.inputs{1}.config
+%             data.inputs{2}.config
+%             data.inputs{3}.config
+%             
+%             pause(5);
+            
+            data.intTimes = [1 1 1];
         end
         function data = singleSpectrumConfiguration()
             data.class = 'mcData';
@@ -300,6 +329,7 @@ classdef mcData < mcSavableClass
         end
     end
     
+    % Core Functionality
     methods
         function d = mcData(varin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
             switch nargin
@@ -414,15 +444,10 @@ classdef mcData < mcSavableClass
             % Need more checks?!
         end
         
-        function save(d)            % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
-            data = d.d; %#ok
-            save([d.d.info.fname ' ' d.d.name], 'data');
-        end
-        
         function initialize(d)      % Initializes the d.r (r for runtime) variables in the mcData object.
             if ~isfield(d.r, 'isInitialized')     % If not initialized, then intialize.
                 
-                % GENERATE INPUT RUNTIME DATA ==================================================================================
+                % GENERATE INPUT RUNTIME DATA (r.i) ============================================================================
                 
                 % First, figure out how many inputs we have.
                 d.r.i.num =             length(d.d.inputs);
@@ -450,19 +475,15 @@ classdef mcData < mcSavableClass
                 d.r.l.name =            [];
                 d.r.l.nameUnit =        [];
                 d.r.l.unit =            [];
+                
+                % See above for the definitions of these variables.
                     
-                inputLetters = 'XYZUVW';
+                inputLetters = 'XYZUVW';    % Figure out what we should call the ith input axis (the 1st is called X, the second Y, ... )
 
                 for ii = 1:d.r.i.num        % Now fill the empty lists
                     c = d.d.inputs{ii};     % Get the config for the iith input.
                     
                     if isfield(c, 'class')
-%                         disp('mcData!!!')
-%                         d.d.inputs{ii}
-%                         d.d.inputs{ii}.class
-%                         c
-%                         c.class
-%                         disp('\mcData!!!')
                         d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config.
                     else
                         error('mcData(): Config given without class. ');
@@ -472,10 +493,6 @@ classdef mcData < mcSavableClass
                     d.r.i.dimension(ii) =   sum(c.kind.sizeInput > 1);
                     d.r.i.size{ii} =        c.kind.sizeInput(c.kind.sizeInput > 1);   % Poor naming.
                     d.r.i.length(ii) =      prod(d.r.i.size{ii});
-                    
-%                     dim = d.r.i.dimension(ii)
-%                     s = d.r.i.size{ii}
-%                     l = d.r.i.length(ii)
                     
                     d.r.i.name{ii} =            d.r.i.i{ii}.nameShort();        % Generate the name of the inputs in... ...e.g. 'name (dev:chn)' form
                     d.r.i.nameUnit{ii} =        d.r.i.i{ii}.nameUnits();        %                                       ...'name (units)' form
@@ -489,8 +506,6 @@ classdef mcData < mcSavableClass
                     d.r.l.type =    [d.r.l.type     ones(1, d.r.i.dimension(ii))*ii];   % To identify which input the above belongs to, the index is tagged with the number of the axis.
                     d.r.l.scans =   [d.r.l.scans    d.r.i.i{ii}.getInputScans()];
                     d.r.l.lengths = [d.r.l.lengths  d.r.i.size{ii}];                    % Will this be a cell?
-                    
-%                     ll = d.r.l.lengths;
                     
                     if d.r.i.dimension(ii) > length(inputLetters)
                         error('mcData.initialize(): Too many dimensions on this input. Not enough letters to describe each dimension.')
@@ -515,7 +530,7 @@ classdef mcData < mcSavableClass
                 d.r.i.numInputAxes = sum(d.r.i.dimension);
                 
 
-                % GENERATE AXIS RUNTIME DATA ===================================================================================
+                % GENERATE AXIS RUNTIME DATA (r.a) =============================================================================
                 
                 % Again, first figure out how many axes we have.
                 d.r.a.num =         length(d.d.axes);
@@ -561,7 +576,7 @@ classdef mcData < mcSavableClass
                     d.r.a.scansInternalUnits{ii} = arrayfun(d.r.a.a{ii}.config.kind.ext2intConv, d.d.scans{ii});
                 end
                 
-                % GENERATE LAYER RUNTIME DATA ==================================================================================
+                % GENERATE LAYER RUNTIME DATA (r.l) ============================================================================
                 
                 d.r.l.name =        [justname       d.r.l.name];
                 d.r.l.nameUnit =    [d.r.a.nameUnit d.r.l.nameUnit];
@@ -573,20 +588,15 @@ classdef mcData < mcSavableClass
                 d.r.plotMode = max(min(2, d.r.a.num + d.r.i.numInputAxes),1);   % Plotmode takes in 0 = histogram (no axes); 1 = 1D (1 axis); ...
                 
                 % And choose which axes to initially display.
-                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(2 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
+                d.r.l.layer = ones(1,  d.r.a.num + d.r.i.numInputAxes)*(1 + d.r.plotMode);  % e.g. for 2D, the layer is initially set to all 3s.
                 n = min(d.r.plotMode, d.r.a.num + d.r.i.numInputAxes);
                 d.r.l.layer(1:n) = 1:n;                                                     % Then the first two axes are set to 1 and 2 (for 2D).
                 
                 % Then, add mcAxis info to the layer information...
                 d.r.l.axis =    [ones( 1, d.r.a.num) d.r.l.axis];
                 d.r.l.type =    [zeros(1, d.r.a.num) d.r.l.type];
-%                 type = d.r.l.type
-%                 d.r.l.length =  [d.r.a.length d.r.i.length];    % Not sure why this is here...
                 d.r.l.lengths = [d.r.a.length  d.r.l.lengths];
                 d.r.l.scans =   [d.d.scans d.r.l.scans];
-                
-%                 ll = d.r.l.lengths
-%                 s = d.r.l.scans
                 
                 % Index weight is best described by an example: If one has a 5x4x3 matrix, then incrimenting the x axis
                 %   increases the linear index (the index if the matrix was streached out) by one. Incrimenting the y axis
@@ -595,7 +605,7 @@ classdef mcData < mcSavableClass
                 d.r.l.weight =  [ones(1,  d.r.a.num) d.r.l.weight];    
                 
                 % Make index weight according to the above specification.
-                for ii = 2:(d.r.a.num + d.r.i.numInputAxes) % Not sure about this line!!!
+                for ii = 2:(d.r.a.num + 1) % Not sure about this line!!!        % replace? d.r.i.numInputAxes
                     d.r.l.weight(ii:end) = d.r.l.weight(ii:end) * d.r.a.length(ii-1);
                 end
                 
@@ -617,20 +627,28 @@ classdef mcData < mcSavableClass
                 
                 % If there isn't already a name, generate one:
                 if isempty(d.d.name)
-                    for ii = 1:(d.r.i.num-1)
-                        d.d.name = [d.d.name '[' d.d.inputs{ii}.name '], '];
-                    end
-
-                    d.d.name = [d.d.name '[' d.d.inputs{d.r.i.num}.name ']'];
-                    
-                    if ~isempty(d.r.a.a)
-                        d.d.name = ['[' d.d.name '] vs '];
-
-                        for ii = 1:(d.r.a.num-1)
-                            d.d.name = [d.d.name '[' d.r.l.name{ii} '], '];
+                    if d.r.i.num < 5
+                        for ii = 1:(d.r.i.num-1)
+                            d.d.name = [d.d.name '[' d.d.inputs{ii}.name '], '];
                         end
 
-                        d.d.name = [d.d.name '[' d.r.l.name{d.r.a.num} ']'];
+                        d.d.name = [d.d.name '[' d.d.inputs{d.r.i.num}.name ']'];
+                    else
+                        d.d.name = ['[' num2str(d.r.i.num) ' inputs]'];
+                    end
+                        
+                    if ~isempty(d.r.a.a)
+                        d.d.name = [d.d.name ' vs '];
+                        
+                        if d.r.a.num < 5
+                            for ii = 1:(d.r.a.num-1)
+                                d.d.name = [d.d.name '[' d.r.l.name{ii} '], '];
+                            end
+
+                            d.d.name = [d.d.name '[' d.r.l.name{d.r.a.num} ']'];
+                        else
+                            d.d.name = ['[' num2str(d.r.a.num) ' axes]'];
+                        end
                     end
                 end
                 
@@ -740,10 +758,10 @@ classdef mcData < mcSavableClass
                     end
 
                     if d.d.flags.circTime && toIncriment(end)     % If we have run out of bounds and need to circshift...
-                        disp('Time is axis and overrun!');
+%                         disp('Time is axis and overrun!');
 
                         for ii = 1:d.r.i.num        % ...for every input, circshift the data forward one 'time' forward.
-                            d.d.data{ii} = circshift(d.d.data{ii}, [0, max(d.l.weight(d.r.l.type == 0 | d.r.l.type == ii))]);
+                            d.d.data{ii} = circshift(d.d.data{ii}, [0, max(d.r.l.weight(d.r.l.type == 0 | d.r.l.type == ii))]);
                         end
 
                         toIncriment(end) = false;   % and pretend that the time axis does not need to be incrimented.
@@ -765,13 +783,17 @@ classdef mcData < mcSavableClass
                     d.r.s = [];
                 end
                 
-                d.save()
+%                 mode = d.r.scanMode
                     
-                if d.r.scanMode == -2       % If dataviewer was quit.
-%                     for ii = 1:d.r.i.num
-%                         d.r.i.i{ii}.close();
-%                     end
+                if d.r.scanMode == -2       % If dataviewer was quit midscan.
+                    for ii = nums
+                        d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
+                    end
+                    
                     delete(d);
+                elseif d.r.scanMode == 0                % If the data was reset mid-scan,
+%                     'reset!'
+                    d.resetData();                      % Reset again to make sure that the last scan wasn't saved (improve this?).
                 elseif d.r.scanMode ~= 2                % If the scan was unexpectantly stopped.
 %                     display('...set to paused...');
                     d.r.scanMode = -1;
@@ -800,6 +822,8 @@ classdef mcData < mcSavableClass
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
                 end
+                
+                d.save();
             end
         end
         function aquire1D(d, jj)
@@ -868,7 +892,24 @@ classdef mcData < mcSavableClass
             end
         end
     end
+    
+    % Additional Functionality
+    methods
+        function save(d)                % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
+            data = d.d; %#ok
+            save([d.d.info.fname ' ' d.d.name], 'data');
+        end
+        
+        function str = indexName()      % Brief name corresponding to current index (the point in axis-space that is currently being measured)
+            d.index
+        end
+        
+        function str = indexNameVerb()  % More elaborate version of the above.
+            
+        end
+    end
 end
+
 
 
 

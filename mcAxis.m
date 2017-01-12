@@ -161,7 +161,7 @@ classdef mcAxis < mcSavableClass
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
-            if ~(isvalid(a) || isvalid(b))
+            if ~(isvalid(a) && isvalid(b))
                 tf = false; return;
             end
             
@@ -276,7 +276,7 @@ classdef mcAxis < mcSavableClass
             tf = true;
 %             display('reading.');
             
-            if a.open();
+            if a.open()
                 if a.inEmulation
 %                     display('inEmulation');
                     a.ReadEmulation();
@@ -306,18 +306,22 @@ classdef mcAxis < mcSavableClass
         function tf = goto(a, x)    % If x is in range, makes sure axis is open, moves axis to x, and returns success.
             tf = true;
             
-            if a.inRange(x)
-                if a.open()
-                    if a.inEmulation
-                        a.GotoEmulation(x);
+            if isnan(x)
+                tf = false;
+            else
+                if a.inRange(x)
+                    if a.open()
+                        if a.inEmulation
+                            a.GotoEmulation(x);
+                        else
+                            a.Goto(x);
+                        end
                     else
-                        a.Goto(x);
+                        tf = false;
                     end
                 else
                     tf = false;
                 end
-            else
-                tf = false;
             end
         end
         
@@ -345,18 +349,39 @@ classdef mcAxis < mcSavableClass
         end
         
         function wait(a)            % Wait for the axis to reach the target value.
-            a.read();               % Removed possibility of delay if the axis is already there but has not been read...
+            % Generalize this!
+            
+            a.read();               % Remove possibility of delay if the axis is already there but has not been read...
                 
-            if strcmpi(a.config.kind.kind, 'grid')  % If it is a virtual grid axis...
-                a.config.grid.wait();               % ...then use the virtual grid wait() function.
-            elseif  strcmpi(a.config.kind.kind, 'time')
-                % Do nothing.
-            else
-                while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
-                    a.read();
-                    pause(.1);
-                end
+            switch a.config.kind.kind
+                case 'grid'
+                    a.config.grid.wait();               % ...then use the virtual grid wait() function.
+                case {'time', 'aptcontrol'}
+                    % Do nothing.
+                otherwise
+                    while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
+                        a.read();
+                        pause(.1);
+                    end
             end
+            
+%             if strcmpi(a.config.kind.kind, 'grid')  % If it is a virtual grid axis...
+%                 a.config.grid.wait();               % ...then use the virtual grid wait() function.
+%             elseif  strcmpi(a.config.kind.kind, 'time')
+%                 % Do nothing.
+%             else
+%                 if strcmpi(a.config.kind.kind, 'aptcontrol')
+%                     while round(mod(a.x - a.xt, 360), 3) ~= 0
+%                         a.read();
+%                         pause(.1);
+%                     end
+%                 else
+%                     while a.x ~= a.xt       % Make it a 'difference less than tolerance'?
+%                         a.read();
+%                         pause(.1);
+%                     end
+%                 end
+%             end
         end
         
         function info = getInfo(a)  % (Currently unused)

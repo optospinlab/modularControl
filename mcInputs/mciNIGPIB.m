@@ -1,8 +1,9 @@
 classdef mciNIGPIB < mcInput
 % mciNIGPIB connects to National Instruments USB to GPIB connectors. Currently, the only GPIB
-% instruments that we care about connection to are the Newport powermeters.
+% instruments that we care about connection to are the Newport powermeters. Use NIMAX to identify
+% the appropriate primary and secondary addresses.
 %
-% Also see mcaTemplate and mcAxis.
+% Also see mciTemplate and mcInput.
 %
 % Status: Finished. Mostly uncommented.
 
@@ -26,7 +27,7 @@ classdef mciNIGPIB < mcInput
             config.kind.shouldNormalize = false;                % If this variable is flagged, the measurement is subtracted from the previous and is divided by the time spent on a pixel. Not that this is done outside the measurement currently in mcData (individual calls to .measure() will not have this behavior currently)
             config.kind.sizeInput =    [1 1];
             
-            config.chn = 'A';
+            config.chn = 'B';
             config.primaryAddress = 5;
         end
     end
@@ -56,11 +57,11 @@ classdef mciNIGPIB < mcInput
             str = [I.config.name ' (' I.config.chn ':' num2str(I.config.primaryAddress) ')'];
         end
         function str = NameVerb(I)
-            str = [I.config.name ' (NIGPIB Connection with port ' I.config.chn ')'];
+            str = [I.config.name ' (NIGPIB connection on channel ' I.config.chn ' and with primary address ' num2str(I.config.primaryAddress) ')'];
         end
         
         function Open(I)
-            I.s = instrfind('Type', 'gpib', 'BoardIndex', 0, 'PrimaryAddress', I.config.primaryAddress, 'Tag', '');
+            I.s = instrfind('Type', 'gpib', 'BoardIndex', 0, 'PrimaryAddress', I.config.primaryAddress); %, 'Tag', '');
             
             if isempty(I.s)                                     % Create the GPIB object if it does not exist
                 I.s = gpib('NI', 0, I.config.primaryAddress);
@@ -81,8 +82,11 @@ classdef mciNIGPIB < mcInput
         end
         function data = Measure(I, ~)
             fprintf(I.s, ['R_' I.config.chn '?']);  % Send the command.
-            pause(0.5);                             % Is it neccessary to wait this long?
-            data = fscanf(I.s);                     % Get the power.
+            pause(0.2);                             % Wait for the powermeter to process and reply (wait longer?)
+            str = fscanf(I.s);                      % Get the power.
+            
+            % Now convert to numeric... (error check this!)
+            data = eval(str);
         end
     end
     

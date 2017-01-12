@@ -47,70 +47,61 @@ classdef mcSavableClass < handle
 
             save(fname, 'config');
         end
-%         function save(obj, fname)
-%             obj.makeClassFolder();
-%             config = obj.config;
-% %             if exist(fname, 'file')
-% %                 save(fname, 'config');
-% %             elseif exist([mcInstrumentHandler.getConfigFolder() class(obj) filesep fname], 'file')
-%                 save([mcInstrumentHandler.getConfigFolder() class(obj) filesep fname], 'config');
-% %             else
-% %                 warning([class(obj) ': filename not understood.']);
-% %             end
+        
+        function saveGUI_Callback(obj, ~, ~)
+            obj.makeClassFolder();
+            [FileName, PathName] = uiputfile('*.mat', 'Save Config As', [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat']);
+            if FileName ~= 0
+                config = obj.config;
+                save([PathName FileName], 'config');
+            end
+        end
+        
+%         function interpretConfig(obj, config)
+%             if ischar(config)
+%                 obj.load(config);
+%             elseif isstruct(config)
+%                 obj.config = config;
+%             end
 %         end
-        function saveGUI_Callback(obj, ~, ~)        % Customize this if neccessary in the daughter class (e.g. saving a .png or a folder of data)
-%             questdlg('Config saving not fully implemented... Sorry.', 'Config Saving Not Implemented', 'Okay', 'Okay');
-
-            if true
-                obj.makeClassFolder();
-                [FileName, PathName] = uiputfile('*.mat', 'Save Config As', [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat']);
-                if FileName ~= 0
-                    config = obj.config;
-                    save([PathName FileName], 'config');
-                end
-            end
-        end
         
-        function interpretConfig(obj, config)
-            if ischar(config)
-                obj.load(config);
-            elseif isstruct(config)
-                obj.config = config;
-            end
-        end
-        
-        function load(obj, fname)
-            if ~exist(fname, 'file')   % If the file initially doesn't exist, try looking in the class's path.
-                fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep fname];
-            end
-            
-            if exist(fname, 'file')
-                config2 = load(fname);
-                obj.config = config2.config;
-                obj.config.src = fname;
-            else
-                warning([class(obj) '.load(fname): The file "' fname '" given to load does not exist.']);
-            end
-        end
+%         function load(obj, fname)
+%             if ~exist(fname, 'file')   % If the file initially doesn't exist, try looking in the class's path.
+%                 fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep fname];
+%             end
+%             
+%             if exist(fname, 'file')
+%                 config2 = load(fname);
+%                 obj.config = config2.config;
+%                 obj.config.src = fname;
+%             else
+%                 warning([class(obj) '.load(fname): The file "' fname '" given to load does not exist.']);
+%             end
+%         end
+%         function loadGUI_Callback(obj, ~, ~)
+% %             questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
+%             if true
+%                 obj.makeClassFolder();
+%                 [FileName, PathName] = uigetfile('*.mat', 'Load Config', [mcInstrumentHandler.getConfigFolder() class(obj)]);
+%                 obj.load([PathName FileName]);
+% %                 if FileName ~= 0
+% %                     config2 = load([PathName FileName]);
+% %                     obj.config = config2.config;
+% %                     obj.config.src = [PathName FileName];
+% %                 end
+%             end
+%         end
         function loadGUI_Callback(obj, ~, ~)
 %             questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
-            if true
-                obj.makeClassFolder();
-                [FileName, PathName] = uigetfile('*.mat', 'Load Config', [mcInstrumentHandler.getConfigFolder() class(obj)]);
-                obj.load([PathName FileName]);
-%                 if FileName ~= 0
-%                     config2 = load([PathName FileName]);
-%                     obj.config = config2.config;
-%                     obj.config.src = [PathName FileName];
-%                 end
-            end
-        end
-        function loadNewGUI_Callback(obj, ~, ~)
-%             questdlg('Config loading not fully implemented... Sorry.', 'Config Loading Not Implemented', 'Okay', 'Okay');
-            if true
-                newobj = eval([class(obj) '()']);
-                newobj.loadGUI_Callback(0, 0);
-            end
+%             if true
+            obj.makeClassFolder();
+            [FileName, PathName] = uigetfile('*.mat', ['Load Config For ' class(obj)], [mcInstrumentHandler.getConfigFolder() class(obj)]);
+
+            config2 = load([PathName FileName]);    % Load the new config.
+            c = config2.config;                     %#ok
+
+            eval([class(obj) '(c)']);               % Make new object
+%             end
         end
     end
 end

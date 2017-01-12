@@ -16,7 +16,7 @@ classdef mciDaughter < mcInput
             config.class = 'mciDaughter';
 
             config.kind.kind =          'daughter';
-            config.kind.name =          'Daughter of mcInstrument';
+            config.kind.name =          ['Daughter of ' parent.name '(.' var ')'];
             config.kind.shouldNormalize = false;
             
             config.kind.extUnits =      units;
@@ -43,7 +43,7 @@ classdef mciDaughter < mcInput
             config.var =    var;
             
             % Naming
-            config.name = [parent.config.name ' (' config.var ')'];
+            config.name = [parent.name ' (' config.var ')'];
         end
     end
     
@@ -55,7 +55,10 @@ classdef mciDaughter < mcInput
             else
                 I.construct(varin);
             end
+            
             I = mcInstrumentHandler.register(I);
+            
+            I.inEmulation = false;      % Never emulate...
         end
     end
     
@@ -73,21 +76,24 @@ classdef mciDaughter < mcInput
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
         function tf = Eq(I, b)          % Compares two mciDaughters
             tf = strcmpi(I.config.parent.name,  b.config.parent.name) &&... % Change? Do this properly with the eq method of the class, instead of the config struct?
-                 strcmp(I.config.var,  b.config.var) && false;  % Remove!
+                 strcmp(I.config.var,  b.config.var);  % Remove!
         end
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
         function Open(I)                % Do whatever neccessary to initialize the input.
-            I.s = I.config.parent;  % Temporary Fix...
+%             I.s = I.config.parent;  % Temporary Fix...
             
-%             c = I.config.parent;
+            c = I.config.parent;
             
-%             if isfield(c, 'class')
-%                 I.s = eval([c.class '(c)']);    % Make the parent...
-%                 I.s.open();                     % ...and open it.
-%             else
-%                 error('mcData(): Config given without class.');
-%             end
+            if isfield(c, 'class')
+                I.s = eval([c.class '(c)']);    % Make the parent...
+%                 in = I.s
+                I.s.open();                     % ...and open it.
+            else
+                error('mcData(): Config given without class.');
+            end
+            
+%             in = I.s
         end
         function Close(~)               % Do whatever neccessary to deinitialize the input.
             % Do nothing. The parent should not be closed because it might be doing something somewhere else.
@@ -98,21 +104,18 @@ classdef mciDaughter < mcInput
             data = I.Measure(integrationTime);
         end
         function data = Measure(I, ~)
-            % How to incorperate integrationTime? Have a prevTime property in mcInput to compare with?
-%             I.s
+            % How to incorporate integrationTime? Have a prevTime property in mcInput to compare with?
+%             I.isOpen
+%             
+%             I.config.parent
+%             
+%             in = I.s
 %             I.s.name
 %             I.s.prevOpt
 %             ['I.s.' I.config.var]
 %             eval(['I.s.' I.config.var])
 %             I.config.var
             data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
-        end
-    end
-    
-    methods
-        % EXTRA --------- Any additional functionality this input should have (remove if there is none).
-        function specificFunction(I)    % ** Rename to a descriptive name for the additional functionality.
-            specific(I);                % ** Change to the appropriate code for this additional functionality.
         end
     end
 end

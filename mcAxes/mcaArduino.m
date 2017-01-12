@@ -1,4 +1,4 @@
-classdef (Sealed) mcaArduino < mcAxis          % ** Insert mca<MyNewAxis> name here...
+classdef (Sealed) mcaArduino < mcAxis
 % mcaArduino communicates via serial to an Arduino. Currently, it is only programmed to send '1' for
 % 'on' and '0' for 'off'. Ideally, this will be made scalable in the future.
 %

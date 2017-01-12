@@ -29,6 +29,7 @@ classdef mcInstrumentHandler < handle
         % No properties.
     end
 
+    % Private methods
     methods (Static, Access=private)
         function val = params(newval)
             persistent params;      % Apparently, this persistent workaround is the best way to get one instance of a variable for an entire class.
@@ -39,51 +40,85 @@ classdef mcInstrumentHandler < handle
         end
     end
 
+    % Public methods
     methods (Static)
-        function ver = version()
-            ver = [0 51];
+        function ver = version()    % Gives the version of modularControl. Will set to [1 0] upon first stable release.
+            ver = [0 62];           % Commit number.
         end
         function tf = open()
             tf = true;
             
-            params = mcInstrumentHandler.params();
+            params = mcInstrumentHandler.params();      % This line gets the class-wide variable stored in the above private method. This would be called a 
             
-            if ~isfield(params, 'open')
-                disp('Opening mcInstrumentHandler');
+            if ~isfield(params, 'open')                 % If this is the first time modularControl has been opened on this instance of matlab (or mcInstrumentHandler has been edited).
+                
+                % Ridiculous introduction.
+                disp('Welcome to:')
+                disp(' ')
+                disp('    ============================')
+                disp('     ||    modularControl    ||')
+                disp('    ============================')
+                disp(' ')
+                disp('Sensational quote of the day:')
+                disp(' ')
+                
+                quotes = {  'WHEN IN DOUBT, AUTOMATE.',...
+                            'Beware of the gremlins.',...
+                            'Never, ever, alow physicists around animals.',...
+                            'Pain is a conserved quantity. Concentrate the pain now for a painfree day!',...
+                            'Never trust Ed.',...
+                            'That doesn''t look like anything to me...',...
+                            'For health and happiness, join the Fu Lab Running Group!'  };
+                        
+                q = randi(length(quotes));
+                
+                disp(['    "' quotes{q} '"'])  % An amusing Easter egg...
+                disp(' ')
+                
+                % Reset everything (should I also clear all and close all?)
                 delete(instrfind)
-%                 clear all
-%                 close all
                 if ~ismac       % Change eventually...
                     daqreset
                 end
                 
+                % This is neccessary for spooky undocumented java stuff.
                 if ~usejava('swing')
                     error('mcInstrumentHandler: Java Swing import failed. Not sure what to do if this happens.');
                 end
                 
+                % Set some vars
                 params.open =                       true;
                 
-                params.instruments =                {};
-                params.shouldEmulate =              false;
-                params.saveDirManual =              '';
+                params.instruments =                {};         % Stores the mcAxes and mcInputs (separate these for simplicity?)
+                params.shouldEmulate =              false;      % Whether or not the axes and inputs should initialize in emulation. Makes this more accessable in the future?
+                
+                params.saveDirManual =              '';         % Empty string, to be loaded from .mat or chosen by GUI. Described in detail below.
                 params.saveDirBackground =          '';
+                
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
                 params.registeredInstruments =      [];
                 
-                params.warningLight =               [];     % Future...
-                params.defaultVideo =               [];
+                params.warningLight =               [];         % (Future...) Stores the axis that controls a light to warn when data is being taken.
+                params.defaultVideo =               [];         % 
                 
                 tf = false;                                         % Return whether the mcInstrumentHandler was open...
                 
+                % Figure out what system we are on (e.g. diamond room computer, etc.)
                 [~, params.hostname] = system('hostname');          % A quick way to identify which system we are on.
-                
+
                 params.hostname(params.hostname < 32 | params.hostname >= 127) = '';    % Make sure only sensible characters are used (e.g. no \0)
-                
+
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
                 params.hostname = strrep(params.hostname, ':', '_');
+                
+%                 if ismac
+%                     disp(['Note: Finding a consistant computer name for a mac has proven difficult. Configs will be saved under the name of "macOS", instead of the probably-inconsistant ' params.hostname])
+%                     params.hostname = 'macOS';
+%                 end
 
-                params.mcFolder = pwd;                                              % Get the current directory
+                % Find the modularControl folder (neccessary for saving configs).
+                params.mcFolder = pwd;      % First, guess that our current directory is the modularControl folder
                 
                 while isempty(params.mcFolder) || ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
                     mcDialog('For everything to function properly, mcInstrumentHandler must know where the modularControl folder is. Press OK to select that folder.', 'Need modularControl folder');
@@ -91,6 +126,7 @@ classdef mcInstrumentHandler < handle
                     params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl folder.');
                 end
 
+                
                 mcInstrumentHandler.params(params);                 % Load persistant params with this so that we don't risk infinite recursion when we try to add the time axis (see below).
                 
                 params.instruments = {mcAxis(mcAxis.timeConfig())}; % Initialize with only time (which is special)
@@ -255,8 +291,8 @@ classdef mcInstrumentHandler < handle
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcAxis')                 % If an instrument is an axis...
-                    axes_{ii} =     instrument{1};              % ...Then append its information.
+                if isa(instrument{1}, 'mcAxis') && isvalid(instrument{1})   % If an instrument is an axis...
+                    axes_{ii} =     instrument{1};                          % ...Then append its information.
                     names{ii} =     instrument{1}.nameShort();
                     configs{ii} =   instrument{1}.config;
                     states(ii) =    instrument{1}.getX();
@@ -273,8 +309,8 @@ classdef mcInstrumentHandler < handle
             ii = 1;
             
             for instrument = params.instruments
-                if isa(instrument{1}, 'mcInput')                % If an instrument is a axis...
-                    inputs{ii} = instrument{1};                 % ...Then append its information.
+                if isa(instrument{1}, 'mcInput') && isvalid(instrument{1})  % If an instrument is a axis...
+                    inputs{ii} = instrument{1};                             % ...Then append its information.
                     names{ii} = instrument{1}.nameShort();
                     ii = ii + 1;
                 end
@@ -284,33 +320,32 @@ classdef mcInstrumentHandler < handle
         % INSTRUMENT REGISTRATION
         function obj2 = register(obj)
             mcInstrumentHandler.open();
-%             if ~isfield(obj, 'config')
-%                 error('All instruments must have a config field');
-%             else
-%                 if ~isfield(obj.config, 'kind')
-%                     error('All instruments must have a config.kind field');
-%                 else
-%                     if ~isfield(obj.config.kind, 'kind')
-%                         error('All instruments must have a config.kind.kind field');
-%                     end
-%                 end
-%             end
             
             obj2 = obj;
             
             params = mcInstrumentHandler.params();
             
-            for instrument = params.instruments
-                if (isa(instrument{1}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(instrument{1}, 'mcInput') && isa(obj, 'mcInput'))
-                    if instrument{1} == obj
-                        obj2 = instrument{1};
-%                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
-                        return;
+            ii = 1;
+            
+            while ii <= length(params.instruments)
+                if isvalid(params.instruments{ii})
+                    if (isa(params.instruments{ii}, 'mcAxis') && isa(obj, 'mcAxis')) || (isa(params.instruments{ii}, 'mcInput') && isa(obj, 'mcInput'))
+                        if params.instruments{ii} == obj
+                            obj2 = params.instruments{ii};
+    %                         warning(['The attempted addition "' obj.name() '" is identical to the already-registered "' obj2.name() '." We will use the latter.']); % ' the latter will not be registered, and the former will be used instead.']);
+                            return;
+                        end
                     end
+                else
+                    params.instruments(ii) = [];
+                    ii = ii - 1;
                 end
+                
+                ii = ii + 1;
             end
             
-            params.instruments{length(params.instruments) + 1} = obj2;
+            params.instruments{end + 1} = obj2;
+            
             if isa(obj2, 'mcAxis') && ~strcmpi(obj2.config.kind.kind, 'manual')
                 obj2.read();
                 obj2.goto(obj2.getX());
@@ -455,8 +490,8 @@ classdef mcInstrumentHandler < handle
             if strcmp(toolBarMode, 'saveopen')
                 t = uitoolbar(f, 'tag', 'FigureToolBar');
                 
-                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadNewGUI_Callback,    'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open_new.png')));
-                uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open.png')));
+                uipushtool(t, 'TooltipString', 'Open in New Window',  'ClickedCallback', @obj.loadGUI_Callback,    'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open_new.png')));
+%                 uipushtool(t, 'TooltipString', 'Open in This Window', 'ClickedCallback', @obj.loadGUI_Callback,       'CData', iconRead(fullfile(params.mcFolder, 'icons','file_open.png')));
                 
 %                 uipushtool(t, 'TooltipString', 'Save As', 'ClickedCallback', @obj.saveAsGUI_Callback, 'CData', iconRead(fullfile(params.mcFolder, 'icons','file_save_as.png')));
                 uipushtool(t, 'TooltipString', 'Save',    'ClickedCallback', @obj.saveGUI_Callback,   'CData', iconRead(fullfile(params.mcFolder, 'icons','file_save.png')));

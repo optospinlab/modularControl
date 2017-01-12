@@ -11,7 +11,13 @@ classdef mcInstrumentManager
         function m = mcInstrumentManager()
             m.f = mcInstrumentHandler.createFigure(m, 'none');
             m.t = uitable(m.f, 'Units', 'Normalized', 'Position', [0 0 1 1]);
-
+            
+            m.makeTable();
+            
+            m.f.Visible = 'on';
+        end
+        
+        function makeTable(m)
             m.t.ColumnName =    {'Axis',    'Position', 'Unit', 'Get', 'Goto Position', 'Unit', 'Goto', 'isOpen',   'inUse',    'inEmulation'};
             
             m.t.ColumnEditable = [true,     false,      false,  false, true,            false,  false,  false,      false,      false];

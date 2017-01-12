@@ -137,7 +137,8 @@ classdef mcUserInput < mcSavableClass
                 case 0
                     obj.config = mcUserInput.defaultConfig();   % If no config is given, assume default config.
                 case 1
-                    obj.interpretConfig(varin);                 % Otherwise, use the given config (struct or file), where .interpretConfig() is inherited from mcSavableClass.
+                    obj.config = varin;
+%                     obj.interpretConfig(varin);                 % Otherwise, use the given config (struct or file), where .interpretConfig() is inherited from mcSavableClass.
                 otherwise
                     error('NotImplemented');
             end
@@ -238,6 +239,7 @@ classdef mcUserInput < mcSavableClass
             
             obj.refreshUserInputMode();
             
+            sendEditsToTopOfUIStack(obj.gui.f);
             
             %%%%%%%%%% USER INPUTS TAB %%%%%%%%%%
             tabHeight = obj.gui.tabInputs.Position(4) - 5*bh;
@@ -331,24 +333,24 @@ classdef mcUserInput < mcSavableClass
                 % Do something to stop the joystick?
             end
         end
-        function shouldContinue = joyActionFunction(obj, ~, event)  % Interprets messages sent by the joystick.
+        function shouldContinue = joyActionFunction(obj, ~, event)  % Interprets messages sent by the joystick, returns whether the joystick shouldContinue or not.
             shouldContinue = 1;
             
             if isvalid(obj)                     % If the UserInput window/class hasn't closed...
                 if obj.gui.joyEnabled.Value     % If the checkbox is still checked...
                     switch event.type
                         case 0      % Debug
-                            obj.gui.joyState = event.axis;      % -1:off, 0:can't find id, 1:running
-                        case 1      % Button
-                            if event.value == 1
+                            obj.gui.joyState = event.axis;          % -1:off, 0:can't find id, 1:running
+                        case 1                                  % Numbered buttons
+                            if event.value == 1                 % If a button was pressed,
                                 num = obj.config.numGroups+1;
 
-                                switch event.axis
+                                switch event.axis               % Figure out what button was pressed (by number) and perform the appropriate action.
                                     case 1
                                         if ~isempty(obj.wp) && isvalid(obj.wp)
                                             obj.wp.dropAtAxes_Callback(0, 0);
                                         else
-                                            disp('No waypoints connected; not sure what to do...');
+                                            disp('No waypoints connected; not sure what to do when pressing the joystick trigger...');
                                         end
                                     case 2
                                         'Side'
@@ -558,23 +560,43 @@ classdef mcUserInput < mcSavableClass
 %             set(jButton,'Enabled',false);
 %             set(jButton,'ToolTipText', axis_.name());
 
-            edit = uicontrol(   'Parent', parent,...
-                                'Style', 'edit',...
-                                'String', axis_.getX(),...
-                                'Value',  axis_.getX(),...
-                                'Position', [pp+pw/3, y, pw/4, bh],...
-                                'Callback', {@limit_Callback, axis_.config.kind.extRange},...
-                                'tooltipString', axis_.nameRange());
-            get = uicontrol(    'Parent', parent,...
-                                'Style', 'push',...
-                                'String', 'Get',...
-                                'Position', [2*pp+pw/3 + pw/4, y, pw/6, bh],...
-                                'Callback', {@setEditWithValue_Callback, @axis_.getX, edit});
-            goto = uicontrol(   'Parent', parent,...
-                                'Style', 'push',...
-                                'String', 'Goto',...
-                                'Position', [2*pp+3*pw/4, y, pw/6, bh],...
-                                'Callback', {@evalFuncWithEditValue_Callback, @axis_.goto, edit});
+            if      iscell(axis_.config.kind.intRange) && length(axis_.config.kind.intRange) == 2 &&...
+                    any(xor([~axis_.config.kind.intRange{1} ~axis_.config.kind.intRange{2}], [~axis_.config.kind.intRange{2} ~axis_.config.kind.intRange{1}]))    % If we should make a toggle switch instead of an edit box...
+                edit = uicontrol(   'Parent', parent,...
+                                    'Style', 'checkbox',...
+                                    'Value',  ~~axis_.getX(),...
+                                    'Position', [pp+pw/3+pw/8 - bh/2, y, bh, bh],...
+                                    'Callback', {@toggle_Callback, @axis_.goto, axis_.config.kind.extRange},...
+                                    'tooltipString', axis_.nameRange());
+                get = uicontrol(    'Parent', parent,...
+                                    'Style', 'push',...
+                                    'String', 'Get',...
+                                    'Position', [2*pp+pw/3 + pw/4, y, pw/3, bh],...
+                                    'Callback', {@setToggleWithValue_Callback, @()(~~axis_.getX()), edit});
+%                 goto = uicontrol(   'Parent', parent,...
+%                                     'Style', 'push',...
+%                                     'String', 'Goto',...
+%                                     'Position', [2*pp+3*pw/4, y, pw/6, bh],...
+%                                     'Callback', {@evalFuncWithEditValue_Callback, @axis_.goto, edit});
+            else
+                edit = uicontrol(   'Parent', parent,...
+                                    'Style', 'edit',...
+                                    'String', axis_.getX(),...
+                                    'Value',  axis_.getX(),...
+                                    'Position', [pp+pw/3, y, pw/4, bh],...
+                                    'Callback', {@limit_Callback, axis_.config.kind.extRange},...
+                                    'tooltipString', axis_.nameRange());
+                get = uicontrol(    'Parent', parent,...
+                                    'Style', 'push',...
+                                    'String', 'Get',...
+                                    'Position', [2*pp+pw/3 + pw/4, y, pw/6, bh],...
+                                    'Callback', {@setEditWithValue_Callback, @axis_.getX, edit});
+                goto = uicontrol(   'Parent', parent,...
+                                    'Style', 'push',...
+                                    'String', 'Goto',...
+                                    'Position', [2*pp+3*pw/4, y, pw/6, bh],...
+                                    'Callback', {@evalFuncWithEditValue_Callback, @axis_.goto, edit});
+            end
 
             tf = 1;
 
@@ -609,6 +631,8 @@ function setAxisKeyStep_Callback(src, ~, axis_)
 
     src.String = val;
     axis_.config.keyStep = val;
+    
+    % Save axis config?
 end
 function setAxisJoyStep_Callback(src, ~, axis_)
     val = str2double(src.String);
@@ -619,6 +643,8 @@ function setAxisJoyStep_Callback(src, ~, axis_)
 
     src.String = val;
     axis_.config.joyStep = val;
+    
+    % Save axis config?
 end
 
 function limit_Callback(src, ~, range)
@@ -658,11 +684,25 @@ function limit_Callback(src, ~, range)
     src.Value = val;
 end
 
+function toggle_Callback(src, ~, func, range)
+    src.Enable = 'off';
+    drawnow;
+    src.Enable = 'on';
+    func(range{src.Value + 1});
+end
+
 function setEditWithValue_Callback(src, ~, val, edit)
     src.Enable = 'off';
     drawnow;
     src.Enable = 'on';
     edit.String = val();
+end
+
+function setToggleWithValue_Callback(src, ~, val, edit)
+    src.Enable = 'off';
+    drawnow;
+    src.Enable = 'on';
+    edit.Value = val();
 end
 
 % function makeUIControlsInactive(src, event, controls)
@@ -676,6 +716,27 @@ function evalFuncWithEditValue_Callback(src, ~, func, edit)
     func(str2double(edit.String));
 end
 
-
-
+            
+function sendEditsToTopOfUIStack(obj)   % Not working perfectly.
+%     obj.Children
+%     length(obj.Children)
+%     iscell(obj.Children)
+    for ii = 1:length(obj.Children)
+        child = obj.Children(ii);
+        
+        if isfield(child, 'Style') || isprop(child, 'Style')
+            if strcmpi(child.Style, 'edit')
+                uistack(child, 'top');
+            end
+        end
+        
+%         isfield(child, 'Children')
+%         isprop(child, 'Children')
+        
+        if isfield(child, 'Children') || isprop(child, 'Children')
+%             Children = child.Children
+            sendEditsToTopOfUIStack(child);       % Recurse.
+        end
+    end
+end
 
