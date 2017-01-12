@@ -184,6 +184,44 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.keyStep =            .5;
             config.joyStep =            5;
         end
+        function config = galvoXBrynnConfig()
+            config.name =               'Galvo X';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'Tholabs Galvometer';   % Check for better name.
+            config.kind.intRange =      [-10 10];
+            config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'mV';                   % 'External' units.
+            config.kind.base =          -2.660;                 % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'ao0';
+            config.type =               'Voltage';
+            
+            config.keyStep =            .5;
+            config.joyStep =            5;
+        end
+        function config = galvoYBrynnConfig()
+            config.name =               'Galvo Y';
+
+            config.kind.kind =          'NIDAQanalog';
+            config.kind.name =          'Tholabs Galvometer';   % Check for better name.
+            config.kind.intRange =      [-10 10];
+            config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'V';                    % 'Internal' units.
+            config.kind.extUnits =      'mV';                   % 'External' units.
+            config.kind.base =          -.400;                  % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'ao1';
+            config.type =               'Voltage';
+            
+            config.keyStep =            .5;
+            config.joyStep =            5;
+        end
     end
     
     methods

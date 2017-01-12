@@ -71,7 +71,9 @@ classdef (Sealed) mcaEO < mcAxis
 
             % Initialize and get handle for controller.
             calllib('EO_Drive','EO_InitHandle');
-            a.s = calllib('EO_Drive','EO_GetHandleBySerial',srl);
+            a.s = calllib('EO_Drive', 'EO_GetHandleBySerial', a.config.srl);
+            
+            a.s
         end
         function Close(a)               % Do whatever neccessary to deinitialize the axis.
             calllib('EO_Drive','EO_ReleaseHandle');
@@ -84,7 +86,7 @@ classdef (Sealed) mcaEO < mcAxis
         end
         function Read(a)
             pos = libpointer('doublePtr',0); %initialize pointer (type 'double', value 0) to get commanded position
-            [errcode,pos] = calllib('EO_Drive','EO_GetCommandPosition',hndl,pos);   % Return commanded position (pos)
+            [errcode, pos] = calllib('EO_Drive', 'EO_GetCommandPosition', a.s, pos);   % Return commanded position (pos)
             
             a.x = pos;
         end
@@ -95,7 +97,8 @@ classdef (Sealed) mcaEO < mcAxis
             a.x = a.xt;
         end
         function Goto(a, x)
-            [errcode] = calllib('EO_Drive', 'EO_Move', a.s, x);     % Move to commanded position (position in um)
+            a.xt = a.config.kind.ext2intConv(x);
+            [errcode] = calllib('EO_Drive', 'EO_Move', a.s, a.xt);  % Move to commanded position (position in um)
         end
     end
 end

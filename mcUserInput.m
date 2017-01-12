@@ -68,16 +68,16 @@ classdef mcUserInput < mcSavableClass
         function config = brynnConfig()
             config.name =               'Default User Input';
             
-            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X';  configMicroX.port = 'COM5';
-            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y';  configMicroY.port = 'COM6';
+            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X';  configMicroX.port = 'COM6';
+            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y';  configMicroY.port = 'COM5';
 
-            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X';  configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
-            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y';  configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            configGalvoX = mcaDAQ.galvoXBrynnConfig();
+            configGalvoY = mcaDAQ.galvoYBrynnConfig();
             
-            configObjZ = mcaEO.piezoZConfig();      configObjZ.name = 'EO Z';    configObjZ.srl = int16(1051);
+            configObjZ = mcaEO.brynnObjConfig();
             
-            config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
-                                  {'Galvos',        mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configObjZ) } };
+            config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaEO(configObjZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Galvos',        mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaEO(configObjZ) } };
                               
             config.numGroups = length(config.axesGroups);
             

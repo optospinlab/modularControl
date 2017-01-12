@@ -52,12 +52,12 @@ classdef mcVideo < mcInput
             config.kind.sizeInput =     [NaN NaN];                  % Unknown until initiation
             
             config.adaptor =            'pointgrey';
-            config.format =             'FF7_Raw8_2048x2048_Mode0';
+            config.format =             '';
             
-            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X';  configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
-            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y';  configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            configGalvoX = mcaDAQ.galvoXBrynnConfig();
+            configGalvoY = mcaDAQ.galvoYBrynnConfig();
             
-            configObjZ = mcaEO.piezoZConfig();      configObjZ.name = 'EO Z';    configObjZ.srl = int16(1051);
+            configObjZ = mcaEO.brynnObjConfig();
             
             config.fbAxes = {mcaDAQ(configGalvoX), mcaDAQ(configGalvoY), mcaEO(configObjZ)};
         end
@@ -84,8 +84,12 @@ classdef mcVideo < mcInput
 
                 vid.f = mcInstrumentHandler.createFigure(vid, 'saveopen');
 
-                vid.f.Resize =      'off';
-                vid.f.Position =    [50, 50, 1280, 960];
+%                 vid.f.Resize =      'off';
+                if strcmpi(vid.config.format, 'F0M5_Mono8_640x480')
+                    vid.f.Position =    [50, 50, 1280, 960];
+                else
+                    vid.f.Position =    [50, 50, 960, 960];
+                end
                 vid.f.Visible =     'on';
     %             f.MenuBar =     'none';
     %             f.ToolBar =     'none';
@@ -100,8 +104,12 @@ classdef mcVideo < mcInput
     %             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
 
     %             hold(vid.a, 'on')
-
-                vid.v = videoinput(vid.config.adaptor, 1, vid.config.format);
+                
+                if isempty(vid.config.format)
+                    vid.v = videoinput(vid.config.adaptor, 1);
+                else
+                    vid.v = videoinput(vid.config.adaptor, 1, vid.config.format);
+                end
 
                 vid.v.FramesPerTrigger = 1;
                 vidRes = vid.v.VideoResolution;
