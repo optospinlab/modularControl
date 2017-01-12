@@ -130,6 +130,14 @@ classdef mciPLE < mcInput
     % These methods overwrite the empty methods defined in mcInput. mcInput will use these. The capitalized methods are used in
     %   more-complex methods defined in mcInput.
     methods
+        function scans = getInputScans(I)
+            scans = {I.config.xaxis};
+        end
+        
+        function units = getInputScanUnits(~)
+            units = {'V'};
+        end
+        
         % EQ
         function tf = Eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
             tf = strcmpi(I.config.axes.red.name,    b.config.axes.red.name) && ... % ...then check if all of the other variables are the same.
@@ -144,10 +152,11 @@ classdef mciPLE < mcInput
         
         % NAME
         function str = NameShort(I)
-            str = [I.config.name ' (' I.config.axes.red.name() ':' I.config.axes.green.name() ')'];
+            str = [I.config.name ' (' num2str(I.config.upPixels) ' pix and '  num2str(I.config.upTime) ' sec up; '  num2str(I.config.downTime) ' sec down; from '  num2str(I.config.xMin) ' to '  num2str(I.config.xMax) ' V)'];
         end
         function str = NameVerb(I)
-            str = [I.config.name ' (with red laser ' I.config.axes.red.name() ' and green laser ' I.config.axes.green.name() ')'];
+            str = I.NameShort();
+            %[I.config.name ' (with red laser ' I.config.axes.red.name() ' and green laser ' I.config.axes.green.name() ')'];
         end
         
         % OPEN/CLOSE
