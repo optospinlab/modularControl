@@ -106,7 +106,7 @@ classdef mciPLE < mcInput
             config.scansPerBin = 16;        % Bins per scan
             b = config.scansPerBin;
             
-            config.output = [[linspace(xMin, xMax, b*upPixels) linspace(xMax, xMin, b*config.downPixels + 1)]' [ones(1, b*upPixels) zeros(1, b*config.downPixels) 0]'];    % One extra point for diff'ing.
+            config.output = [[linspace(xMin, xMax, b*upPixels) linspace(xMax, xMin, b*config.downPixels + 1)]' [zeros(1, b*upPixels) ones(1, b*config.downPixels) 0]'];    % One extra point for diff'ing.
             config.xaxis =  linspace(xMin, xMax + (xMax - xMin)*config.downPixels/upPixels, upPixels + config.downPixels);  % x Axis with fake units
         end
     end

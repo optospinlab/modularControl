@@ -320,7 +320,7 @@ classdef mcData < mcSavableClass
             data.axes =     {};
             data.scans =    {};
             data.inputs =   {mciSpectrum()};
-            data.intTimes = 1;
+            data.intTimes = 60;
         end
         function data = PLEConfig()
 %             data = mcData.inputConfig(mciPLE(), 20, 1);
