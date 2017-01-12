@@ -1,5 +1,5 @@
 classdef (Sealed) mcaEO < mcAxis
-% mcaEO controls the (Edmonds Optics?) Z objective peizo in Brynn's microscope.
+% mcaEO controls the (Edmonds Optics?) Z objective peizo in Brynn's microscope (untested!).
 %
 % Also see mcAxis.
 
@@ -9,7 +9,7 @@ classdef (Sealed) mcaEO < mcAxis
         %  - customVar2
         
         function config = defaultConfig()               % Static config that should be used if no configuration is provided upon intialization.
-            config = mcaTemplate.brynnObjConfig();
+            config = mcaEO.brynnObjConfig();
         end
         function config = brynnObjConfig()
             config.class =              'mcaEO';
@@ -18,7 +18,7 @@ classdef (Sealed) mcaEO < mcAxis
 
             config.kind.kind =          'eopizeo';
             config.kind.name =          'Edmonds Optics Piezo';
-            config.kind.intRange =      [-42 42];
+            config.kind.intRange =      [0 100];
             config.kind.int2extConv =   @(x)(x);
             config.kind.ext2intConv =   @(x)(x);
             config.kind.intUnits =      'um';
@@ -33,8 +33,8 @@ classdef (Sealed) mcaEO < mcAxis
     end
     
     methods             % Initialization method (this is what is called to make an axis object).
-        function a = mcaTemplate(varin)                 % ** Insert mca<MyNewAxis> name here...
-            a.extra = {'customVar1', 'customVar2'};     % ** Record the names of the custom variables here (These may be used elsewhere in the program in the future).
+        function a = mcaEO(varin)
+            a.extra = {'srl'};
             if nargin == 0
                 a.construct(a.defaultConfig());
             else
@@ -48,51 +48,53 @@ classdef (Sealed) mcaEO < mcAxis
     methods
         % NAME ---------- The following functions define the names that the user should use for this axis.
         function str = NameShort(a)     % 'short' name, suitable for UIs/etc.
-            str = [a.config.name ' (' a.config.customVar1 ':' a.config.customVar2 ')'];                                                     % ** Change these to your custom vars.
+            str = [a.config.name ' (' num2str(a.config.srl) ')'];
         end
         function str = NameVerb(a)      % 'verbose' name, suitable to explain the identity to future users.
-            str = [a.config.name ' (a template for custom mcAxes with custom vars ' a.config.customVar1 ' and ' a.config.customVar2 ')'];   % ** Change these to your custom vars.
+            str = [a.config.name ' (an Edmonds Optics piezo with serial number ' num2str(a.config.srl) ')'];   % ** Change these to your custom vars.
         end
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use a.extra for this?)
-        function tf = Eq(a, b)          % Compares two mcaTemplates
-            tf = strcmpi(a.config.customVar1,  b.config.customVar1) && strcmpi(a.config.customVar2,  b.config.customVar2);                  % ** Change these to your custom vars.
+        function tf = Eq(a, b)          % Compares two mcaEO
+            tf = a.config.srl == b.config.srl;
         end
         
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).
         function Open(a)                % Do whatever neccessary to initialize the axis.
-            
-            a.s = open(a.config.customVar1, a.config.customVar2);   % ** Change this to the custom code which opens the axis. Keep in mind that a.s should be used to store session info (e.g. serial ports, DAQ sessions). Of course, for some inputs, this is unneccessary.
+            addpath('C:\Program Files\Edmund Optics\EO-Drive\');
+
+            % Check if dll already loaded; if not, load dll
+            if ~libisloaded('EO_Drive')
+                loadlibrary('EO_Drive.dll','eo_drive.h');
+            end
+
+            % Initialize and get handle for controller.
+            calllib('EO_Drive','EO_InitHandle');
+            a.s = calllib('EO_Drive','EO_GetHandleBySerial',srl);
         end
         function Close(a)               % Do whatever neccessary to deinitialize the axis.
-            close(a.config.customVar1, a.config.customVar2);        % ** Change this to the custom code which closes the axis.
+            calllib('EO_Drive','EO_ReleaseHandle');
+            a.s = [];
         end
         
         % READ ---------- For 'slow' axes that take a while to reach the target position (a.xt), define a way to determine the actual position (a.x). These do *not* have to be defined for 'fast' axes.
         function ReadEmulation(a)       
-            a.x = a.xt;         % ** In emulation, just assume the axis is 'fast'?
+            a.x = a.xt;
         end
         function Read(a)
-            a.x = read(a.s);    % ** Change this to the code to get the actual postition of the axis.
+            pos = libpointer('doublePtr',0); %initialize pointer (type 'double', value 0) to get commanded position
+            [errcode,pos] = calllib('EO_Drive','EO_GetCommandPosition',hndl,pos);   % Return commanded position (pos)
+            
+            a.x = pos;
         end
         
         % GOTO ---------- The 'meat' of the axis: the funtion that translates the user's intended movements to reality.
         function GotoEmulation(a, x)
-            a.xt = a.config.kind.ext2intConv(x);    % ** Usually, behavior should not deviate from this default a.GotoEmulation(x) function. Change this if more complex behavior is desired.
+            a.xt = a.config.kind.ext2intConv(x);
             a.x = a.xt;
         end
         function Goto(a, x)
-            a.xt = a.config.kind.ext2intConv(x);    % Set the target position a.xt (in internal units) to the user's desired x (in internal units).
-            a.x = a.xt;                             % If this axis is 'fast' and immediately advances to the target (e.g. peizos), then set a.x.
-            goto(a.s, a.x)                          % ** Change this to be the code that actually moves the axis (also change the above if different behavior is desired).
-                                                    % Also note that all 'isInRange' error checking is done in the parent mcAxis.
-        end
-    end
-        
-    methods
-        % EXTRA --------- Any additional functionality this axis should have (remove if there is none).
-        function specificFunction(a)    % ** Rename to a descriptive name for the additional functionality.
-            specific(a);                % ** Change to the appropriate code for this additional functionality.
+            [errcode] = calllib('EO_Drive', 'EO_Move', a.s, x);     % Move to commanded position (position in um)
         end
     end
 end
