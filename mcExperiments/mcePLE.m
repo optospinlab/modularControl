@@ -56,10 +56,11 @@ classdef mcePLE < mcExperiment
             
             % -3 -> 3 V red freq control
             redAnalog =     mcaDAQ.redConfig();
+            redDigital =    mcaDAQ.redDigitalConfig();
             
             % Green laser on/off
             greenDigital =  mcaDAQ.greenConfig();
-            greenOD2 =      mcaDAQ.greenConfig();   greenOD2.name = 'Green OD2';    greenOD2.chn = 'Port0/Line2';
+            greenOD2 =      mcaDAQ.greenOD2Config();
             
             PLE = mciPLE.defaultConfig();
             
@@ -130,7 +131,7 @@ classdef mcePLE < mcExperiment
         
         function data = Analysis(e)
             %
-            e.aPLE =            e.objects{6}.d.data;
+            e.aPLE =            e.objects{7}.d.data;
             data =              e.aPLE;
             e.aSpec =           e.objects{3}.d.data;
 

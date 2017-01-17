@@ -62,7 +62,7 @@ classdef (Sealed) mcaDAQ < mcAxis
         function config = greenConfig()
             config.class =              'mcaDAQ';
             
-            config.name =               'Green Laser';
+            config.name =               'Green';
 
             config.kind.kind =          'NIDAQdigital';
             config.kind.name =          'Laser Modulation';
@@ -75,6 +75,48 @@ classdef (Sealed) mcaDAQ < mcAxis
 
             config.dev =                'Dev1';
             config.chn =                'Port0/Line2';
+            config.type =               'Output';
+            
+            config.keyStep =            1;
+            config.joyStep =            1;
+        end
+        function config = greenOD2Config()
+            config.class =              'mcaDAQ';
+            
+            config.name =               'Green OD2';
+
+            config.kind.kind =          'NIDAQdigital';
+            config.kind.name =          'Optical Density 2';
+            config.kind.intRange =      {0 1};
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      '1/0';                  % 'Internal' units.
+            config.kind.extUnits =      '1/0';                  % 'External' units.
+            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'Port0/Line3';
+            config.type =               'Output';
+            
+            config.keyStep =            1;
+            config.joyStep =            1;
+        end
+        function config = redDigitalConfig()
+            config.class =              'mcaDAQ';
+            
+            config.name =               'Red';
+
+            config.kind.kind =          'NIDAQdigital';
+            config.kind.name =          'Red Modulation';
+            config.kind.intRange =      {0 1};
+            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      '1/0';                  % 'Internal' units.
+            config.kind.extUnits =      '1/0';                  % 'External' units.
+            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+
+            config.dev =                'Dev1';
+            config.chn =                'Port0/Line4';
             config.type =               'Output';
             
             config.keyStep =            1;

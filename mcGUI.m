@@ -7,7 +7,7 @@ classdef mcGUI < mcSavableClass
         f = [];
         
         pw = 300;
-        ph = 500; % Make variable...
+        ph = 700; % Make variable...
     end
     
     methods (Static)
@@ -91,14 +91,16 @@ classdef mcGUI < mcSavableClass
                                                         'String', control{3},...
                                                         'Value', control{3},...     % Also store number as value (used if string change is undesirable).
                                                         'Position', [M + W/2, gui.ph - ii*bh, W/2, bh]);     
-                                                    
+                                     
+                        
                         if length(control) > 4
                             gui.controls{jj}.TooltipString =    gui.getLimitString(control{5});
                             gui.controls{jj}.Callback =         {@gui.limit control{5}};
                         else
                             gui.controls{jj}.TooltipString =    gui.getLimitString([]);
-                        end
+                        end     
                         
+                        jj = jj + 1;
                         ii = ii + 1;
                     case 'push'
                         if ~strcmpi(prevControl, 'push')
@@ -115,7 +117,6 @@ classdef mcGUI < mcSavableClass
                 end
                 
                 prevControl = control{1};
-                jj = jj + 1;
             end
             
             gui.f.Visible = 'on';
@@ -154,7 +155,6 @@ classdef mcGUI < mcSavableClass
             src.String =    val;
             src.Value =     val;
         end
-        
         function str = getLimitString(~, lim)
             str = 'No requirements.';
             
@@ -170,6 +170,10 @@ classdef mcGUI < mcSavableClass
                 end
             end
         end
+        
+%         function val = getEditValue(gui, jj)  % Gets the value of the jj'th edit (change this eventually to look for the edit corresponding to a string? After all, this makes editing difficult)
+%             val = gui.controls{jj}.Value;
+%         end
     end
     
     methods

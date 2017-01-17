@@ -5,7 +5,7 @@ function PLESetupTemp()
 %     c.additionalAxes = {mcaDAQ.piezoZConfig};
     a = mcaDAQ; %mcAxis %mcaPoints();
     
-    numScans =  20;
+    numScans =  15;
     
     e = mcePLE.customConfig(numScans);
     lenPLE =    240;

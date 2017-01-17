@@ -125,7 +125,7 @@ classdef mcInstrumentHandler < handle
                     
                     params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl folder.');
                 end
-
+                
                 
                 mcInstrumentHandler.params(params);                 % Load persistant params with this so that we don't risk infinite recursion when we try to add the time axis (see below).
                 

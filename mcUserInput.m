@@ -45,19 +45,21 @@ classdef mcUserInput < mcSavableClass
             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
             
 %             configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
-            configGreen =  mcaDAQ.greenConfig();    configGreen.name = 'Green';
-            configOD =     mcaDAQ.greenConfig();    configOD.name = 'Green OD2'; configOD.chn =  'Port0/Line3';
+            configGreen =  mcaDAQ.greenConfig();
+            configOD =     mcaDAQ.greenOD2Config();
             configRed =    mcaDAQ.redConfig();
+            configRedDig = mcaDAQ.redDigitalConfig();
             
             flipConfig = mcaArduino.flipMirrorConfig();
 %             flipConfig =        mcaDAQ.digitalConfig();
 %             flipConfig.chn = 	'Port0/Line1';
 %             flipConfig.name = 	'Flip Mirror';
             
-            config.axesGroups = { {'Micros',        mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
-                                  {'Piezos',        mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'Galvos',        mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
-                                  {'Lasers',        mcaDAQ(configGreen),    mcaDAQ(configOD),       mcaArduino(flipConfig) } };
+            config.axesGroups = { {'Micros',    mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Piezos',    mcaDAQ(configPiezoX),   mcaDAQ(configPiezoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'Galvos',    mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaDAQ(configPiezoZ) }, ...
+                                  {'Green',     mcaDAQ(configGreen),    mcaDAQ(configOD),       mcaArduino(flipConfig) }, ...
+                                  {'Red',       mcaDAQ(configRedDig),   mcaDAQ(configRed),      mcaArduino(flipConfig) } };
                               
             config.numGroups = length(config.axesGroups);
             
