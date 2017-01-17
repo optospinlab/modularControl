@@ -194,7 +194,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'mV';                   % 'External' units.
-            config.kind.base =          -2.660;                 % The (internal) value that the axis seeks at startup.
+            config.kind.base =          -2.610;                 % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'ao0';
@@ -213,7 +213,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'mV';                   % 'External' units.
-            config.kind.base =          -.400;                  % The (internal) value that the axis seeks at startup.
+            config.kind.base =          -.490;                  % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'ao1';

@@ -316,6 +316,8 @@ classdef mcAxis < mcSavableClass
                         else
                             a.Goto(x);
                         end
+                        
+                        a.read();
                     else
                         tf = false;
                     end
@@ -356,7 +358,7 @@ classdef mcAxis < mcSavableClass
             switch a.config.kind.kind
                 case 'grid'
                     a.config.grid.wait();               % ...then use the virtual grid wait() function.
-                case {'time', 'aptcontrol'}
+                case {'time', 'aptcontrol', 'eopizeo'}
                     % Do nothing.
                 otherwise
                     while a.x ~= a.xt       % Make it a 'difference less than tolerance'?

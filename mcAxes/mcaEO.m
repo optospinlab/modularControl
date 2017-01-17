@@ -24,7 +24,7 @@ classdef (Sealed) mcaEO < mcAxis
             config.kind.ext2intConv =   @(x)(x);
             config.kind.intUnits =      'um';
             config.kind.extUnits =      'um';
-            config.kind.base =          0;
+            config.kind.base =          50;
             
             config.keyStep =            .1;
             config.joyStep =            1;
@@ -88,6 +88,8 @@ classdef (Sealed) mcaEO < mcAxis
             pos = libpointer('doublePtr',0); %initialize pointer (type 'double', value 0) to get commanded position
             [errcode, pos] = calllib('EO_Drive', 'EO_GetCommandPosition', a.s, pos);   % Return commanded position (pos)
             
+            % Error check?
+            
             a.x = pos;
         end
         
@@ -99,6 +101,8 @@ classdef (Sealed) mcaEO < mcAxis
         function Goto(a, x)
             a.xt = a.config.kind.ext2intConv(x);
             [errcode] = calllib('EO_Drive', 'EO_Move', a.s, a.xt);  % Move to commanded position (position in um)
+        
+            % Error check?
         end
     end
 end
