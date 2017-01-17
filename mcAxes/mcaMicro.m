@@ -67,7 +67,7 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % OPEN/CLOSE
         function Open(a)        % Consider putting error detection on this?
-            disp(['Opening micrometer on port ' a.config.port '...']);
+%             disp(['Opening micrometer on port ' a.config.port '...']);
             
             a.s = serial(a.config.port);
             set(a.s, 'BaudRate', 921600, 'DataBits', 8, 'Parity', 'none', 'StopBits', 1, ...
@@ -86,7 +86,7 @@ classdef (Sealed) mcaMicro < mcAxis
             fprintf(a.s, [a.config.addr 'OR']);          % Get to home state (should retain position)
             pause(.25);
             
-            disp(['...Finished opening micrometer on port ' a.config.port]);
+%             disp(['...Finished opening micrometer on port ' a.config.port]);
         end
         function Close(a)
             fprintf(a.s, [a.config.addr 'RS']);
@@ -126,8 +126,14 @@ classdef (Sealed) mcaMicro < mcAxis
 
             a.xt = a.config.kind.ext2intConv(x);
             
-            if abs(a.xt - a.x) > 20 && isempty(a.t)
-                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .2); % 10fps
+%             xt = a.xt
+%             x = a.x
+%             abs(a.xt - a.x)
+%             abs(a.xt - a.x) > 20
+%             a.t
+            
+            if abs(a.xt - a.x) > .02 && isempty(a.t)
+                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .1); % 10fps
                 start(a.t);
             end
         end
@@ -142,6 +148,7 @@ classdef (Sealed) mcaMicro < mcAxis
 %             xt = a.xt
 %             drawnow
             if abs(a.x - a.xt) < 1e-4
+%                 'deleting!'
                 stop(a.t);
                 delete(a.t);
                 a.t = [];

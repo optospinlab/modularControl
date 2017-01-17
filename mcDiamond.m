@@ -3,29 +3,29 @@ function mcDiamond
     
     % Open some GUIs:
     
-    disp('  Opening the blue camera...')
     mcVideo();
+%     disp('  Opened the blue camera...')
     
-    disp('  Opening mcUserInput mcAxes...')
     input = mcUserInput(mcUserInput.diamondConfig());
+%     disp('  Opened mcUserInput mcAxes...')
     
-    disp('  Opening mcUserInput listeners...')
     input.openListener();
+%     disp('  Opened mcUserInput listeners...')
     
-    disp('  Opening mcgDiamond...')
     mcgDiamond();
+%     disp('  Opened mcgDiamond...')
     
 %     disp('  Opening mcUserInput waypoints...')  % This is needed to connect the trigger of the joystick to the mcWaypoints feature.
 %     input.openWaypoints();
 
     % Additionally, open these instruments:
-    disp('  Opening additional mcInstruments...')
     mcaManual(mcaManual.polarizationConfig());
 
     configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
     mciDAQ(configCounter);
 
     mciSpectrum();
+%     disp('  Opened additional mcInstruments...')
 end
 
 

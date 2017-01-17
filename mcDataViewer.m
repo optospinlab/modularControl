@@ -184,7 +184,7 @@ classdef mcDataViewer < mcSavableClass
             gui.tabs.t2d = uitab('Parent', utg, 'Title', '2D');
             gui.tabs.t3d = uitab('Parent', utg, 'Title', '3D');
 
-            javaenable = true;
+            javaenable = false;
             
             if javaenable
                 jtabgroup = findjobj(utg);

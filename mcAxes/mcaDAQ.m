@@ -108,9 +108,9 @@ classdef (Sealed) mcaDAQ < mcAxis
 
             config.kind.kind =          'NIDAQdigital';
             config.kind.name =          'Red Modulation';
-            config.kind.intRange =      {0 1};
-            config.kind.int2extConv =   @(x)(x);                % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
+            config.kind.intRange =      {1 0};
+            config.kind.int2extConv =   @(x)(1-x);                % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(1-x);                % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      '1/0';                  % 'Internal' units.
             config.kind.extUnits =      '1/0';                  % 'External' units.
             config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
@@ -156,7 +156,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.ext2intConv =   @(x)((25 - x)./5);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'um';                   % 'External' units.
-            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+            config.kind.base =           5;                     % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'ao0';
@@ -177,7 +177,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.ext2intConv =   @(x)((x + 25)./5);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'um';                   % 'External' units.
-            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+            config.kind.base =           5;                     % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'ao2';
