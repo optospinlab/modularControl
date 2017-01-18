@@ -83,13 +83,13 @@ classdef mciDaughter < mcInput
         function Open(I)                % Do whatever neccessary to initialize the input.
 %             I.s = I.config.parent;  % Temporary Fix...
             
-            c = I.config.parent
+            c = I.config.parent;
             
             if isprop(c, 'config')
                 c = c.config;
             end
             
-            c
+%             c
             
             if isfield(c, 'class')
                 I.s = eval([c.class '(c)']);    % Make the parent...
@@ -123,12 +123,12 @@ classdef mciDaughter < mcInput
 %             I.config.var
             I.close();
             I.open();
-
-            I.s
-            str = ['I.s.' I.config.var]
+% 
+%             I.s
+%             str = ['I.s.' I.config.var]
             data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
-            data
-            expected = I.config.kind.sizeInput
+%             data
+%             expected = I.config.kind.sizeInput
         end
     end
 end

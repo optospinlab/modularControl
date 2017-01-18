@@ -71,7 +71,7 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.ext2intConv =   @(x)(x);                % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      '1/0';                  % 'Internal' units.
             config.kind.extUnits =      '1/0';                  % 'External' units.
-            config.kind.base =           0;                     % The (internal) value that the axis seeks at startup.
+            config.kind.base =           1;                     % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'Port0/Line2';

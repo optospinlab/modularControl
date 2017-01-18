@@ -65,14 +65,14 @@ classdef mcAxis < mcSavableClass
             
             % Seconds:
 %             config.kind.intRange =      [0 Inf];
-%             config.kind.intUnits =      's';                    % 'Internal' units.
-%             config.kind.extUnits =      's';                    % 'External' units.
+%             config.kind.intUnits =      's';      % 'Internal' units.
+%             config.kind.extUnits =      's';      % 'External' units.
 %             config.kind.base =          0;
             
             % Scans:
             config.kind.intRange =      [1 Inf];
-            config.kind.intUnits =      'scans ago';                    % 'Internal' units.
-            config.kind.extUnits =      'scans ago';                    % 'External' units.
+            config.kind.intUnits =      'scan #';   % 'Internal' units.
+            config.kind.extUnits =      'scan #';   % 'External' units.
             config.kind.base =          1;
             
             % Not sure which one to use...
@@ -311,13 +311,15 @@ classdef mcAxis < mcSavableClass
             else
                 if a.inRange(x)
                     if a.open()
-                        if a.inEmulation
-                            a.GotoEmulation(x);
-                        else
-                            a.Goto(x);
-                        end
+                        if a.config.kind.ext2intConv(x) ~= a.xt  % If we aren't already at the desired value (change? there might be cases where this feature is undesirable.
+                            if a.inEmulation
+                                a.GotoEmulation(x);
+                            else
+                                a.Goto(x);
+                            end
                         
-                        a.read();
+                            a.read();
+                        end
                     else
                         tf = false;
                     end

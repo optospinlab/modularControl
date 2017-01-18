@@ -14,6 +14,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
         shouldOptimize = [];
         
         prevOpt = [];
+        prev = [];
         rollingMeanDiff = [];
     end
 
@@ -84,7 +85,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             s = wiener2(d.data{1}, [3 3]);
 
 %             figure;
-            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), .8), strel('diamond',1));
+            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), .85), strel('diamond',1));
             % Don't hardcode quantile!!!
             
             %             figure; imagesc(bw);
@@ -237,11 +238,16 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                     
                     d = mcData(mcData.optimizeConfiguration(a.axes_{ii},...
                                                             a.shouldOptimize,...
-                                                            Y(length(a.axes_) + ii),...
-                                                            200,... % Should not be hardcoded!
-                                                            2));    % Should not be hardcoded!
+                                                            2*Y(length(a.axes_) + ii),...
+                                                            100,... % Should not be hardcoded!
+                                                            4));    % Should not be hardcoded!
                     disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
-                    d.aquire();
+%                     d.aquire();
+                    
+                    dv = mcDataViewer(d, false);
+                    pause(.25);
+                    a.prev{ii} = d.d.data{1};
+                    dv.closeRequestFcnDF(0,0);
                     disp('...Finished.');
                     
                     a.prevOpt(x, ii, 2) = a.axes_{ii}.getX();
@@ -257,19 +263,24 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                     
                     d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
                                                             a.shouldOptimize,...
-                                                            3,...   % Should not be hardcoded!
-                                                            200,... % Should not be hardcoded!
-                                                            2));    % Should not be hardcoded!
+                                                            4,...   % Should not be hardcoded!
+                                                            100,... % Should not be hardcoded!
+                                                            4));    % Should not be hardcoded!
                                                         
                     disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
-                    d.aquire();
+%                     d.aquire();
+                    
+                    dv = mcDataViewer(d, false);
+                    pause(.25);
+                    a.prev{ii} = d.d.data{1};
+                    dv.closeRequestFcnDF(0,0);
                     disp('...Finished.');
                     
                     a.prevOpt(x, ii, 2) = a.additionalAxes{jj}.getX();
                     a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
                 end
                 
-                p = a.prevOpt;
+                p = a.prevOpt;  %#ok
                 
                 save('temp.mat', 'p');
                 

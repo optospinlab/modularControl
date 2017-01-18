@@ -396,8 +396,8 @@ classdef mcData < mcSavableClass
                     if ~isnumeric(d.d.scans{ii})
                         error(['mcData(): Expected numeric array for the scan of the ' getSuffix(ii) ' axis. Got: ' class(d.d.scans{ii})]);
                     end
-                    if min(size(d.d.scans{ii})) ~= 1 && length(size(d.d.scans{ii})) ~= 2    % If d.d.scans{ii} isn't a 1xn or nx1 vector...
-                        error(['mcData(): Expected a 1xn or nx1 vector for the scan of the ' getSuffix(ii) ' axis. Got a matrix of dimension [ ' size(d.d.scans{ii}) ' ].']);
+                    if min(size(d.d.scans{ii})) ~= 1 || max(size(d.d.scans{ii})) == 1 || length(size(d.d.scans{ii})) ~= 2   % If d.d.scans{ii} isn't a 1xn or nx1 vector...
+                        error(['mcData(): Expected a 1xn or nx1 vector for the scan of the ' getSuffix(ii) ' axis. Got a matrix of dimension [ ' num2str(size(d.d.scans{ii})) ' ].']);
                     end
                 end
             else

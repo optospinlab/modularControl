@@ -88,7 +88,11 @@ classdef mcProcessedData < handle
                     case {2, '2D'}
                         selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1);
                         selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2);
+                        
+%                         selTypeX =    	pd.parent.r.l.type(pd.parent.r.l.layer == 1)
+%                         selTypeY =    	pd.parent.r.l.type(pd.parent.r.l.layer == 2)
 %                         in = pd.input
+%                         len = pd.parent.r.l.lengths
 %                         l = pd.parent.r.l.layer
 %                         t = pd.parent.r.l.type
 
@@ -124,6 +128,7 @@ classdef mcProcessedData < handle
                         d = squeeze(d); % Remove singleton dimensions (whether natural or meaned).
 
                         nums =          1:length(final);
+                        
                         axisXindex = nums(pd.parent.r.l.layer(final) == 1);
                         axisYindex = nums(pd.parent.r.l.layer(final) == 2);
 

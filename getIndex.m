@@ -37,6 +37,10 @@ function index = getIndex(varargin)
 %     if sum(lengths < layer | layer > 1)
 %         error('layer should be bounded by lengths.');
 %     end
+
+%     for ii = 1:mode
+%         varargin{ii}
+%     end
     
     if length(varargin{1}) < mode - 2
         error('getIndex: Cannot find a ND slice of a MD matrix where M < N');

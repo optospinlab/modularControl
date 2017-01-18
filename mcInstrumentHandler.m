@@ -70,6 +70,7 @@ classdef mcInstrumentHandler < handle
                             'That doesn''t look like anything to me...',...
                             'For health and happiness, join the Fu Lab Running Group!'  };
                         
+                rng('shuffle');
                 q = randi(length(quotes));
                 
                 disp(['    "' quotes{q} '"'])  % An amusing Easter egg...
