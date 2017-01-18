@@ -83,14 +83,20 @@ classdef mciDaughter < mcInput
         function Open(I)                % Do whatever neccessary to initialize the input.
 %             I.s = I.config.parent;  % Temporary Fix...
             
-            c = I.config.parent;
+            c = I.config.parent
+            
+            if isprop(c, 'config')
+                c = c.config;
+            end
+            
+            c
             
             if isfield(c, 'class')
                 I.s = eval([c.class '(c)']);    % Make the parent...
 %                 in = I.s
                 I.s.open();                     % ...and open it.
             else
-                error('mcData(): Config given without class.');
+                error('mciDaugter(): Config given without class.');
             end
             
 %             in = I.s
@@ -115,7 +121,14 @@ classdef mciDaughter < mcInput
 %             ['I.s.' I.config.var]
 %             eval(['I.s.' I.config.var])
 %             I.config.var
+            I.close();
+            I.open();
+
+            I.s
+            str = ['I.s.' I.config.var]
             data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
+            data
+            expected = I.config.kind.sizeInput
         end
     end
 end

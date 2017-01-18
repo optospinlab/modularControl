@@ -11,12 +11,11 @@ function mcDiamond
     
     input.openListener();
 %     disp('  Opened mcUserInput listeners...')
-    
+    input.openWaypoints();
+%     disp('  Opening mcUserInput waypoints...')  % This is needed to connect the trigger of the joystick to the mcWaypoints feature.
+
     mcgDiamond();
 %     disp('  Opened mcgDiamond...')
-    
-%     disp('  Opening mcUserInput waypoints...')  % This is needed to connect the trigger of the joystick to the mcWaypoints feature.
-%     input.openWaypoints();
 
     % Additionally, open these instruments:
     mcaManual(mcaManual.polarizationConfig());

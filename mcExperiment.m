@@ -19,6 +19,8 @@ classdef mcExperiment < mcInput
         push1 = {};
         push2 = {};
         
+        classes = {};
+        
         fname = [];
     end
 
@@ -154,7 +156,7 @@ classdef mcExperiment < mcInput
             e.push2 =           cell(1, e.num);
             e.proceedboxes =    cell(1, e.num);
             
-            e.config.classes =  cell(1, e.num); 'classes!'
+            e.classes =  cell(1, e.num); 'classes!'
             
             for ii = 1:e.num
                 e.doneboxes{ii} =   uicontrol(  'Parent', e.f,...
@@ -181,21 +183,21 @@ classdef mcExperiment < mcInput
                                                 'Callback', {@e.push2_Callback, ii});
                 e.proceedboxes{ii}= uicontrol(  'Parent', e.f,...
                                                 'Style', 'check',...
-                                                'Value', e.config.autoProDef || strcmpi(e.config.classes{ii}(1:3), 'pau'),...
+                                                'Value', e.config.autoProDef || strcmpi(e.classes{ii}(1:3), 'pau'),...
                                                 'HorizontalAlign', 'left',...
                                                 'Position', [t4, p + (e.num-ii)*bh, cw, bh],...
                                                 'Callback', @e.proceedCheck_Callback);
                                             
                 if isstruct(e.config.steps{ii}{2})
                     if isfield(e.config.steps{ii}{2}, 'class')
-                        e.config.classes{ii} = e.config.steps{ii}{2}.class;
+                        e.classes{ii} = e.config.steps{ii}{2}.class;
                     else
                         error(['mcData(): Axis config for ' e.config.steps{ii}{2}.name ' given without class.']);
                     end
                 elseif ischar(e.config.steps{ii}{2})
-                    e.config.classes{ii} = e.config.steps{ii}{2};
+                    e.classes{ii} = e.config.steps{ii}{2};
                     
-                    switch lower(e.config.classes{ii}(1:2))
+                    switch lower(e.classes{ii}(1:2))
                         case 'mc'
                             error('mcExperiment.Open(): String-type step should not be allowed to impersonate an mcClass');
                     end
@@ -203,7 +205,7 @@ classdef mcExperiment < mcInput
                     error(['mcExperiment.Open(): Type ' class(e.config.steps{ii}{2}) ' not understood.']);
                 end
                 
-                switch lower(e.config.classes{ii}(1:3)) % Change, in case the first three letters aren't enough?
+                switch lower(e.classes{ii}(1:3)) % Change, in case the first three letters aren't enough?
                     case 'mca'  % mcAxis
                         c = e.config.steps{ii}{2};
                         e.objects{ii} = eval([c.class '(c)']);  % Make an mcAxis (subclass) object based on that config.
@@ -215,7 +217,7 @@ classdef mcExperiment < mcInput
                         e.objects{ii} = mcDataViewer(data, false, false);
                         e.objects{ii}.isPersistant = true;
                     case 'mcd'  % mcData
-                        if strcmpi(e.config.classes{ii}, 'mcData')
+                        if strcmpi(e.classes{ii}, 'mcData')
                             data = mcData(e.config.steps{ii}{2});
                             data.r.scanMode = -1;                               % Make sure this is paused at start...
                             data.d.name = [e.name ' - ' data.d.name];
@@ -240,14 +242,46 @@ classdef mcExperiment < mcInput
         function Close(e)
             % Save!
             
-            figure(e.f);
-            closereq
+%             for ii = 1:e.num
+%                 e.objects{ii}
+%             end
+%             
+%             switch lower(e.classes{ii}(1:3)) % Change, in case the first three letters aren't enough?
+%                 case 'mca'  % mcAxis
+%                     e.objects{ii}.close();
+%                 case 'mci'  % mcInput
+%                     data = mcData(mcData.singleConfiguration(e.config.steps{ii}{2}, e.config.steps{ii}{3}));
+%                     data.r.scanMode = -1;                               % Make sure this is paused at start...
+%                     data.d.name = [e.name ' - ' data.d.name];
+% 
+%                     e.objects{ii} = mcDataViewer(data, false, false);
+%                     e.objects{ii}.isPersistant = true;
+%                 case 'mcd'  % mcData
+%                     if strcmpi(e.classes{ii}, 'mcData')
+%                         data = mcData(e.config.steps{ii}{2});
+%                         data.r.scanMode = -1;                               % Make sure this is paused at start...
+%                         data.d.name = [e.name ' - ' data.d.name];
+% 
+%                         e.objects{ii} = mcDataViewer(data, false, false);   % ...and don't initially show the gui.
+%                         e.objects{ii}.isPersistant = true;
+%                     else
+%                         warning('mcExperiment.Open(): Class starting with mcd not understood');
+%                     end
+%                 case 'pau'  % pause
+%                     % Do nothing.
+%                 end
+            
+            delete(e.f);
+%             delete(e)
+            
+%             figure(e.f);
+%             closereq
         end
         
         % MEASURE ------- The 'meat' of the input: the funtion that actually does the measurement and 'inputs' the data. Ignore integration time (with ~) if there should not be one.
         function data = Measure(e, ~)
-            e
-            e.config
+%             e
+%             e.config
             while e.config.current <= e.num
                 e.proceeding = e.proceedboxes{e.config.current}.Value;
                 e.refreshStep();
@@ -255,7 +289,7 @@ classdef mcExperiment < mcInput
                 waitfor(e, 'proceeding', true);
                 e.refreshStep();
                 
-                switch lower(e.config.classes{e.config.current}(1:3))
+                switch lower(e.classes{e.config.current}(1:3))
                     case {'mcd', 'mci'}
                         e.objects{e.config.current}.df.Visible = 'on';  % Make the data figue visible,
                         figure(e.f);    % But resore focus to the mcExperiment panel, so that we can tell whether the data figure should be hidden after the scan finishes (don't close if the data figure is selected).
@@ -305,6 +339,12 @@ classdef mcExperiment < mcInput
             e.refreshStep();
             
             data = e.Analysis();
+%             e.close();
+
+
+            % Reset...
+            e.config.current = 1;
+            e.refreshStep();
         end
     end
     
@@ -346,7 +386,7 @@ classdef mcExperiment < mcInput
         end
         
         function push1_Callback(e, ~, ~, ii)
-            if ii == e.config.current && ( strcmpi(e.config.classes{ii}(1:3), 'mci') || strcmpi(e.config.classes{ii}(1:3), 'mcd') )
+            if ii == e.config.current && ( strcmpi(e.classes{ii}(1:3), 'mci') || strcmpi(e.classes{ii}(1:3), 'mcd') )
                 e.objects{e.config.current}.scanButton_Callback(0,0);
 %                 mode3 = e.objects{e.config.current}.data.r.scanMode
 %                 e.proceeding = (e.objects{e.config.current}.data.r.scanMode == 2);
@@ -374,7 +414,7 @@ classdef mcExperiment < mcInput
                     e.doneboxes{ii}.Value = 1;
                     e.doneboxes{ii}.BackgroundColor = [0.9400 0.9400 0.9400];
                     
-                    switch lower(e.config.classes{ii}(1:3))
+                    switch lower(e.classes{ii}(1:3))
                         case {'mcd', 'mci'}
                             e.push2{ii}.String = 'View';
                             e.push2{ii}.Enable = 'on';
@@ -389,7 +429,7 @@ classdef mcExperiment < mcInput
                     e.doneboxes{ii}.BackgroundColor = [0 0.9400 0];
 %                     e.names{ii}.BackgroundColor = [0 0.9400 0];
                     
-                    switch lower(e.config.classes{ii}(1:3))
+                    switch lower(e.classes{ii}(1:3))
                         case {'mcd', 'mci'}
                             e.push2{ii}.String = 'View';
                             e.push2{ii}.Enable = 'on';
@@ -417,7 +457,7 @@ classdef mcExperiment < mcInput
 %                         e.names{ii}.BackgroundColor = [0 0.9400 0];
                     end
                     
-                    switch lower(e.config.classes{ii}(1:3))
+                    switch lower(e.classes{ii}(1:3))
                         case {'mcd', 'mci'}
                             e.push1{ii}.String = 'Acquire';
                             e.push1{ii}.Enable = 'off';

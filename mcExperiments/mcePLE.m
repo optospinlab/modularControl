@@ -11,6 +11,7 @@ classdef mcePLE < mcExperiment
     properties
         aPLE
         aSpec
+        aSpec2
         
         aSpecPos
         aSpecIntensity
@@ -28,7 +29,7 @@ classdef mcePLE < mcExperiment
         %  - results
         
         function config = defaultConfig()               % Static config that should be used if no configuration is provided upon intialization.
-            config = mcePLE.customConfig(20);
+            config = mcePLE.customConfig(2);
         end
         function config = customConfig(numScans)
             config.class = 'mcePLE';
@@ -70,7 +71,7 @@ classdef mcePLE < mcExperiment
             % PLE input
             scansPLE =      mcData.inputConfig(PLE, numScans, 1);    % (Fake integrationTime)
             
-            sl = 30;    % (seconds) = Spectrum Length
+            sl = 60;    % (seconds) = Spectrum Length
             
             config.overview =   'Overview should be used to describe a mcExperiment.';
             config.steps =      {   
@@ -78,8 +79,9 @@ classdef mcePLE < mcExperiment
 %                                     {'Green On',            greenDigital,   1,          'Turn the green on so we can take a spectrum.'};...
                                     {'Spec Mirror Down',    mirror,         0,          'Move the SPCM mirror down so that we can take a spectrum.'};...
                                     {'Spectrum',            spectrometer,   sl,         'Take a spectrum to determine whether we should see an NV with PLE.'};...
+                                    {'Spectrum 2',          spectrometer,   sl,         'Take a second spectrum to avoid cosmic rays.'};...
 %                                     {'Green Off',           greenDigital,   0,          'For posterity, turn the green off while we play around with the red.'};...
-                                    {'Red On',              redSerial,      'on()',     'Turn the red laser on so we can use it.'};...
+                                    {'Red On',              redDigital,     1,          'Turn the red laser on so we can use it.'};...
 %                                     {'Align Red',           redSerial,      637.2,      'Set the wavelength of the red laser to be on the ZPL.'};...
 %                                     {'Red at -3V',          redAnalog,      -Inf,       'Offset -3V from the basepoint so we can verify the scan will pass through the ZPL.'};...
 %                                     {'-3V Spectrum',        spectrometer,   sl,         'Take a spectrum at -3V.'};...
@@ -92,7 +94,7 @@ classdef mcePLE < mcExperiment
                                     {'Green OD0',           greenOD2,       0,          'Make sure the OD2 filter is down.'};...
 %                                     {'Pause (.5s)',         'pause',        .5,          'Pause to make sure everything has time to flip.'};...
 %                                     {'Green OD0',           greenOD2,       0,          'Remove the OD2 filter.'};...
-                                    {'Red Off',             redSerial,      'off()',    'Turn the red off'}  
+                                    {'Red Off',             redDigital,     0,          'Turn the red off'}  
                                 };
                                 
             config.current =    1;                          % Current step
@@ -131,36 +133,42 @@ classdef mcePLE < mcExperiment
         
         function data = Analysis(e)
             %
-            e.aPLE =            e.objects{7}.d.data;
-            data =              e.aPLE;
-            e.aSpec =           e.objects{3}.d.data;
+            e.aPLE =            e.objects{8}.data.d.data{1};
+            
+            e.aSpec =           e.objects{3}.data.d.data{1};
+            e.aSpec2 =          e.objects{4}.data.d.data{1};
+            
+            data =              0;
 
             %
-            M =                 max(e.aSpec(e.aSpec < 200));    % thresh of 200 for cosmic ray...
-            e.aSpecPos =        find(e.aSpec == M, 1);
-            
-            e.aSpecIntensity =  M;
-        
-            %
-            x = 1:e.config.upPixels;
-            
-            finmean(:) =        fitLorentz(x, mean(e.aPLE(x), 2), ft);
-            e.aLineWid =        finmean(3);
-            e.aIntensity =      finmean(1);
-            
-            %
-            findata =   zeros(3, tscans);
-            
-            for jj = 1:e.config.numScans
-                d2 = e.aSpec(:, jj);
-
-                findata(:, jj) = fitLorentz(x, d2(x), ft);
-            end
-            
-            finmedian =         median(findata, 2);  
-
-            e.aLineWidM   =     finmedian(3);
-            e.aIntensityM =     finmedian(1);
+%             M =                 max(e.aSpec(e.aSpec < 200));    % thresh of 200 for cosmic ray...
+%             e.aSpecPos =        find(e.aSpec == M, 1);
+%             
+%             e.aSpecIntensity =  M;
+%         
+%             %
+%             x = 1:e.config.upPixels;
+%             
+%             
+%             ft = fittype('d + a / ( 1 + ( 2*(x - b)/c ).^2 )');
+%             
+%             finmean(:) =        fitLorentz(x, mean(e.aPLE(x), 2), ft);
+%             e.aLineWid =        finmean(3);
+%             e.aIntensity =      finmean(1);
+%             
+%             %
+%             findata =   zeros(3, tscans);
+%             
+%             for jj = 1:e.config.numScans
+%                 d2 = e.aSpec(:, jj);
+% 
+%                 findata(:, jj) = fitLorentz(x, d2(x), ft);
+%             end
+%             
+%             finmedian =         median(findata, 2);  
+% 
+%             e.aLineWidM   =     finmedian(3);
+%             e.aIntensityM =     finmedian(1);
         end
     end
     

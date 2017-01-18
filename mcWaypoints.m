@@ -372,9 +372,9 @@ classdef mcWaypoints < mcSavableClass
             delete(wp.listeners.x);
             delete(wp.listeners.y);
             
-%             prop = findprop(mcAxis, 'x');
-%             wp.listeners.x = event.proplistener(wp.config.axes{wp.config.xi}, prop, 'PostSet', @wp.listenToAxes_Callback);
-%             wp.listeners.y = event.proplistener(wp.config.axes{wp.config.yi}, prop, 'PostSet', @wp.listenToAxes_Callback);
+            prop = findprop(mcAxis, 'x');
+            wp.listeners.x = event.proplistener(wp.config.axes{wp.config.xi}, prop, 'PostSet', @wp.listenToAxes_Callback);
+            wp.listeners.y = event.proplistener(wp.config.axes{wp.config.yi}, prop, 'PostSet', @wp.listenToAxes_Callback);
         end
         function listenToAxes_Callback(wp, ~, ~)
             if isvalid(wp)

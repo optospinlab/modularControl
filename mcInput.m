@@ -267,18 +267,6 @@ classdef mcInput < mcSavableClass
                         return;
                     end
                     
-%                     size(data)
-%                     
-%                     I.config.kind.sizeInput
-% 
-%                     size(data) == I.config.kind.sizeInput
-%                     
-%                     all(size(data) == I.config.kind.sizeInput)
-%                     
-%                     size(data) == I.config.kind.sizeInput(end:-1:1)
-%                     
-%                     all(size(data) == I.config.kind.sizeInput(end:-1:1))
-                    
                     if ~( all(size(data) == I.config.kind.sizeInput) || all(size(data) == I.config.kind.sizeInput(end:-1:1)) )  % Check for flipping...
                         warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
                         data = NaN(I.config.kind.sizeInput);

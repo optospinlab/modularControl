@@ -84,7 +84,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             s = wiener2(d.data{1}, [3 3]);
 
 %             figure;
-            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), .9), strel('diamond',1));
+            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), .8), strel('diamond',1));
             % Don't hardcode quantile!!!
             
             %             figure; imagesc(bw);
@@ -112,7 +112,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 halfsquarewid(ii) = ceil(min(taxi(taxi ~= 0))/4) + 1.5;
             end
             
-            limit = .75;    % Don't hardcode!!!
+            limit = .75;    % Don't hardcode!!! (limits the scan range to 1.5x1.5 um
             
             config.A =      [xvals; yvals; min(halfsquarewid*unitx, limit); min(halfsquarewid*unity, limit)];
             
@@ -239,7 +239,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                                                             a.shouldOptimize,...
                                                             Y(length(a.axes_) + ii),...
                                                             200,... % Should not be hardcoded!
-                                                            5));    % Should not be hardcoded!
+                                                            2));    % Should not be hardcoded!
                     disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
                     d.aquire();
                     disp('...Finished.');
@@ -257,9 +257,9 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                     
                     d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
                                                             a.shouldOptimize,...
-                                                            5,...   % Should not be hardcoded!
+                                                            3,...   % Should not be hardcoded!
                                                             200,... % Should not be hardcoded!
-                                                            5));    % Should not be hardcoded!
+                                                            2));    % Should not be hardcoded!
                                                         
                     disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
                     d.aquire();
