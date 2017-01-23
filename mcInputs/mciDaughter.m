@@ -75,8 +75,8 @@ classdef mciDaughter < mcInput
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
         function tf = Eq(I, b)          % Compares two mciDaughters
-            tf = strcmpi(I.config.parent.name,  b.config.parent.name) &&... % Change? Do this properly with the eq method of the class, instead of the config struct?
-                 strcmp(I.config.var,  b.config.var);  % Remove!
+            tf =    strcmpi(I.config.parent.name,  b.config.parent.name) &&... % Change? Do this properly with the eq method of the class, instead of the config struct?
+                    strcmp(I.config.var,  b.config.var);  % Remove!
         end
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
@@ -102,7 +102,7 @@ classdef mciDaughter < mcInput
 %             in = I.s
         end
         function Close(~)               % Do whatever neccessary to deinitialize the input.
-            % Do nothing. The parent should not be closed because it might be doing something somewhere else.
+            % Do nothing. The parent should not be closed because it might be doing something elsewhere.
         end
         
         % MEASURE ------- The 'meat' of the input: the funtion that actually does the measurement and 'inputs' the data. Ignore integration time (with ~) if there should not be one.
@@ -121,13 +121,21 @@ classdef mciDaughter < mcInput
 %             ['I.s.' I.config.var]
 %             eval(['I.s.' I.config.var])
 %             I.config.var
+
             I.close();
             I.open();
+            
+%             ['I.s.' I.config.var]
 % 
+% % 
 %             I.s
 %             str = ['I.s.' I.config.var]
-            data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
-%             data
+            try
+                data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
+            catch
+                data = NaN(I.config.kind.sizeInput);
+            end
+                %             data
 %             expected = I.config.kind.sizeInput
         end
     end

@@ -81,10 +81,14 @@ classdef mcScalePanel < handle
             end
         end
         function normalize_Callback(panel, ~, ~)
-            panel.gui.minSlid.Max = str2double(panel.gui.dataMinEdit.String);
+            if ~isnan(str2double(panel.gui.dataMinEdit.String))
+                panel.gui.minSlid.Max = str2double(panel.gui.dataMinEdit.String);
+            end
             panel.gui.minSlid.Value = panel.gui.minSlid.Max;
 
-            panel.gui.maxSlid.Max = str2double(panel.gui.dataMaxEdit.String);
+            if ~isnan(str2double(panel.gui.dataMaxEdit.String))
+                panel.gui.maxSlid.Max = str2double(panel.gui.dataMaxEdit.String);
+            end
             panel.gui.maxSlid.Value = panel.gui.maxSlid.Max;
 
             panel.slider_Callback(panel.gui.minSlid, -1);
@@ -202,6 +206,18 @@ classdef mcScalePanel < handle
                 magn = floor(log10(M));
 %                 STR = [num2str(M/(10^magn), '%1.1f') 'e' num2str(magn)];
                 STR = [num2str(ceil(M/(10^(magn-1)))/10, '%1.1f') 'e' num2str(magn)];
+            end
+            
+            if isnan(str2double(str))
+                str = '0';
+            end
+            if isnan(str2double(STR))
+                STR = '1';
+            end
+            
+            if str2double(STR) < str2double(str)
+                str = '0';
+                STR = '1';
             end
             
             str0 = panel.gui.dataMinEdit.String;

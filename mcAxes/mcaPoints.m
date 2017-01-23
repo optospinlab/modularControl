@@ -48,7 +48,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             fname = '';
             
             while ~exist(fname, 'file')
-                [FileName, PathName] = uigetfile('*.mat', 'Select the (2D) mcData .mat file to find bright spots upon.');
+                [FileName, PathName] = uigetfile('*.mat', 'Select the (2D) mcData .mat file to find bright spots upon.', mcInstrumentHandler.getSaveFolder(0));
                 if isnumeric(FileName)
                     fname = '';
                 else
@@ -65,10 +65,33 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             config = mcaPoints.brightSpotConfig(d.data);
         end
+%         function config = specialPromptBrightSpotConfig()
+%             fname = '';
+%             
+%             while ~exist(fname, 'file')
+%                 [FileName, PathName] = uigetfile('*.mat', 'Select the (2D) mcData .mat file to find bright spots upon.');
+%                 if isnumeric(FileName)
+%                     fname = '';
+%                 else
+%                     fname = [PathName FileName];
+% %                     fname
+%                 end
+%             end
+%             
+%             d = load(fname);
+%             
+%             if ~isfield(d, 'data')
+%                 error('mcaPoints.promptBrightSpotConfig(): Given .mat file does not contain the struct data; is not compatible.')
+%             end
+%             
+%             config = mcaPoints.brightSpotConfig(d.data);
+%         end
         function config = brightSpotConfig(d)
+            q = .85;
+            
             config.class =              'mcaPoints';
             
-            config.name =               ['Points Found in ' d.name];
+            config.name =               ['Points From ' d.info.timestamp];
             
             config.src =                d;
             
@@ -82,10 +105,14 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 error(['mcaPoints(): Expected a 2D data structure. Found ' num2str(length(d.axes)) ' dimensions.']);
             end
             
+            if any(isnan(d.data{1}))
+                error('mcaPoints(): NaN value detected in data; cannot find points.');
+            end
+            
             s = wiener2(d.data{1}, [3 3]);
 
 %             figure;
-            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), .85), strel('diamond',1));
+            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), q), strel('diamond',1));
             % Don't hardcode quantile!!!
             
             %             figure; imagesc(bw);
@@ -107,10 +134,26 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             config.nums = 1:length(xvals);
             
             halfsquarewid = zeros(size(xvals));
+%             halfsquarewidy = zeros(size(xvals));
 
             for ii = config.nums
                 taxi = abs(xind - xind(ii)) + abs(yind - yind(ii));
-                halfsquarewid(ii) = ceil(min(taxi(taxi ~= 0))/4) + 1.5;
+%                 m = min(taxi(taxi ~= 0));
+%                 sorttaxi = sort(taxi)
+% %                 taxi == m
+% %                 mintaxi = find(taxi == m, 1);
+%                 
+                halfsquarewid(ii) = ceil(min(taxi(taxi ~= 0))/2) + .5;
+%                 
+%                 minx = abs(mean(xind(sorttaxi(2:4))) - xind(ii))
+%                 miny = abs(mean(yind(sorttaxi(2:4)) - yind(ii))
+%                 
+%                 fin = ceil(min(minx, miny)) + .5
+                
+%                 halfsquarewid(ii) = ceil(min(minx, miny)) + .5;
+                
+%                 halfsquarewidx(ii) = minx + .5;
+%                 halfsquarewidy(ii) = miny + .5;
             end
             
             limit = .75;    % Don't hardcode!!! (limits the scan range to 1.5x1.5 um
@@ -168,6 +211,9 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                     a.additionalAxes{ii} = eval([c.class '(c)']);
                 end
             end
+            if ~isfield(a.config, 'numOptimize')
+                a.config.numOptimize = 1;
+            end
             
             a.rollingMeanDiff =  NaN(2, 10);
             
@@ -187,7 +233,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use a.extra for this?)
         function tf = Eq(a, b)
-            tf = strcmpi(a.config.name, b.config.name);
+            tf = strcmpi(a.config.name, b.config.name);% && strcmpi(a.config.src.info.timestamp, b.config.src.info.timestamp);
         end
         
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).
@@ -209,6 +255,8 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             a.Goto(x);
         end
         function Goto(a, x)
+            disp(['Going to the ' getSuffix(x) ' point...']);
+            
             a.x = x;
             a.xt = a.x;
             
@@ -233,51 +281,53 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             end
             
             if ~isempty(a.config.shouldOptimize)
-                for ii = 1:n
-                    a.prevOpt(x, ii, 1) = y(ii);
-                    
-                    d = mcData(mcData.optimizeConfiguration(a.axes_{ii},...
-                                                            a.shouldOptimize,...
-                                                            2*Y(length(a.axes_) + ii),...
-                                                            100,... % Should not be hardcoded!
-                                                            4));    % Should not be hardcoded!
-                    disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
-%                     d.aquire();
-                    
-                    dv = mcDataViewer(d, false);
-                    pause(.25);
-                    a.prev{ii} = d.d.data{1};
-                    dv.closeRequestFcnDF(0,0);
-                    disp('...Finished.');
-                    
-                    a.prevOpt(x, ii, 2) = a.axes_{ii}.getX();
-                    a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
-                    
-                    a.rollingMeanDiff(ii, 1) = a.prevOpt(x, ii, 3);
-                end
-                
-                for jj = 1:length(a.additionalAxes)
-                    ii = ii + 1;
-                    
-                    a.prevOpt(x, ii, 1) = a.additionalAxes{jj}.getX();
-                    
-                    d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
-                                                            a.shouldOptimize,...
-                                                            4,...   % Should not be hardcoded!
-                                                            100,... % Should not be hardcoded!
-                                                            4));    % Should not be hardcoded!
-                                                        
-                    disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
-%                     d.aquire();
-                    
-                    dv = mcDataViewer(d, false);
-                    pause(.25);
-                    a.prev{ii} = d.d.data{1};
-                    dv.closeRequestFcnDF(0,0);
-                    disp('...Finished.');
-                    
-                    a.prevOpt(x, ii, 2) = a.additionalAxes{jj}.getX();
-                    a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
+                for jj = 1:a.config.numOptimize
+                    for ii = 1:n
+                        a.prevOpt(x, ii, 1) = y(ii);
+
+                        d = mcData(mcData.optimizeConfiguration(a.axes_{ii},...
+                                                                a.shouldOptimize,...
+                                                                2*Y(length(a.axes_) + ii),...
+                                                                100,... % Should not be hardcoded!
+                                                                4));    % Should not be hardcoded!
+                        disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
+    %                     d.aquire();
+
+                        dv = mcDataViewer(d, false);
+                        a.prev{ii} = d.d.data{1};
+                        pause(.25);
+                        dv.closeRequestFcnDF(0,0);
+                        disp('...Finished.');
+
+                        a.prevOpt(x, ii, 2) = a.axes_{ii}.getX();
+                        a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
+
+                        a.rollingMeanDiff(ii, 1) = a.prevOpt(x, ii, 3);
+                    end
+
+                    for jj = 1:length(a.additionalAxes)
+                        ii = ii + 1;
+
+                        a.prevOpt(x, ii, 1) = a.additionalAxes{jj}.getX();
+
+                        d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
+                                                                a.shouldOptimize,...
+                                                                4,...   % Should not be hardcoded!
+                                                                100,... % Should not be hardcoded!
+                                                                4));    % Should not be hardcoded!
+
+                        disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
+    %                     d.aquire();
+
+                        dv = mcDataViewer(d, false);
+                        a.prev{ii} = d.d.data{1};
+                        pause(.25);
+                        dv.closeRequestFcnDF(0,0);
+                        disp('...Finished.');
+
+                        a.prevOpt(x, ii, 2) = a.additionalAxes{jj}.getX();
+                        a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
+                    end
                 end
                 
                 p = a.prevOpt;  %#ok

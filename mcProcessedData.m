@@ -111,6 +111,8 @@ classdef mcProcessedData < handle
                         relevant =      pd.parent.r.l.type == 0 | pd.parent.r.l.type == pd.input;
 
                         nums =          1:length(pd.parent.r.l.layer);
+                        nums(relevant)= 1:sum(relevant);                    % This is neccessary if there are multiple inputs.
+                        
                         toMean =        relevant & pd.parent.r.l.layer == 3;
 
                         d = pd.parent.d.data{pd.input};

@@ -362,7 +362,7 @@ classdef mcExperiment < mcInput
     % Fill-in methods
     methods
         function Step(e)    % Proceed with the iith step of the experiment e. Overwrite this in mce subclasses.
-            disp(['Step ' num2str(e.config.current) ' -> ' num2str(e.config.current + 1)]);
+            disp(['    Step ' num2str(e.config.current) ' -> ' num2str(e.config.current + 1)]);
 %             switch ii
 %                 case 0
 %                     % Do something at the end of step 0.
@@ -379,9 +379,11 @@ classdef mcExperiment < mcInput
     
     % UI methods
     methods
-        function crf(e, ~, ~)   % Close request function
+        function crf(e, src, ~)   % Close request function
             if ~isvalid(e)
-                closereq
+                delete(src)
+            else
+                e.close();
             end
         end
         

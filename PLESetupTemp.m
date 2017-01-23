@@ -3,18 +3,19 @@ function PLESetupTemp()
 %     c = mcaPoints.promptBrightSpotConfig();
 
     
-    configPiezoX = mcaDAQ.piezoConfig();    configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';
-    configPiezoY = mcaDAQ.piezoConfig();    configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
-
-    data = mcData(mcData.squareScanConfiguration(mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mciDAQ(mciDAQ.counterConfig), 20, 10, 300));
-    mcDataViewer(data, false);
-
-    c = mcaPoints.brightSpotConfig(data.d);
+%     configPiezoX = mcaDAQ.piezoConfig();    configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';
+%     configPiezoY = mcaDAQ.piezoConfig();    configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
+% 
+%     data = mcData(mcData.squareScanConfiguration(mcaDAQ(configPiezoX), mcaDAQ(configPiezoY), mciDAQ(mciDAQ.counterConfig), 20, 10, 300));
+%     mcDataViewer(data, false);
+% 
+%     c = mcaPoints.brightSpotConfig(data.d);
+%     
     
-    
-%     c = mcaPoints.promptBrightSpotConfig();
+    c = mcaPoints.promptBrightSpotConfig();
     c.shouldOptimize = mciDAQ.counterConfig;
     c.additionalAxes = {mcaDAQ.piezoZConfig};
+    c.numOptimize = 2;
     a = mcaPoints(c);
     a.makePlot
     
@@ -23,9 +24,9 @@ function PLESetupTemp()
     e = mcePLE.customConfig(numScans);
     lenPLE =    240;
     
-    c1 = mciDaughter.daughterConfig(a, 'prevOpt(end,1,3)', [1 1], 'um');    c1.name = 'X Offset';
-    c2 = mciDaughter.daughterConfig(a, 'prevOpt(end,2,3)', [1 1], 'um');    c2.name = 'Y Offset';
-    c3 = mciDaughter.daughterConfig(a, 'prevOpt(end,3,3)', [1 1], 'um');    c3.name = 'Z Offset';
+    c1 = mciDaughter.daughterConfig(a, 'prevOpt(end,1,3) + 25', [1 1], 'um');    c1.name = 'X Offset From Expected';
+    c2 = mciDaughter.daughterConfig(a, 'prevOpt(end,2,3) + 25', [1 1], 'um');    c2.name = 'Y Offset From Expected';
+    c3 = mciDaughter.daughterConfig(a, 'prevOpt(end,3,2) + 25', [1 1], 'um');    c3.name = 'Absolute Z';
     
     c4 = mciDaughter.daughterConfig(a, 'prev{1}', [100 1], 'cts');	c4.name = 'X Scan';
     c5 = mciDaughter.daughterConfig(a, 'prev{2}', [100 1], 'cts');  c5.name = 'Y Scan';
@@ -57,6 +58,7 @@ function PLESetupTemp()
     d.scans =   {1:length(a.config.nums)};
     d.inputs =  {mciDAQ.counterConfig, i1, i2, i3, i1b, i2b, i3b, mcePLE(e), i4, i5, i6, i7, i8, i9, i10, i11};
     d.intTimes = NaN(size(d.inputs)); %, NaN, NaN, NaN];
+    d.intTimes(1) = 1;
     
     mcDataViewer(mcData(d));
 end

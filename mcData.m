@@ -444,6 +444,18 @@ classdef mcData < mcSavableClass
             % Need more checks?!
         end
         
+        function tf = eq(d, b)
+            if      isfield(d.d, 'info')        && isfield(b.d, 'info') 
+                if  isfield(d.d.info, 'fname')  && isfield(b.d.info, 'fname')
+                    tf = strcmpi(d.info.fname, b.info.fname);
+                else
+                    tf = false;
+                end
+            else
+                tf = false;
+            end
+        end
+        
         function initialize(d)      % Initializes the d.r (r for runtime) variables in the mcData object.
             if ~isfield(d.r, 'isInitialized')     % If not initialized, then intialize.
                 
