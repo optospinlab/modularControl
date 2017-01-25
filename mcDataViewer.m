@@ -589,7 +589,7 @@ classdef mcDataViewer < mcSavableClass
                         
 %                         data
                         
-                        save([PathName FileName], 'data');      % Make sure that the extension is three characters?
+                        save([PathName FileName], '-v6', 'data');      % Make sure that the extension is three characters?
                     case 3      % .png
                         if gui.data.r.plotMode == 0
                             warning(['mcDataViewer.saveGUI_Callback() - ' gui.data.d.name ': Cannot save an axes-less histogram. Sorry.'])
@@ -622,7 +622,7 @@ classdef mcDataViewer < mcSavableClass
                 
 %                 data
                 
-                save([PathName FileName(1:end-4) ' (full).mat'], 'data');   % Make sure that the extension is three characters?
+                save([PathName FileName(1:end-4) ' (full).mat'], '-v6', 'data');   % Make sure that the extension is three characters?
                 
                 pause(.05);                                         % Pause again
             else
@@ -845,7 +845,7 @@ classdef mcDataViewer < mcSavableClass
             gui.posL.sel.Visible =   pvis;
             gui.posL.pix.Visible =   pvis;
             gui.posL.act.Visible =   pvis;
-%             gui.posL.prv.Visible =   pvis;
+            gui.posL.prv.Visible =   pvis;
             
             if gui.isRGB
                 gui.p(2).Visible =       pvis;
@@ -1040,8 +1040,8 @@ classdef mcDataViewer < mcSavableClass
                     if gui.data.r.l.type(gui.data.r.l.layer == 1) == 0
                         gui.listeners.x = event.proplistener(gui.data.r.a.a{gui.data.r.l.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
                     else
-                        gui.pos.prv.XData = 0;
-                        gui.pos.act.XData = 0;
+                        gui.pos.prv.XData = [NaN NaN];
+                        gui.pos.act.XData = [NaN NaN];
                     end
                 case 2
 %                     ax = gui.data.r.a.a{gui.data.r.l.layer == 1}.name()
@@ -1049,46 +1049,36 @@ classdef mcDataViewer < mcSavableClass
                     if gui.data.r.l.type(gui.data.r.l.layer == 1) == 0
                         gui.listeners.x = event.proplistener(gui.data.r.a.a{gui.data.r.l.layer == 1}, prop, 'PostSet', @gui.listenToAxes_Callback);
                     else
-                        gui.pos.prv.XData = 0;
-                        gui.pos.act.XData = 0;
+                        gui.pos.prv.XData = NaN;
+                        gui.pos.act.XData = NaN;
                     end
                     if gui.data.r.l.type(gui.data.r.l.layer == 2) == 0
                         gui.listeners.y = event.proplistener(gui.data.r.a.a{gui.data.r.l.layer == 2}, prop, 'PostSet', @gui.listenToAxes_Callback);
                     else
-                        gui.pos.act.YData = 0;
-                        gui.pos.prv.YData = 0;
+                        gui.pos.act.YData = NaN;
+                        gui.pos.prv.YData = NaN;
                     end
             end
+            
+            gui.listenToAxes_Callback(0,0);
         end
         function listenToAxes_Callback(gui, ~, ~)
-%             display('listening...')
             if isvalid(gui) && gui.data.r.plotMode ~= 0 && all( gui.data.r.l.type(gui.data.r.l.layer == 1 | gui.data.r.l.layer == 2) == 0 )
                 axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
-%                 bx = axisX.name()
 
                 x = axisX.getX();
-
                 gui.posL.act.XData = [x x];
                 gui.pos.act.XData = x;
-                
-%                 xprv = gui.data.data.axisPrev(gui.data.r.l.layer == 1);
-                
+
                 x = gui.data.r.a.prev(gui.data.r.l.layer == 1);
-                if x ~= gui.pos.prv.XData
-                    gui.posL.prv.XData = [x x];
-                    gui.pos.prv.XData = x;
-                end
+                gui.posL.prv.XData = [x x];
+                gui.pos.prv.XData = x;
 
                 if gui.data.r.plotMode == 2
                     axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
-%                     by = axisY.name()
 
                     gui.pos.act.YData = axisY.getX();
-                
-                    y = gui.data.r.a.prev(gui.data.r.l.layer == 2);
-                    if y ~= gui.pos.prv.YData
-                        gui.pos.prv.YData = y;
-                    end
+                    gui.pos.prv.YData = gui.data.r.a.prev(gui.data.r.l.layer == 2);
                 end
                 
             end

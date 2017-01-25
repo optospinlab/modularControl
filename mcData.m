@@ -797,7 +797,7 @@ classdef mcData < mcSavableClass
                 
 %                 mode = d.r.scanMode
                     
-                if d.r.scanMode == -2       % If dataviewer was quit midscan.
+                if d.r.scanMode == -2       % If dataViewer was quit midscan.
                     for ii = nums
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
@@ -813,11 +813,15 @@ classdef mcData < mcSavableClass
                 elseif d.d.flags.shouldOptimize     % If there should be a post-scan optimization...
                     switch length(d.r.a.a)
                         case 1
+%                             tic
                             [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);    % First find the peak.
-
+%                             toc
+%                             tic
                             d.r.a.a{1}.goto(d.d.scans{1}(1));                       % Approaching from the same direction...
-
+%                             toc
+%                             tic
                             d.r.a.a{1}.goto(x);                                     % ...goto the peak.
+%                             toc
                         case 2
                             [x, y] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, d.d.scans{2});     % First find the peak.
 
@@ -909,7 +913,7 @@ classdef mcData < mcSavableClass
     methods
         function save(d)                % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
             data = d.d; %#ok
-            save([d.d.info.fname ' ' d.d.name], 'data');
+            save([d.d.info.fname ' ' d.d.name], '-v6', 'data');
         end
         
         function str = indexName()      % Brief name corresponding to current index (the point in axis-space that is currently being measured)
