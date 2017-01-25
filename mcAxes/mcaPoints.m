@@ -65,6 +65,68 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             config = mcaPoints.brightSpotConfig(d.data);
         end
+        function config = modifyAndPromptBrightSpotConfig()
+            fname = '';
+            
+            while ~exist(fname, 'file')
+                [FileName, PathName] = uigetfile('*.mat', 'Select the (2D) mcData .mat file to find bright spots upon.', mcInstrumentHandler.getSaveFolder(0));
+                if isnumeric(FileName)
+                    error('mcaPoints.modifyAndPromptBrightSpotConfig(): No file given.')
+                else
+                    fname = [PathName FileName];
+%                     fname
+                end
+            end
+            
+            d = load(fname);
+            
+            if ~isfield(d, 'data')
+                error('mcaPoints.modifyAndPromptBrightSpotConfig(): Given .mat file does not contain the struct data; is not compatible.')
+            end
+            
+            d1 = d
+            d2 = d.data
+            
+            f1 = figure;
+            ax = axes(f1);
+            
+            %                     Style     String                  Variable    TooltipString                                               Optional: Limit [min max round] (only for edit)
+            c2.controls =     { { 'title',  'Options:  ',           NaN,        'Use the following options to configure how bright spots are detected' },...
+                                { 'text',   'Name:  ',              d.data.name,'The name of this mcaPoints.'},...
+                                { 'edit',   'Smoothing:  ',         3,          'The ''range'' of the smoohing algortihm.',                                                                                 [1 Inf 1]},...
+                                { 'edit',   'Quantile:  ',          .85,        'After smoothing, the maxima with brightness in the overall <quantile> quantile are selected as possible bright spots.',    [0 1]},...
+                                { 'edit',   'Dialate:  ',           1,          'To prevent two accidental maxima on the same spot, the maxima are dialated in a diamond shape outward by this value.',     [0 Inf 1]},...
+                                { 'edit',   'Box Min (um):  ',      0,          'Minimum width of a box.',                                  [0 Inf]},...
+                                { 'edit',   'Box Max (um):  ',      1.5,        'Maximum width of a box.',                                  [0 Inf]},...
+                                { 'edit',   'Box Cutoff (um):  ',   .5,         'All spots with boxes under this width will be ignored.',   [0 Inf]},...
+                                { 'edit',   'Opt Range (pix):  ',   100,        'Maximum width of a box.',                                  [2 Inf 1]},...
+                                { 'edit',   'Opt Time (s):  ',      2,          'All spots with boxes under this width will be ignored.',   [0 Inf]},...
+                                { 'push',   'Finalize',             'quit',     'Push this to finalize and continue.' } };
+            
+            gui = mcGUI(c2);
+            
+            while isvalid(gui)
+                'update'
+%                 c = mcaPoints.brightSpotConfigFull(d.data, 1, .85, 3);
+                c = mcaPoints.brightSpotConfigFull(d.data, gui.controls{3}.Value, gui.controls{2}.Value, gui.controls{1}.Value);
+                
+                a = mcaPoints(c);
+                delete(a);
+                a = mcaPoints(c);
+                
+                a.makePlotWithAxes(ax);
+                
+                gui.controls
+                
+                waitfor(gui, 'updated');
+                
+                gui.controls
+            end
+                
+            delete(a);
+            
+            config = c;
+        end
 %         function config = specialPromptBrightSpotConfig()
 %             fname = '';
 %             
@@ -87,8 +149,9 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
 %             config = mcaPoints.brightSpotConfig(d.data);
 %         end
         function config = brightSpotConfig(d)
-            q = .85;
-            
+            config = mcaPoints.brightSpotConfigFull(d, 1, .85, 3);
+        end
+        function config = brightSpotConfigFull(d, dialate, quant, smooth)
             config.class =              'mcaPoints';
             
             config.name =               ['Points From ' d.info.timestamp];
@@ -109,10 +172,10 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 error('mcaPoints(): NaN value detected in data; cannot find points.');
             end
             
-            s = wiener2(d.data{1}, [3 3]);
+            s = wiener2(d.data{1}, [smooth smooth]);
 
 %             figure;
-            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), q), strel('diamond',1));
+            bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), quant), strel('diamond', dialate));
             % Don't hardcode quantile!!!
             
             %             figure; imagesc(bw);
@@ -344,34 +407,42 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
     methods
         % EXTRA --------- Any additional functionality this axis should have (remove if there is none).
         function makePlot(a)
+            a.makePlotWithAxes(a, []);
+        end
+        function makePlotWithAxes(a, ax)
             a.open();
             
-            figure;
+            'here'
             
-            ax = axes;
+            if isempty(ax) || ~isvalid(ax)
+                disp('No axes given...');
+                f = figure;
+                ax = axes(f);
+            end
             
-            xlabel(a.axes_{1}.nameUnits());
-            ylabel(a.axes_{2}.nameUnits());
+            xlabel(ax, a.axes_{1}.nameUnits());
+            ylabel(ax, a.axes_{2}.nameUnits());
             
-            imagesc(a.config.src.scans{1}, a.config.src.scans{2}, a.config.src.data{1}');
+            imagesc(ax, a.config.src.scans{1}, a.config.src.scans{2}, a.config.src.data{1}');
             
             ax.YDir = 'normal';
             
             daspect([1 1 1]);
 
-            hold all;
+            hold(ax, 'all');
                     
             s = size(a.config.A);
             shouldPlotBox = s(1) == 4;
 
             for ii = a.config.nums
-                text(   a.config.A(1,ii), a.config.A(2,ii), num2str(ii),...
+                text(   ax, a.config.A(1,ii), a.config.A(2,ii), num2str(ii),...
                         'VerticalAlignment', 'middle',...
                         'HorizontalAlignment', 'center',...
                         'color', 'red');
                 
                 if shouldPlotBox
-                    plot(   a.config.A(3,ii) * [1 1 -1 -1 1] + a.config.A(1,ii),...
+                    plot(   ax,...
+                            a.config.A(3,ii) * [1 1 -1 -1 1] + a.config.A(1,ii),...
                             a.config.A(4,ii) * [1 -1 -1 1 1] + a.config.A(2,ii),...
                             'red');
                 end

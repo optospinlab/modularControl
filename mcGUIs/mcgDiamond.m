@@ -7,13 +7,13 @@ classdef mcgDiamond < mcGUI
     
     methods (Static)
         function config = defaultConfig()
-            config = mcgDiamond.exampleConfig();
+            config = mcgDiamond.diamondConfig();
         end
-        function config = exampleConfig()
+        function config = diamondConfig()
             galvoConfig = mcaDAQ.galvoConfig();
             piezoConfig = mcaDAQ.piezoConfig();
             
-            %                     Style     String              Variable    TooltipString                               Optional: Limit [min max round] (only for edit)
+            %                     Style     String              Variable    TooltipString                                                                       Optional: Limit [min max round] (only for edit)
             config.controls = { { 'title',  'Galvos:  ',        NaN,        'Confocal scanning for the galvo mirrors.' },...
                                 { 'edit',   'Range (mV): ',     200,        'The range of the scan (in X and Y), centered on the current position. If this scan goes out of bounds, it is shifted to be in bounds.',                                        [0 abs(diff(galvoConfig.kind.int2extConv(galvoConfig.kind.intRange)))]},...
                                 { 'edit',   'Pixels (#): ',     50,         'The number of points (in each dimension) which should be sampled over the scan range.',                                                                                        [1 Inf 1]},...

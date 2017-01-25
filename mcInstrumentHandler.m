@@ -113,10 +113,10 @@ classdef mcInstrumentHandler < handle
                 params.hostname = strrep(params.hostname, '.', '_');    % Not sure if this is the best way to do this...
                 params.hostname = strrep(params.hostname, ':', '_');
                 
-%                 if ismac
-%                     disp(['Note: Finding a consistant computer name for a mac has proven difficult. Configs will be saved under the name of "macOS", instead of the probably-inconsistant ' params.hostname])
-%                     params.hostname = 'macOS';
-%                 end
+                if ismac
+                    disp(['Note: Finding a consistant computer name for a mac has proven difficult. Configs will be saved under the name of "macOS", instead of the probably-inconsistant ' params.hostname])
+                    params.hostname = 'macOS';
+                end
 
                 % Find the modularControl folder (neccessary for saving configs).
                 params.mcFolder = pwd;      % First, guess that our current directory is the modularControl folder

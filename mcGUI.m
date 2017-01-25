@@ -6,6 +6,8 @@ classdef mcGUI < mcSavableClass
         controls = {};
         f = [];
         
+        updated = 0;
+        
         pw = 300;
         ph = 700; % Make variable...
     end
@@ -72,6 +74,27 @@ classdef mcGUI < mcSavableClass
                                     'FontWeight', 'bold',...
                                     'Position', [M, gui.ph - ii*bh, W, bh]);     
                         ii = ii + 1;
+                    case 'text'
+                        if strcmpi(prevControl, 'title')
+                            ii = ii + .25;
+                        end
+                        if strcmpi(prevControl, 'push')
+                            ii = ii + 1;
+                        end
+                        
+                        uicontrol(                      'Parent', gui.f,...  
+                                                        'Style', 'text',... 
+                                                        'String', control{2},... 
+                                                        'TooltipString', control{4},... 
+                                                        'HorizontalAlignment', 'left',...
+                                                        'Position', [M, gui.ph - ii*bh, W, bh]);
+                                                    
+                        gui.controls{jj} =   uicontrol( 'Parent', gui.f,...
+                                                        'Style', 'edit',... 
+                                                        'String', control{3},...
+                                                        'Position', [M, gui.ph - (ii+1)*bh, W, bh]);    
+                                   
+                        ii = ii + 2;
                     case 'edit'
                         if strcmpi(prevControl, 'title')
                             ii = ii + .25;
@@ -86,20 +109,21 @@ classdef mcGUI < mcSavableClass
                                                         'TooltipString', control{4},... 
                                                         'HorizontalAlignment', 'right',...
                                                         'Position', [M, gui.ph - ii*bh, W/2, bh]);
+                                                    
                         gui.controls{jj} =   uicontrol( 'Parent', gui.f,...
                                                         'Style', 'edit',... 
                                                         'String', control{3},...
                                                         'Value', control{3},...     % Also store number as value (used if string change is undesirable).
                                                         'Position', [M + W/2, gui.ph - ii*bh, W/2, bh]);     
                                      
-                        
                         if length(control) > 4
                             gui.controls{jj}.TooltipString =    gui.getLimitString(control{5});
                             gui.controls{jj}.Callback =         {@gui.limit control{5}};
                         else
                             gui.controls{jj}.TooltipString =    gui.getLimitString([]);
-                        end     
-                        
+                            gui.controls{jj}.Callback =         @gui.update;
+                        end  
+                            
                         jj = jj + 1;
                         ii = ii + 1;
                     case 'push'
@@ -122,7 +146,7 @@ classdef mcGUI < mcSavableClass
             gui.f.Visible = 'on';
         end
         
-        function limit(~, src, ~, lim)
+        function limit(gui, src, ~, lim)
             val = str2double(src.String);       % Try to interpret the edit string as a double.
             
             if isnan(val)                       % If we don't understand.. (e.g. '1+1' was input), try to eval() it.
@@ -154,6 +178,8 @@ classdef mcGUI < mcSavableClass
             
             src.String =    val;
             src.Value =     val;
+            
+            gui.update();
         end
         function str = getLimitString(~, lim)
             str = 'No requirements.';
@@ -170,6 +196,9 @@ classdef mcGUI < mcSavableClass
                 end
             end
         end
+        function update(gui)
+            gui.updated = gui.updated + 1;
+        end
         
 %         function val = getEditValue(gui, jj)  % Gets the value of the jj'th edit (change this eventually to look for the edit corresponding to a string? After all, this makes editing difficult)
 %             val = gui.controls{jj}.Value;
@@ -179,6 +208,8 @@ classdef mcGUI < mcSavableClass
     methods
         function Callbacks(gui, ~, ~, cbName)
             switch cbName
+                case 'quit'
+                    delete(gui);
                 case 'hello'
                     disp('Hello World!');
                 otherwise
