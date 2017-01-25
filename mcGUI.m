@@ -199,7 +199,10 @@ classdef mcGUI < mcSavableClass
         function update(gui)
             gui.updated = gui.updated + 1;
         end
-        
+        function delete(gui)
+            delete(gui.f)
+            delete(gui.controls)
+        end
 %         function val = getEditValue(gui, jj)  % Gets the value of the jj'th edit (change this eventually to look for the edit corresponding to a string? After all, this makes editing difficult)
 %             val = gui.controls{jj}.Value;
 %         end
