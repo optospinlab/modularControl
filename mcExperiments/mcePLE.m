@@ -53,9 +53,9 @@ classdef mcePLE < mcExperiment
             ghwp = mcaAPT(ghwpC);
 %             
 %             msgbox('Please rotate the green half-wave plate to the PLE position.');
-            ghwpPLE =   219.5722;
+            ghwpPLE =   213.1726;   % 80uW
 %             msgbox('Please rotate the green half-wave plate to the optimization position.');
-            ghwpOpt =   222.6306;
+            ghwpOpt =   207.2705;   % 1.4mW
             
             % Spectrometer
 %             spectrometer =  mciSpectrum.pyWinSpecConfig();

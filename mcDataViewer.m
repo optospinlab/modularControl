@@ -650,6 +650,7 @@ classdef mcDataViewer < mcSavableClass
                     
                     switch lower(answer)
                         case 'yes'
+                            c.data.other.axes = [];                 % Temp fix for big error.
                             mcDataViewer(mcData(c.data), false)    % And don't show the control window when opening...
                         case 'no'
                             disp('mcDataViewer.loadGUI_Callback(): File was not loaded due to version conflict...');

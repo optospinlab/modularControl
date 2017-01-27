@@ -697,7 +697,7 @@ classdef mcData < mcSavableClass
                 
             d.r.scanMode = 0;
             
-            [~, ~, d.d.other.axes, d.d.other.status] = mcInstrumentHandler.getAxes();
+            [~, ~, ~, d.d.other.status] = mcInstrumentHandler.getAxes();    % Huge bug came from saving other.axes! Will fix soon.
         end
         
         function aquire(d)
@@ -839,7 +839,11 @@ classdef mcData < mcSavableClass
                     end
                 end
                 
-                d.save();
+%                 tic
+                if ~d.d.flags.shouldOptimize
+                    d.save();
+                end
+%                 toc
             end
         end
         function aquire1D(d, jj)
@@ -912,8 +916,11 @@ classdef mcData < mcSavableClass
     % Additional Functionality
     methods
         function save(d)                % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
-            data = d.d; %#ok
-            save([d.d.info.fname ' ' d.d.name], '-v6', 'data');
+            'saving'
+            data = d.d
+            tic
+            save([d.d.info.fname ' ' d.d.name], 'data');
+            toc
         end
         
         function str = indexName()      % Brief name corresponding to current index (the point in axis-space that is currently being measured)
