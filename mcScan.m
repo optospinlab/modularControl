@@ -177,7 +177,7 @@ classdef mcScan < mcSavableClass
                     ii = ii + 1;
                 end
                 
-                if gui.scanAxes{index}.choose.Value == 1;
+                if gui.scanAxes{index}.choose.Value == 1
                     gui.scanAxes{index}.range =             [NaN NaN 50];
                 end
             end
@@ -290,7 +290,7 @@ classdef mcScan < mcSavableClass
                     ii = ii + 1;
                 end
                 
-                if gui.scanInputs{index}.instrumentIndex == 1;
+                if gui.scanInputs{index}.instrumentIndex == 1
                     gui.scanInputs{index}.integrationTime =     1;
                 end
             end
@@ -426,7 +426,7 @@ classdef mcScan < mcSavableClass
                     end
                 else                                        % Otherwise, make sure that no other panel is using this axis...
                     for ii = 1:length(gui.scanAxes)
-                        if ii ~= saIndex && gui.scanAxes{saIndex}.choose.Value == gui.scanAxes{ii}.choose.Value;
+                        if ii ~= saIndex && gui.scanAxes{saIndex}.choose.Value == gui.scanAxes{ii}.choose.Value
                             gui.scanAxes{ii}.choose.Value = 1;  % If another panel is using this axis, set it to 'Choose' mode.
                             gui.chooseAxis(ii);
                         end
@@ -444,7 +444,7 @@ classdef mcScan < mcSavableClass
                 gui.scanInputs{siIndex}.instrumentName = gui.scanInputs{siIndex}.choose.String{gui.scanInputs{siIndex}.choose.Value};
                 
                 for ii = 1:length(gui.scanInputs)               % Then, make sure that no other panel is using this axis...
-                    if ii ~= siIndex && gui.scanInputs{siIndex}.choose.Value == gui.scanInputs{ii}.choose.Value;
+                    if ii ~= siIndex && gui.scanInputs{siIndex}.choose.Value == gui.scanInputs{ii}.choose.Value
                         gui.scanInputs{ii}.choose.Value = 1;    % If another panel is using this input, set it to 'Choose' mode.
                         gui.chooseInput(ii);
                     end
@@ -539,7 +539,7 @@ classdef mcScan < mcSavableClass
                 if gui.scanAxes{index}.range(2) <= 0 || isnan(gui.scanAxes{index}.range(2))
                     gui.scanAxes{index}.range(2) = 10;
                 end
-            else        % Otherwise, if time isn't selected...
+            elseif ~iscell(axes_{ii}.config.kind.extRange)  % Otherwise, if time isn't selected...
                 if gui.scanAxes{index}.range(1) < min(axes_{ii}.config.kind.extRange) || isnan(gui.scanAxes{index}.range(1))
                     gui.scanAxes{index}.range(1) = min(axes_{ii}.config.kind.extRange);
                 end
@@ -614,7 +614,7 @@ classdef mcScan < mcSavableClass
             
             params.intTimes =    cellfun(@(x)(double(x.integrationTime)), gui.scanInputs);
             
-            params
+%             params
             
             if proceed
                 mcDataViewer(mcData(params))

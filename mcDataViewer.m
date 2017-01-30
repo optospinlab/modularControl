@@ -550,7 +550,7 @@ classdef mcDataViewer < mcSavableClass
             
             pause(.05);
             
-            gui.listenToAxes_Callback();
+            gui.listenToAxes_Callback(0, 0);
                     
             if shouldAquire
                 gui.scanButton_Callback(0, 0);
@@ -650,6 +650,7 @@ classdef mcDataViewer < mcSavableClass
                     
                     switch lower(answer)
                         case 'yes'
+                            c.data.other.axes = [];                 % Temp fix for big error.
                             mcDataViewer(mcData(c.data), false)    % And don't show the control window when opening...
                         case 'no'
                             disp('mcDataViewer.loadGUI_Callback(): File was not loaded due to version conflict...');
@@ -1063,8 +1064,19 @@ classdef mcDataViewer < mcSavableClass
             gui.listenToAxes_Callback(0,0);
         end
         function listenToAxes_Callback(gui, ~, ~)
-            if isvalid(gui) && gui.data.r.plotMode ~= 0 && all( gui.data.r.l.type(gui.data.r.l.layer == 1 | gui.data.r.l.layer == 2) == 0 )
-                axisX = gui.data.r.a.a{gui.data.r.l.layer == 1};
+%             isvalid(gui)
+%             isobject(gui)
+%             isempty(gui)
+%             gui.data.r.plotMode ~= 0
+%             all( gui.data.r.l.type(gui.data.r.l.layer == 1 | gui.data.r.l.layer == 2) == 0 )
+%             gui;
+            d = gui.data;   % Really odd bug makes gui.data.r... take more time to access.
+%             gui.data.r;
+%             gui.data.r.l;
+%             R = gui.data.r;
+            R = d.r;
+            if isvalid(gui) && R.plotMode ~= 0 && all( R.l.type(R.l.layer == 1 | R.l.layer == 2) == 0 )
+                axisX = R.a.a{R.l.layer == 1};
 
                 x = axisX.getX();
                 gui.posL.act.XData = [x x];

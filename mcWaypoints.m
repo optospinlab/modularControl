@@ -73,13 +73,15 @@ classdef mcWaypoints < mcSavableClass
                     if iscell(varin)
                         wp.config = emptyConfig();
                         wp.config.axes = varin;
-                        wp.emptyWaypoints();
                     elseif ischar(varin)
                         wp.load(varin);
                     elseif isstruct(varin)
                         wp.config = varin;
-                        wp.emptyWaypoints();
                     end
+            end
+            
+            if ~isfield(wp.config, 'waypoints')
+                wp.emptyWaypoints();
             end
             
             if length(wp.config.axes) < 2
@@ -378,10 +380,10 @@ classdef mcWaypoints < mcSavableClass
         end
         function listenToAxes_Callback(wp, ~, ~)
             if isvalid(wp)
-                wp.p.XData = wp.config.axes{wp.config.xi}.getX();
-                wp.p.YData = wp.config.axes{wp.config.yi}.getX();
-                wp.t.XData = wp.config.axes{wp.config.xi}.getXt();
-                wp.t.YData = wp.config.axes{wp.config.yi}.getXt();
+                wp.p.XData = wp.config.axes{wp.config.xi}.config.kind.int2extConv(wp.config.axes{wp.config.xi}.x);
+                wp.p.YData = wp.config.axes{wp.config.yi}.config.kind.int2extConv(wp.config.axes{wp.config.yi}.x);
+                wp.t.XData = wp.config.axes{wp.config.xi}.config.kind.int2extConv(wp.config.axes{wp.config.xi}.xt);
+                wp.t.YData = wp.config.axes{wp.config.yi}.config.kind.int2extConv(wp.config.axes{wp.config.yi}.xt);
                 
                 wp.computeLimits();
                 
@@ -397,23 +399,30 @@ classdef mcWaypoints < mcSavableClass
                 xr = [min(xlist) max(xlist)];
                 yr = [min(ylist) max(ylist)];
 
-                xw = (diff(xr) + 10)/2;
-                yh = (diff(yr) + 10)/2;
+                if xr(1) < wp.a.XLim(1) || xr(2) > wp.a.XLim(2) || yr(1) < wp.a.YLim(1) || yr(2) > wp.a.YLim(2)
+%                     xr(1) < wp.a.XLim(1)
+%                     xr(2) > wp.a.XLim(2)
+%                     yr(1) < wp.a.YLim(1)
+%                     yr(2) > wp.a.YLim(2)
+                    
+                    xw = .6*(diff(xr) + 10);
+                    yh = .6*(diff(yr) + 10);
 
-                dims = wp.f.Position(3:4);
+                    dims = wp.f.Position(3:4);
 
-                if dims(1)/dims(2) > xw/yh  % Then we need to expand x.
-                    xw = yh*(dims(1)/dims(2));
-                else                        % Then we need to expand y.
-                    yh = xw*(dims(2)/dims(1));
+                    if dims(1)/dims(2) > xw/yh  % Then we need to expand x.
+                        xw = yh*(dims(1)/dims(2));
+                    else                        % Then we need to expand y.
+                        yh = xw*(dims(2)/dims(1));
+                    end
+
+                    x = mean(xr);
+                    y = mean(yr);
+
+                    wp.a.XLim = [x-xw x+xw];
+                    wp.a.YLim = [y-yh y+yh];
+                    drawnow limitrate;
                 end
-
-                x = mean(xr);
-                y = mean(yr);
-
-                wp.a.XLim = [x-xw x+xw];
-                wp.a.YLim = [y-yh y+yh];
-                drawnow limitrate;
             end
         end
         

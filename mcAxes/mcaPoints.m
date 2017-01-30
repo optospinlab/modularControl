@@ -96,37 +96,41 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                                 { 'edit',   'Num Cutoff (#):  ',    100,        'Only sample num points.',                                  [0 Inf 1]},...
                                 { 'edit',   'Opt Range (pix):  ',   100,        'Maximum width of a box.',                                  [2 Inf 1]},...
                                 { 'edit',   'Opt Time (s):  ',      2,          'All spots with boxes under this width will be ignored.',   [0 Inf]},...
-                                { 'push',   'Finalize',             'quit',     'Push this to finalize and continue.' } };
+                                { 'edit',   'Num Rolling Mean (#):  ', 10,      'Number of points to use in the rolling mean calculation.', [0 Inf 1]},...
+                                { 'push',   'Finalize',             'finish',   'Push this to finalize and continue.' } };
             
             gui = mcGUI(c2);
             
             f = figure;
             ax = axes(f);
             
-            while isvalid(gui) && isvalid(f);
+            while isvalid(gui) && isvalid(f) && ~gui.finished
                 c = mcaPoints.brightSpotConfigFull( d.data,...
-                                                    gui.controls{3}.Value,...   % dialate
-                                                    gui.controls{2}.Value,...   % quantile
-                                                    gui.controls{1}.Value,...   % smoothing
-                                                    gui.controls{4}.Value,...   % boxmin
-                                                    gui.controls{5}.Value,...   % boxmax
-                                                    gui.controls{6}.Value,...   % boxcut
-                                                    gui.controls{7}.Value );    % numcut
+                                                    gui.controls{4}.Value,...   % dialate
+                                                    gui.controls{3}.Value,...   % quantile
+                                                    gui.controls{2}.Value,...   % smoothing
+                                                    gui.controls{5}.Value,...   % boxmin
+                                                    gui.controls{6}.Value,...   % boxmax
+                                                    gui.controls{7}.Value,...   % boxcut
+                                                    gui.controls{8}.Value );    % numcut
                 
-                tic
                 a = mcaPoints(c);
-                toc
-                
                 delete(a);
                 a = mcaPoints(c);
                 
-                tic
                 a.makePlotWithAxes(ax);
-                toc
                 
                 waitfor(gui, 'updated');
                 delete(a);
             end
+            
+            c.name =    gui.controls{1}.String;
+            c.optPix =  gui.controls{9}.Value;
+            c.optTime = gui.controls{10}.Value;
+            c.numRoll = gui.controls{11}.Value;
+            
+            c.shouldOptimize = mciDAQ.counterConfig;    % Don't hardcode this...
+            c.additionalAxes = {mcaDAQ.piezoZConfig};
             
             delete(a);
             delete(gui)
@@ -134,31 +138,12 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             config = c;
         end
-%         function config = specialPromptBrightSpotConfig()
-%             fname = '';
-%             
-%             while ~exist(fname, 'file')
-%                 [FileName, PathName] = uigetfile('*.mat', 'Select the (2D) mcData .mat file to find bright spots upon.');
-%                 if isnumeric(FileName)
-%                     fname = '';
-%                 else
-%                     fname = [PathName FileName];
-% %                     fname
-%                 end
-%             end
-%             
-%             d = load(fname);
-%             
-%             if ~isfield(d, 'data')
-%                 error('mcaPoints.promptBrightSpotConfig(): Given .mat file does not contain the struct data; is not compatible.')
-%             end
-%             
-%             config = mcaPoints.brightSpotConfig(d.data);
-%         end
         function config = brightSpotConfig(d)
             config = mcaPoints.brightSpotConfigFull(d, 1, .85, 3, .5, 1.5, .25, Inf);
         end
         function config = brightSpotConfigFull(d, dialate, quant, smooth, boxmin, boxmax, boxcut, numcut)
+            d.other.axes = [];      % Temp fix.
+            
             config.class =              'mcaPoints';
             
             config.name =               ['Points From ' d.info.timestamp];
@@ -209,7 +194,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
 %                 boxmin/2
 %                 max( min( (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx, boxmax/2 ), boxmin/2 )
                 
-                halfsquarewid(ii) = max( min( (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx, boxmax/2 ), boxmin/2 );
+                halfsquarewid(ii) = min( (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx, boxmax/2 );
             end
             
             ind = halfsquarewid >= boxcut/2;
@@ -218,13 +203,13 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             config.nums = 1:sum(ind);
             
-%             halfsquarewid = halfsquarewid(config.nums);
+            hsw = max(halfsquarewid(ind), boxmin/2);
             
-            config.A =      [xvals(ind); yvals(ind); halfsquarewid(ind); halfsquarewid(ind)];
+            config.A =      [xvals(ind); yvals(ind); hsw; hsw];
             
             config.axes =   d.axes(1:2);
             
-            config.data = d;
+%             config.data = d;
 
             config.kind.kind =          'brightspot';
             config.kind.name =          'Bright spots found from 2D data';
@@ -260,6 +245,16 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             else
                 c = a.config.shouldOptimize;
                 a.shouldOptimize = eval([c.class '(c)']);
+                
+                if ~isfield(a.config, 'optPix')
+                    a.config.optPix = 100;
+                end
+                if ~isfield(a.config, 'optTime')
+                    a.config.optTime = 2;
+                end
+                if ~isfield(a.config, 'optNum')
+                    a.config.optNum = 1;
+                end
             end
             if ~isfield(a.config, 'additionalAxes')
                 a.config.additionalAxes = {};
@@ -270,11 +265,12 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                     a.additionalAxes{ii} = eval([c.class '(c)']);
                 end
             end
-            if ~isfield(a.config, 'numOptimize')
-                a.config.numOptimize = 1;
-            end
             
-            a.rollingMeanDiff =  NaN(2, 10);
+            if ~isfield(a.config, 'numRoll')
+                a.rollingMeanDiff =  NaN(2, 10);
+            else
+                a.rollingMeanDiff =  NaN(2, a.config.numRoll);
+            end
             
             a = mcInstrumentHandler.register(a);
         end
@@ -314,7 +310,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             a.Goto(x);
         end
         function Goto(a, x)
-            disp(['Going to the ' getSuffix(x) ' point...']);
+%             disp(['Going to the ' getSuffix(x) ' point...']);
             
             a.x = x;
             a.xt = a.x;
@@ -326,7 +322,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             n = length(a.axes_);
             
             if ~isempty(a.config.shouldOptimize)
-                m = mean(a.rollingMeanDiff, 2);
+                m = trimmean(a.rollingMeanDiff, 20, 2);
                 
                 y = Y;
                 
@@ -340,23 +336,23 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             end
             
             if ~isempty(a.config.shouldOptimize)
-                for kk = 1:a.config.numOptimize
+                for kk = 1:a.config.optNum
                     for ii = 1:n
                         a.prevOpt(x, ii, 1) = y(ii);
 
                         d = mcData(mcData.optimizeConfiguration(a.axes_{ii},...
                                                                 a.shouldOptimize,...
                                                                 2*Y(length(a.axes_) + ii),...
-                                                                100,... % Should not be hardcoded!
-                                                                4));    % Should not be hardcoded!
-                        disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
+                                                                a.config.optPix,...
+                                                                a.config.optTime));
+%                         disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
     %                     d.aquire();
 
                         dv = mcDataViewer(d, false);
                         a.prev{ii} = d.d.data{1};
                         pause(.25);
                         dv.closeRequestFcnDF(0,0);
-                        disp('...Finished.');
+%                         disp('...Finished.');
 
                         a.prevOpt(x, ii, 2) = a.axes_{ii}.getX();
                         a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
@@ -371,18 +367,18 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
 
                         d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
                                                                 a.shouldOptimize,...
-                                                                4,...   % Should not be hardcoded!
-                                                                100,... % Should not be hardcoded!
-                                                                4));    % Should not be hardcoded!
+                                                                4,...                   % Should not be hardcoded!
+                                                                a.config.optPix,...
+                                                                a.config.optTime));
 
-                        disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
+%                         disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
     %                     d.aquire();
 
                         dv = mcDataViewer(d, false);
                         a.prev{ii} = d.d.data{1};
                         pause(.25);
                         dv.closeRequestFcnDF(0,0);
-                        disp('...Finished.');
+%                         disp('...Finished.');
 
                         a.prevOpt(x, ii, 2) = a.additionalAxes{jj}.getX();
                         a.prevOpt(x, ii, 3) = a.prevOpt(x, ii, 2) - a.prevOpt(x, ii, 1);
@@ -393,8 +389,6 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 
                 save('temp.mat', 'p');
                 
-%                 a.prevOpt = 0;
-                
                 a.rollingMeanDiff = circshift(a.rollingMeanDiff, [0 1]);
             end
         end
@@ -403,7 +397,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
     methods
         % EXTRA --------- Any additional functionality this axis should have (remove if there is none).
         function makePlot(a)
-            a.makePlotWithAxes(a, []);
+            a.makePlotWithAxes([]);
         end
         function makePlotWithAxes(a, ax)
             a.open();
@@ -423,30 +417,18 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             colormap(ax, gray(256));
             
             ax.YDir = 'normal';
-            
-            daspect([1 1 1]);
+            daspect(ax, [1 1 1]);
 
             hold(ax, 'all');
                     
             s = size(a.config.A);
             shouldPlotBox = s(1) == 4;
 
-%             for ii = a.config.nums
-%                 text(   ax, a.config.A(1,ii), a.config.A(2,ii), num2str(ii),...
-%                         'VerticalAlignment', 'middle',...
-%                         'HorizontalAlignment', 'center',...
-%                         'color', 'red');
-%                 
-%                 if shouldPlotBox
-%                     plot(   ax,...
-%                             a.config.A(3,ii) * [1 1 -1 -1 1] + a.config.A(1,ii),...
-%                             a.config.A(4,ii) * [1 -1 -1 1 1] + a.config.A(2,ii),...
-%                             'red');
-%                 end
-%             end
-
             if ~isempty(a.config.A)
-                text(   ax, a.config.A(1, :), a.config.A(2, :), cellfun(@num2str, num2cell(a.config.nums), 'UniformOutput', false),...
+                text(   ax,...
+                        a.config.A(1, :),...
+                        a.config.A(2, :),...
+                        cellfun(@num2str, num2cell(a.config.nums), 'UniformOutput', false),...
                         'VerticalAlignment', 'middle',...
                         'HorizontalAlignment', 'center',...
                         'color', 'red');
@@ -455,10 +437,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 Y = repmat(a.config.A(4, :), [6 1]) .* repmat([1 -1 -1 1 1 NaN]', [1 max(a.config.nums)]) + repmat(a.config.A(2, :), [6 1]);
 
                 if shouldPlotBox
-                    plot(   ax,...
-                            X,...
-                            Y,...
-                            'red');
+                    plot(ax, X, Y, 'red');
                 end
             end
         end

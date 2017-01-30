@@ -7,6 +7,7 @@ classdef mcGUI < mcSavableClass
         f = [];
         
         updated = 0;
+        finished = false;
         
         pw = 300;
         ph = 700; % Make variable...
@@ -81,6 +82,9 @@ classdef mcGUI < mcSavableClass
                         if strcmpi(prevControl, 'push')
                             ii = ii + 1;
                         end
+                        if strcmpi(prevControl, 'edit')
+                            ii = ii + 1;
+                        end
                         
                         uicontrol(                      'Parent', gui.f,...  
                                                         'Style', 'text',... 
@@ -94,12 +98,16 @@ classdef mcGUI < mcSavableClass
                                                         'String', control{3},...
                                                         'Position', [M, gui.ph - (ii+1)*bh, W, bh]);    
                                    
+                        jj = jj + 1;
                         ii = ii + 2;
                     case 'edit'
                         if strcmpi(prevControl, 'title')
                             ii = ii + .25;
                         end
                         if strcmpi(prevControl, 'push')
+                            ii = ii + 1;
+                        end
+                        if strcmpi(prevControl, 'text')
                             ii = ii + 1;
                         end
                         
@@ -213,6 +221,11 @@ classdef mcGUI < mcSavableClass
             switch cbName
                 case 'quit'
                     delete(gui);
+                case 'update'
+                    gui.update();
+                case 'finish'
+                    gui.update();
+                    gui.finished = true;
                 case 'hello'
                     disp('Hello World!');
                 otherwise

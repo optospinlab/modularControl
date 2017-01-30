@@ -14,7 +14,7 @@ classdef (Sealed) mcaAPT < mcAxis
         %  - SN
         
         function config = defaultConfig()               % Static config that should be used if no configuration is provided upon intialization.
-            config = mcaAPT.calibratedConfig();
+            config = mcaAPT.rotatorConfig();
         end
         function config = rotatorConfig()
             config.class =              'mcaAPT';
