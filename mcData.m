@@ -752,7 +752,9 @@ classdef mcData < mcSavableClass
                     
                     d.aquire1D(w * (d.d.index - 1)' + 1);
                     
-                    drawnow
+%                     if ~d.r.canScanFast
+%                         drawnow
+%                     end
 
                     currentlyMax =  d.d.index == d.r.a.length;  % Variables to figure out which indices need incrimenting/etc.
 
@@ -783,7 +785,8 @@ classdef mcData < mcSavableClass
                     d.d.index(toReset) = 1;                 % Reset all the indices that were maxed (except the first) to one.
 
                     for ii = nums((toIncriment | toReset) & nums ~= 1)
-                        d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));
+                        a = d.r.a.a;
+                        a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));
                     end
                 end
                 
@@ -871,7 +874,7 @@ classdef mcData < mcSavableClass
             elseif d.r.canScanFast
                 d.r.s.Rate = 1/max(d.d.intTimes);     % Whoops; integration time has to be the same for all inputs... Taking the max for now...
                 
-                d.r.s.queueOutputData([d.r.a.scansInternalUnits{1}  d.r.a.scansInternalUnits{1}(end)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
+                d.r.s.queueOutputData([d.r.a.scansInternalUnits{1}  d.r.a.scansInternalUnits{1}(1)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
 
                 [data_, times] = d.r.s.startForeground();       % Should I startBackground() and use a listener? (Do this in the future!)
 
@@ -916,11 +919,11 @@ classdef mcData < mcSavableClass
     % Additional Functionality
     methods
         function save(d)                % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
-            'saving'
-            data = d.d
-            tic
+%             'saving'
+            data = d.d;
+%             tic
             save([d.d.info.fname ' ' d.d.name], 'data');
-            toc
+%             toc
         end
         
         function str = indexName()      % Brief name corresponding to current index (the point in axis-space that is currently being measured)

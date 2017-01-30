@@ -36,6 +36,7 @@ classdef mcAxis < mcSavableClass
         isOpen = false;         % Boolean.
         inUse = false;          % Boolean.
         inEmulation = false;    % Boolean.
+        isObservable = true;    % Boolean. Should update ox and oxt to allow listeners to see the changes.
         
         reservedBy = [];        % Object (unfinished...)
     end
@@ -48,6 +49,11 @@ classdef mcAxis < mcSavableClass
         x = 0;                  % Current position.
         xt = 0;                 % Target position.
     end
+    
+%     properties (SetObservable)
+%         ox = 0;                  % Current position.
+%         oxt = 0;                 % Target position.
+%     end
     
     methods (Static)
         function config = defaultConfig()
