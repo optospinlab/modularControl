@@ -487,10 +487,10 @@ classdef mcUserInput < mcSavableClass
                         end
 
                         if dVal ~= 0                                                        % If there was a change...
-                            val = a.getX() + dVal;                                          % ...calculate the result.
+                            val = a.config.kind.int2extConv(a.x) + dVal;                    % ...calculate the result.
 
-                            if abs(val - a.getXt()) > abs(5*dVal)                           % If the axis is lagging too far behind...
-                                obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0.9400 0], isKey);    % ...then flash green
+                            if abs(val - a.config.kind.int2extConv(a.xt)) > abs(5*dVal)     % If the axis is lagging too far behind...
+                                obj.flashKey(2*axis_ + (sign(value)-1)/2, [0 0.9400 0], false);    % ...then flash green
                             else
                                 if iscell(a.config.kind.extRange)
                                     switch val

@@ -209,7 +209,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             config.axes =   d.axes(1:2);
             
-            config.data = d;
+%             config.data = d;
 
             config.kind.kind =          'brightspot';
             config.kind.name =          'Bright spots found from 2D data';
