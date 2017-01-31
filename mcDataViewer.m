@@ -928,7 +928,7 @@ classdef mcDataViewer < mcSavableClass
                             gui.a.YLimMode = 'auto';
 
                             gui.h(1).Data = gui.data.d.data{gui.r.input};
-                            gui.h(1).NumBins = 20;
+                            gui.h(1).NumBins = ceil(length(gui.h(1).Data)/3);
 
                             gui.scale.gray.dataChanged_Callback(0,0);
                         end
