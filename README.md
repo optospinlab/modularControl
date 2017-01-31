@@ -21,14 +21,27 @@ The behavior of each `mc<Classname>` is defined by the logic in the functions of
 
 * `mc<Classname>()`,			no identity given, defaults to `mc<Classname>(mc<Classname>.defaultConfig())` where `defaultConfig()` is a `static` function that returns the default config struct (see below);
 * `mc<Classname>(config)`,		uses the identity of the struct `config`. Fields of `config` might include `config.name` (i.e. the name of the identity), etc;
-* `mc<Classname>('config.mat')`,	uses the identity in the file `'config.mat'`
+* `mc<Classname>('config.mat')`,	uses the identity contained in the MATLAB file `'config.mat'`
 
 Often there are other `static` functions such as `mc<Classname>.defaultConfig()` (e.g. `piezoConfig()`) which conveniently define identity (in the form of a returned `config` struct) so that the user does not have to correctly assemble a `config` struct every time. Differences between `config`s amount to simple differences in identity. For instance, `config.chn` for a `mcaDAQ` object, the DAQ channel that the object is connected to, could be `'ao0'`, `'ao1'`, and so on.
 
 This separation of behavior and identity means that this code is inherently modular. `mcAxis` is a class that generalizes the behavior of a 1D parameter space. The main function in `mcAxis` is `.goto(x)`, which tells the axis to goto that particular `x` value. This function can be used on a variety of real objects that behave like a 1D parameter space: linear motion for piezos, wavelength for a tunable frequency laser, etc.
 
 ## What's Up With `mca`, `mci`, etc?:
-`mca<Classname>`, `mci<Classname>`, and `mce<Classname>` are subclasses of `mcAxis`, `mcInput`, and `mcExperiment`, respectively. All the `mca`s and `mci`s are `mcAxes` and `mcInputs`, respectively, and so on. The reason for this specification is that `mcaDAQ`s and `mcaMicro`s, despite their common functionality (e.g. each `.goto(x)`), behave very differently. Attempting to contain the behavior of every `mcAxis` inside a single `mcAxis` class became difficult as the number of necessary behaviors increased. Instead, `mcAxis` and `mcInput` spawn a set of subclass `mca`s and `mci`s that define the specific functionality. How is this done? Each `mca` and `mci` must 'fill in' functionality via the capitalized version of each function. For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`, the method that the user calls. `.measure()` is defined in the `mcInput` superclass, along with an empty version of `.Measure()`, which is 'filled in' by the subclass `mciDAQ`.
+There are several parent classes that spawn a number of daughter subclasses in modular control. For clarity and organization, the daughter subclasses take the first three letters as the prefix of thier classnames. The following is a list of classes that spawn daughters:
+
+Class               | This Class Abstractifies...  | Subclass Prefix | Example Subclass     |
+--------------------|--------------|-----------------|-----------------------|
+`mcAxis`			| ...1D parameter spaces | `mca` | `mcaDAQ`|
+`mcInput`			| ...measurement         | `mci` | `mciDAQ`|
+`mcExperiment`	| ...experimental procedure | `mce` | `mcePLE`|
+`mcGUI`			| ...MATLAB GUIs | `mcg` | `mcgDiamond`|
+
+Why was this done? Different code must be executed to interact with different devices. Attempting to contain the behavior of every axis inside a single `mcAxis` class became difficult as the number of necessary behaviors increased. The `switch` statement to deal with the different behaviors became unmanagably long. But, for compatability and *modularity* it was important to have all interactions be done through common classes and functions. Hence, `mcAxis`, `mcInput`, etc spawn a set of subclass `mca`s, `mci`s, etc that define the specific functionality. These subclasses, to reduce clutter, are stored in the subfolders of `modularControl` labeled by parent name.
+
+How is this done? Each parent function calls (after error-checking, etc) a capitalized version of that parent function. 
+Each custom subclass must 'fill in' functionality via that capitalized version.
+For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`, the method that the user calls. `.measure()` is defined in the `mcInput` superclass, along with an empty version of `.Measure()`, which is 'filled in' by the subclass `mciDAQ`. Most parents have a `mc[]Template` to help with filling in the functionality; just replace the double-starred (`**`) lines.
 
 ## What's Up With `config.kind` In `mcAxes` and `mcInputs`:
 `config.kind` is a rather-ambiguous structure in every `mcAxis` and `mcInput`. It was put in for organizational purposes. It contains the following fields:
@@ -70,12 +83,12 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
   4. Set `micro = mcaMicro(configM)` which gives us a `mcaMicro` object with the desired `config`.
  3. Load the counter:
   1. Let `configI = mciDAQ.counterConfig()`.
-  2. By default, `configI.dev` and `configI.chn` are set to `'Dev1'` and `'ctr1'`, respectively. Change these if neccessary. For instance, set `configP.chn = 'ctr2'` to access the 2nd counter channel.
+  2. By default, `configI.dev` and `configI.chn` are set to `'Dev1'` and `'ctr1'`, respectively. Change these if neccessary. For instance, set `configI.chn = 'ctr2'` to access the 2nd counter channel.
   3. Set `configI.name` to a descriptive name. e.g. `configI.name = 'Counter'`
   4. Set `count = mciDAQ(configI)` which gives us a `mciDAQ` object with the desired `config`.
  4. Note that the last three steps can be streamlined by a startup script. `mcDiamond` serves this purpose for the diamond microscope and load all of the pertinant axes and inputs.
  5. Suppose that we want to do a 11x11 pixel scan from 10um to 20um with the x piezo and 20um to 30um with the y micrometer. We will use `mcData`.
-  1. Set `axes_ = {piezo, micro}`. This gives `mcData` the axes we want to scan over. Note that it is also sufficient to set `axes_ = {configP, configM}` as long as `configP.class = mcaDAQ` and `configM.class = mcaMicro`. If you want to really be obscene, `axes_ = {piezo, configM}` is also valid.
+  1. Set `axes_ = {piezo, micro}`. This gives `mcData` the axes we want to scan over. Note that it is also sufficient to set `axes_ = {configP, configM}` as long as `configP.class = 'mcaDAQ'` and `configM.class = 'mcaMicro'`. If you want to really be obscene, `axes_ = {piezo, configM}` is also valid.
   2. Set `scans = {linspace(10, 20, 11), linspace(20, 30, 11)}`. These vectors contain all of the points that we will scan over, with the `i`th index of this cell array corresponding to the axis of the `i`th index of the cell array `axes_`. Note that one can input pretty crazy vectors whose entries are not-neccessarily equally spaced (although this is not reccommended because the 2D imaging method assumes equal spacing; the 1D imaging method, however, should display correctly).
   3. Set `inputs = {count}`. This gives `mcData` the input that we want to measure at each point of the scan. Note specifically that more `mcInput`s can be added as additional entries of the cell array (naturally). As with axes, using the `config` instead of the `mcInput` object is sufficient.
   4. Set `integrationTime = [time]` to the time `time` (in seconds) that we want to spend at each point. `time = .09` sounds reasonable for ~1 second X scans.
@@ -85,13 +98,51 @@ Suppose that we want to do an XY scan on the counter with the X piezo and the Y 
   2. Acquire the data visually with `mcDataViewer`. Use `viewer = mcDataViewer(data)`.
  7. The function `mcScan` is a GUI which makes a `mcData` structure without having to go through the command line as in step 5. Run `mcScan` and simply select the appropriate axes/scans/etc using edit boxes and dropdown lists.
 
+In all, we have
+
+~~~MATLAB
+% 1. Load the piezo
+configP = mcaDAQ.piezoConfig();		% Make the piezo config.
+configP.chn = 'ao1';
+configP.name = 'Piezo X';
+piezo = mcaDAQ(configP);			% Make the piezo object.
+ 
+% 2. Load the micrometer
+configM = mcaMicro.microConfig();	% Make the micrometer config.
+configM.port = 'COM7';
+configM.name = 'Micro Y';
+micro = mcaMicro(configM);			% Make the micrometer object.
+ 
+% 3. Load the counter
+configI = mciDAQ.counterConfig();
+configI.chn = 'ctr2';
+configI.name = 'Counter';
+count = mciDAQ(configI);
+
+% 5. Setup the mcData structure (which will aquire the data)
+axes_ = {piezo, micro};
+scans = {linspace(10, 20, 11), linspace(20, 30, 11)};
+inputs = {count};
+integrationTime = [.09];
+data = mcData(axes_, scans, inputs, integrationTime);
+
+% 6.1. Aquire the data programmatically
+data.aquire();
+disp(data.d.data);					% Print the data in the console.
+
+% 6.2. Aquire the data via GUI
+data.reset();							% Reset the previous aquisition.
+viewer = mcDataViewer(data);
+
+~~~
+
 ## Future (Incomplete List)
 
 ### High Priority:
 
 * Make sure loading and saving configs/data is functional.
 * Make sure that `mcData` works in all situations (e.g. different configurations of axes and inputs).
-* Finish `mcExperiment` stuff.
+* Polish `mcExperiment` stuff.
 * Commenting!
 
 ### Low Priority:
