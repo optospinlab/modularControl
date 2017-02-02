@@ -617,6 +617,7 @@ classdef mcScan < mcSavableClass
 %             params
             
             if proceed
+                mcData(params)
                 mcDataViewer(mcData(params))
             end
         end

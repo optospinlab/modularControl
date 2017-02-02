@@ -332,6 +332,8 @@ classdef mcData < mcSavableClass
     % Core Functionality
     methods
         function d = mcData(varin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
+%             varin
+            
             switch nargin
                 case 0
 %                     error('We shouldnt be here')
@@ -841,12 +843,14 @@ classdef mcData < mcSavableClass
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
                 end
-                
-%                 tic
-                if ~d.d.flags.shouldOptimize
-                    d.save();
+
+                if ~isvalid(d)
+                    if ~d.d.flags.shouldOptimize
+                        d.save();
+                    end
+                else
+                    disp('mcData.aquire(): Warning: deleted abruptly; could not save...')
                 end
-%                 toc
             end
         end
         function aquire1D(d, jj)

@@ -2,7 +2,8 @@ classdef mcDataViewer < mcSavableClass
 % mcDataViewer provides a gui for mcData.
 %
 % Syntax:
-%   - mcDataViewer(data)        % Where data is an mcData object.
+%   - mcDataViewer(data)        % data is an mcData config/object.
+%   - mcDataViewer('data.mat')  % 'data.mat' points to an mcData config.
 %
 % Status: Mostly finished, somewhat commented. Future: definitely RGB, maybe 3D?
     
@@ -74,80 +75,30 @@ classdef mcDataViewer < mcSavableClass
             switch nargin       % Update this switch statement!
                 case 0
                     gui.data = mcData();
-                    gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data);
-                    gui.g = mcProcessedData(gui.data);
-                    gui.b = mcProcessedData(gui.data);
-                case 1
-                    if islogical(varargin)
-                        if ~varargin
-                            shouldMakeManager = false;
-                        end
-%                         gui = mcDataViewer();
-                        gui.data = mcData();
-                        gui.data.dataViewer = gui;
-                        gui.r = mcProcessedData(gui.data);
-                        gui.g = mcProcessedData(gui.data);
-                        gui.b = mcProcessedData(gui.data);
-                    else
-                        gui.data = varargin{1};
-                        gui.data.dataViewer = gui;
-                        gui.r = mcProcessedData(gui.data);
-                        gui.g = mcProcessedData(gui.data);
-                        gui.b = mcProcessedData(gui.data);
-                    end
-                case 2
-                    if islogical(varargin{2})
-                        if ~varargin{2}
-                            shouldMakeManager = false;
-                        end
-%                         gui = mcDataViewer(varargin{1});
-                        gui.data = varargin{1};
-                        gui.data.dataViewer = gui;
-                        gui.r = mcProcessedData(gui.data);
-                        gui.g = mcProcessedData(gui.data);
-                        gui.b = mcProcessedData(gui.data);
-                    else
-                        gui.data = varargin{1};
-                        gui.data.dataViewer = gui;
-                        gui.r = mcProcessedData(gui.data, varargin{2});
-                        gui.g = mcProcessedData(gui.data);
-                        gui.b = mcProcessedData(gui.data);
-                    end
-                case 3
-                    if islogical(varargin{2})
-                        shouldMakeManager = varargin{2};
-                        
-                        if islogical(varargin{3})
-                            shouldMakeVisible = varargin{3};
-                            
-                            gui.data = varargin{1};
-                            gui.data.dataViewer = gui;
-                            gui.r = mcProcessedData(gui.data);
-                            gui.g = mcProcessedData(gui.data);
-                            gui.b = mcProcessedData(gui.data);
-                        else
-                            gui.data = varargin{1};
-                            gui.data.dataViewer = gui;
-                            gui.r = mcProcessedData(gui.data, varargin{3});
-                            gui.g = mcProcessedData(gui.data);
-                            gui.b = mcProcessedData(gui.data);
-                        end
-                        
-                    else
-                        gui.data = varargin{1};
-                        gui.data.dataViewer = gui;
-                        gui.r = mcProcessedData(gui.data, varargin{2});
-                        gui.g = mcProcessedData(gui.data, varargin{3});
-                        gui.b = mcProcessedData(gui.data);
-                    end
-                case 4
+%                 case 1
+%                     gui.data = varargin;
+                otherwise
                     gui.data = varargin{1};
-                    gui.data.dataViewer = gui;
-                    gui.r = mcProcessedData(gui.data, varargin{2});
-                    gui.g = mcProcessedData(gui.data, varargin{3});
-                    gui.b = mcProcessedData(gui.data, varargin{4});
             end
+            
+%             gui.data
+%             isa(gui.data, 'mcData')
+            
+            if ~isa(gui.data, 'mcData')         % If gui.data isn't an mcData object...
+                gui.data = mcData(gui.data);    % Then use gui.data as the input for the mcData constructor.
+            end
+            
+            if nargin >= 2
+                shouldMakeManager = varargin{2};
+            end
+            if nargin >= 3
+                shouldMakeVisible = varargin{3};
+            end
+            
+            gui.data.dataViewer = gui;          % Make sure that the dataViewer has a pointer to this gui.
+            gui.r = mcProcessedData(gui.data);  % And make the 3 channels of processed data that are displayed.
+            gui.g = mcProcessedData(gui.data);
+            gui.b = mcProcessedData(gui.data);
             
             if gui.data.r.scanMode == 2 || gui.data.r.scanMode == -1
                 shouldAquire = false;
@@ -691,12 +642,14 @@ classdef mcDataViewer < mcSavableClass
                 delete(gui.cf);
                 delete(gui.df);
 
-                pause(.1);                       % Remove this eventually.
+%                 pause(10);                       % Remove this eventually.
 
     %             delete(gui.data);               % This should be done gracefully.
-                gui.data = '';
+%                 gui.data = '';
+% 
+%                 delete(gui);
 
-                delete(gui);
+                % Should we delete it direcly? or is leaving it to garbage collection fine?
             end
         end
         function closeRequestFcnCF(gui, ~, ~)   % Close function for the control figure (the one with the buttons)

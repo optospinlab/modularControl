@@ -69,6 +69,7 @@ classdef mcProcessedData < handle
                         relevant =      pd.parent.r.l.type == 0 | pd.parent.r.l.type == pd.input;
 
                         nums =          1:length(pd.parent.r.l.layer);
+                        nums(relevant)= 1:sum(relevant);                        % This is neccessary if there are multiple inputs.
                         toMean =        relevant & pd.parent.r.l.layer == 2;
 
                         d = pd.parent.d.data{pd.input};
@@ -120,10 +121,6 @@ classdef mcProcessedData < handle
                         for ii = nums(toMean)
                             d = nanmean(d, ii);
                         end
-
-    %                     pd.parent.r.l.layer
-    %                     pd.parent.r.l.lengths
-    %                     relevant
 
                         final = relevant & pd.parent.r.l.lengths ~= 1 & pd.parent.r.l.layer ~= 3;   % If relevant and not singleton or meaned.
 
