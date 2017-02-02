@@ -407,9 +407,10 @@ classdef mcUserInput < mcSavableClass
             end
         end
         function keyPressFunction(obj, ~, event)                    % Interprets messages sent by the keyboard.
+%             event
+            
             if isvalid(obj)                     % If the UserInput window/class hasn't closed...
-                if obj.gui.joyEnabled.Value     % If the checkbox is still checked...
-                    
+                if obj.gui.keyEnabled.Value     % If the checkbox is still checked...
                     % First, decide whether it is appropriate to accept keyboard input in this context.
                     focus = gco;
 
@@ -438,9 +439,9 @@ classdef mcUserInput < mcSavableClass
                                 obj.userAction(2,  multiplier, 1);
                             case {'downarrow', 's'}
                                 obj.userAction(2, -multiplier, 1);
-                            case {'equal', 'add', 'e'}
+                            case {'equal', 'add', 'e', 'pageup'}
                                 obj.userAction(3,  multiplier, 1);
-                            case {'hyphen', 'subtract', 'q'}
+                            case {'hyphen', 'subtract', 'q', 'pagedown'}
                                 obj.userAction(3, -multiplier, 1);
                             case {'1', '2', '3', '4', '5', '6', '7', '8', '9'}  % The number keys switch the selected axis group.
                                 num = str2double(event.Key);
@@ -529,7 +530,7 @@ classdef mcUserInput < mcSavableClass
         function flashKey(obj, key, color, isKey)       % Flash a color on the UI arrow keys.
             if isKey
                 obj.gui.keylist(key).BackgroundColor = color;
-                pause(.016);
+                pause(.032);
                 obj.gui.keylist(key).BackgroundColor = [0.9400    0.9400    0.9400];
             end
         end

@@ -232,18 +232,25 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.kind =          'NIDAQanalog';
             config.kind.name =          'Tholabs Galvometer';   % Check for better name.
             config.kind.intRange =      [-10 10];
-            config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+            
+            config.kind.int2extConv =   @(x)((x + 2.6253).*108.94);        % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)((x ./ 108.94) - 2.6253);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
-            config.kind.extUnits =      'mV';                   % 'External' units.
-            config.kind.base =          -2.610;                 % The (internal) value that the axis seeks at startup.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =          -2.6253;                 % The (internal) value that the axis seeks at startup.
+            
+%             config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
+%             config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+%             config.kind.intUnits =      'V';                    % 'Internal' units.
+%             config.kind.extUnits =      'mV';                   % 'External' units.
+%             config.kind.base =          -2.610;                 % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'ao0';
             config.type =               'Voltage';
             
-            config.keyStep =            .5;
-            config.joyStep =            5;
+            config.keyStep =            .1;
+            config.joyStep =            .5;
         end
         function config = galvoYBrynnConfig()
             config.name =               'Galvo Y';
@@ -251,18 +258,25 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.kind =          'NIDAQanalog';
             config.kind.name =          'Tholabs Galvometer';   % Check for better name.
             config.kind.intRange =      [-10 10];
-            config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+            
+            config.kind.int2extConv =   @(x)((x + 0.5113).*108.94);        % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)((x ./ 108.94) - 0.5113);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
-            config.kind.extUnits =      'mV';                   % 'External' units.
-            config.kind.base =          -.490;                  % The (internal) value that the axis seeks at startup.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =          -0.5113;                 % The (internal) value that the axis seeks at startup.
+            
+%             config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
+%             config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+%             config.kind.intUnits =      'V';                    % 'Internal' units.
+%             config.kind.extUnits =      'mV';                   % 'External' units.
+%             config.kind.base =          -.490;                  % The (internal) value that the axis seeks at startup.
 
             config.dev =                'Dev1';
             config.chn =                'ao1';
             config.type =               'Voltage';
             
-            config.keyStep =            .5;
-            config.joyStep =            5;
+            config.keyStep =            .1;
+            config.joyStep =            .5;
         end
     end
     
@@ -308,14 +322,17 @@ classdef (Sealed) mcaDAQ < mcAxis
         
         % OPEN/CLOSE
         function Open(a)
-            switch lower(a.config.kind.kind)
-                case 'nidaqanalog'
-                    a.s = daq.createSession('ni');
-                    addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
-                case 'nidaqdigital'
-                    a.s = daq.createSession('ni');
-                    addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
-            end
+            a.s = daq.createSession('ni');
+            a.addToSession(a.s);
+            
+%             switch lower(a.config.kind.kind)
+%                 case 'nidaqanalog'
+%                     a.s = daq.createSession('ni');
+%                     addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
+%                 case 'nidaqdigital'
+%                     a.s = daq.createSession('ni');
+%                     addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
+%             end
             
             a.s.outputSingleScan(a.x);
         end

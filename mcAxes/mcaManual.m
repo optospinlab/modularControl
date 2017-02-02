@@ -64,19 +64,23 @@ classdef (Sealed) mcaManual < mcAxis
             tf = strcmpi(a.config.message,  b.config.message) && strcmpi(a.config.verb,  b.config.verb);
         end
         
-        % OPEN/CLOSE not neccessary
+        % OPEN
+        function Open(a)
+            a.s = load('gong');
+        end
+        
+        % CLOSE not neccessary
         
         % GOTO
         function GotoEmulation(a, x)
-            load(gong.mat);
-            sound(y);           % Glorious
-            
+            sound(a.s.y);           % Glorious
+
             if a.x == a.config.kind.ext2intConv(x)
-                questdlg([a.config.message ' Is the ' a.config.name ' at ' num2str(a.config.kind.int2extConv(a.x)) '? '...
-                          'If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!'], 'Done', 'Done');
+                mcDialog([a.config.message ' Is the ' a.config.name ' at ' num2str(a.config.kind.int2extConv(a.x)) '? '...
+                          'If not, please ' a.config.verb ' it'], ['Please ' a.config.verb '!']);
             else
-                questdlg([a.config.message ' Please ' a.config.verb ' the ' a.config.kind.name ' of  the ' a.config.name...
-                          ' from ' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits ' to ' num2str(x) ' ' a.config.kind.extUnits], ['Please ' a.config.verb '!'], 'Done', 'Done');
+                mcDialog([a.config.message 10 'Please [' a.config.verb '] the ' a.config.kind.name ' of  the ' a.config.name...
+                          ' from [' num2str(a.config.kind.int2extConv(a.x)) ' ' a.config.kind.extUnits '] to [' num2str(x) ' ' a.config.kind.extUnits '].'], ['Please ' a.config.verb '!']);
 
                 a.xt = a.config.kind.ext2intConv(x);
                 a.x = a.xt;

@@ -115,17 +115,20 @@ classdef mciDAQ < mcInput
         
         % OPEN/CLOSE
         function Open(I)
-            switch lower(I.config.kind.kind)
-                case 'nidaqanalog'
-                    I.s = daq.createSession('ni');
-                    addAnalogInputChannel(  I.s, I.config.dev, I.config.chn, I.config.type);
-                case 'nidaqdigital'
-                    I.s = daq.createSession('ni');
-                    addDigitalChannel(      I.s, I.config.dev, I.config.chn, 'InputOnly');
-                case 'nidaqcounter'
-                    I.s = daq.createSession('ni');
-                    addCounterInputChannel( I.s, I.config.dev, I.config.chn, I.config.type);
-            end
+            I.s = daq.createSession('ni');
+            I.addToSession(I.s);
+            
+%             switch lower(I.config.kind.kind)
+%                 case 'nidaqanalog'
+%                     I.s = daq.createSession('ni');
+%                     addAnalogInputChannel(  I.s, I.config.dev, I.config.chn, I.config.type);
+%                 case 'nidaqdigital'
+%                     I.s = daq.createSession('ni');
+%                     addDigitalChannel(      I.s, I.config.dev, I.config.chn, 'InputOnly');
+%                 case 'nidaqcounter'
+%                     I.s = daq.createSession('ni');
+%                     addCounterInputChannel( I.s, I.config.dev, I.config.chn, I.config.type);
+%             end
         end
         function Close(I)
             release(I.s);

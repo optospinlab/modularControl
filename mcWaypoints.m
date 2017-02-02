@@ -25,6 +25,7 @@ classdef mcWaypoints < mcSavableClass
         p = [];             % Axes position scatter
         t = [];             % Axes target position scatter
         g = [];             % Grid scatter
+        b = [];             % Range box
         
         listeners = [];     % These listen to x and xt.
         
@@ -105,6 +106,11 @@ classdef mcWaypoints < mcSavableClass
             wp.p = scatter(wp.a, [], [], 'o');
             wp.t = scatter(wp.a, [], [], 'x');
             wp.g = scatter(wp.a, [], [], 'd');
+            
+            x = wp.config.axes{1}.config.kind.extRange;
+            y = wp.config.axes{2}.config.kind.extRange;
+            
+            wp.b = plot(wp.a, [x(1) x(1) x(2) x(2) x(1)], [y(1) y(2) y(2) y(1) y(1)], 'r');
             
             hold(wp.a, 'off')
             
