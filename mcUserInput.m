@@ -70,16 +70,17 @@ classdef mcUserInput < mcSavableClass
         function config = brynnConfig()
             config.name =               'Default User Input';
             
-            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X';  configMicroX.port = 'COM6';
-            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y';  configMicroY.port = 'COM5';
+            configMicroX = mcaMicro.microXBrynnConfig();
+            configMicroY = mcaMicro.microYBrynnConfig();
 
             configGalvoX = mcaDAQ.galvoXBrynnConfig();
             configGalvoY = mcaDAQ.galvoYBrynnConfig();
             
             configObjZ = mcaEO.brynnObjConfig();
             
-            config.axesGroups = { {'Micrometers',   mcaMicro(configMicroX), mcaMicro(configMicroY), mcaEO(configObjZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
-                                  {'Galvos',        mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaEO(configObjZ) } };
+            config.axesGroups = { {'Micrometers',           mcaMicro(configMicroX), mcaMicro(configMicroY), mcaEO(configObjZ) }, ...     % Arrange the axes into sets of {name, axisX, axisY, axisZ}.
+                                  {'Galvos',                mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),   mcaEO(configObjZ) }, ... 
+                                  {[char(955) '/2 Plate'],  mcaDAQ(configGalvoX),   mcaDAQ(configGalvoY),  mcaHwpRotator } };
                               
             config.numGroups = length(config.axesGroups);
             

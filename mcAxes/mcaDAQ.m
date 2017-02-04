@@ -322,17 +322,17 @@ classdef (Sealed) mcaDAQ < mcAxis
         
         % OPEN/CLOSE
         function Open(a)
-            a.s = daq.createSession('ni');
-            a.addToSession(a.s);
+%             a.s = daq.createSession('ni');
+%             a.addToSession(a.s);
             
-%             switch lower(a.config.kind.kind)
-%                 case 'nidaqanalog'
-%                     a.s = daq.createSession('ni');
-%                     addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
-%                 case 'nidaqdigital'
-%                     a.s = daq.createSession('ni');
-%                     addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
-%             end
+            switch lower(a.config.kind.kind)
+                case 'nidaqanalog'
+                    a.s = daq.createSession('ni');
+                    addAnalogOutputChannel(a.s, a.config.dev, a.config.chn, a.config.type);
+                case 'nidaqdigital'
+                    a.s = daq.createSession('ni');
+                    addDigitalChannel(a.s, a.config.dev, a.config.chn, 'OutputOnly');
+            end
             
             a.s.outputSingleScan(a.x);
         end

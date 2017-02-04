@@ -164,54 +164,49 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 error('mcaPoints(): NaN value detected in data; cannot find points due to this.');
             end
             
-            s = wiener2(d.data{1}, [smooth smooth]);
+            s = wiener2(d.data{1}, [smooth smooth]);        % First, smooth the given data
+            
+            % Then, find the local maxima (filtered to be in the quantile'th quantile of the smoothed data) in the smoothed data. Then, to merge neaby
+            % maxima that are too close to be distinct NVs, dialtate each maxima in a diamond pattern.
             bw = imdilate(imclearborder(imregionalmax(s)) & s > quantile(s(:), quant), strel('diamond', dialate));
-            r = regionprops(bw, s, 'WeightedCentroid', 'MaxIntensity');
-            c = cat(1, r.WeightedCentroid);
-            [~, sorted] = sort(cat(1, r.MaxIntensity), 'descend');
+            
+            r = regionprops(bw, s, 'WeightedCentroid', 'MaxIntensity');     % Then, find the centroids of all of the distinct regions.
+            c = cat(1, r.WeightedCentroid);                                 % And put the centroids into array form
+            [~, sorted] = sort(cat(1, r.MaxIntensity), 'descend');          % Finally, sort the centroids based on brightness.
 
-            xind = round(c(sorted,2));
+            xind = round(c(sorted,2));                                      % Round the centroids to the nearest pixel...
             yind = round(c(sorted,1));
 
-            xvals = d.scans{1}(xind);
+            xvals = d.scans{1}(xind);                                       % And find the position corresponding to those pixels. (Future: linearly interpolate?)
             yvals = d.scans{2}(yind);
 
-            unitx = abs(d.scans{1}(2) - d.scans{1}(1));     % Make sure length is greater than 1?
+            unitx = abs(d.scans{1}(2) - d.scans{1}(1));                     % And figure out the spacing between each pixel (which will be used later). (Future: account for non-linear scans?)
             unity = abs(d.scans{2}(2) - d.scans{2}(1));
             
-            if abs(unitx - unity) > 1e-9
+            if abs(unitx - unity) > 1e-9                                    % If unitx ~= unity, warn the user, because the process works best when unitx == unity
                 warning('mcaPoints(): unitx ~= unity');
             end
             
-            halfsquarewid = zeros(size(xvals));
+            halfsquarewid = zeros(size(xvals));                             % Make an empty list that we will fill...
 
-            for ii = 1:length(xvals)
-                taxi = abs(xind - xind(ii)) + abs(yind - yind(ii));
-                
-%                 ''
-%                 (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx
-%                 boxmax/2
-%                 boxmin/2
-%                 max( min( (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx, boxmax/2 ), boxmin/2 )
-                
-                halfsquarewid(ii) = min( (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx, boxmax/2 );
+            for ii = 1:length(xvals)                                        % For every point...
+                taxi = abs(xind - xind(ii)) + abs(yind - yind(ii));         % ...calculate the taxicab distance between it and all other points... (notice that xind and yind are vectors).
+                halfsquarewid(ii) = min( (ceil(min(taxi(taxi ~= 0))/2) + .5) * unitx, boxmax/2 );    % And make the width of the 'box', i.e. 'scanning region' to be half the taxicab distance. This should prevent significant overlap. Limit the maximum to boxmax.
             end
             
-            ind = halfsquarewid >= boxcut/2;
+            ind = halfsquarewid >= boxcut/2;                                % Now remove all of the points which have boxes smaller than the box cuttoff.
             finalind = max(find(ind, numcut, 'first')) + 1;
             ind(finalind:end) = false;
             
-            config.nums = 1:sum(ind);
+            config.nums = 1:sum(ind);                                       % And make a list called nums (which is a legacy artifact of sorts)
             
-            hsw = max(halfsquarewid(ind), boxmin/2);
+            hsw = max(halfsquarewid(ind), boxmin/2);                        % Now, limit the minimum square-width to be boxmin.
             
-            config.A =      [xvals(ind); yvals(ind); hsw; hsw];
+            config.A =      [xvals(ind); yvals(ind); hsw; hsw];             % And make an array with rows corresponding to the [xpos, ypos, hxwid, hywid] of each point.
             
-            config.axes =   d.axes(1:2);
-            
-%             config.data = d;
+            config.axes =   d.axes(1:2);                                    % Lastly, store the axes that generated the data.
 
-            config.kind.kind =          'brightspot';
+            config.kind.kind =          'brightspot';                       % And fill in the other required stuff.
             config.kind.name =          'Bright spots found from 2D data';
             config.kind.intRange =      num2cell(config.nums);
             config.kind.int2extConv =   @(x)(x);

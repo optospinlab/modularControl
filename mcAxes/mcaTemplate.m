@@ -9,7 +9,7 @@ classdef (Sealed) mcaTemplate < mcAxis          % ** Insert mca<MyNewAxis> name 
 %
 % There are five (relevant) properties that are pre-defined in mcAxis that the user should be aware of:
 %       a.config    % The config structure that should only be used to define the axis identity. *No* runtime information should be stored in config (e.g. serial session).
-%       a.s         % This should be used for the persistant axis session, whether serial, NIDAQ, or etc.
+%       a.s         % This should be used for the persistant runtime axis session, whether serial, NIDAQ, or etc.
 %       a.t         % An additional 'timer' session for unusual axes (see mcaMicro for use to poll the micros about the current position).
 %       a.extra     % A (currently unused) cell array which should contain the names of the essential custom variables for the config (why isn't this in a.config?).
 %       a.x         % Current position of the axis in the internal units of the 1D parameterspace.

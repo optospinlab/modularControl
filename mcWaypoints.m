@@ -44,9 +44,20 @@ classdef mcWaypoints < mcSavableClass
             config.yi = 2;
         end
         function config = defaultConfig()
+            config = mcWaypoints.diamondConfig();
+        end
+        function config = diamondConfig()
             configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
             configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
             configPiezoZ = mcaDAQ.piezoConfig();    configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
+            
+            config.axes = {mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ)};
+            config.xi = 1;  % Of the list of axes to keep track of, which axes should be displayed as x and y in the gui?
+            config.yi = 2;
+        end
+        function config = brynnConfig()
+            configMicroX = mcaMicro.microXBrynnConfig();
+            configMicroY = mcaMicro.microYBrynnConfig();
             
             config.axes = {mcaMicro(configMicroX), mcaMicro(configMicroY), mcaDAQ(configPiezoZ)};
             config.xi = 1;  % Of the list of axes to keep track of, which axes should be displayed as x and y in the gui?
@@ -203,6 +214,7 @@ classdef mcWaypoints < mcSavableClass
             wp.render();
         end
         function gotoPosition_Callback(wp, ~, ~)
+            wp.config.axes{wp.config.xi}.config
             wp.config.axes{wp.config.xi}.goto(wp.menus.currentPos(1));
             wp.config.axes{wp.config.yi}.goto(wp.menus.currentPos(2));
         end
@@ -411,8 +423,8 @@ classdef mcWaypoints < mcSavableClass
 %                     yr(1) < wp.a.YLim(1)
 %                     yr(2) > wp.a.YLim(2)
                     
-                    xw = .6*(diff(xr) + 10);
-                    yh = .6*(diff(yr) + 10);
+                    xw = .6*diff(xr) + 500;
+                    yh = .6*diff(yr) + 500;
 
                     dims = wp.f.Position(3:4);
 

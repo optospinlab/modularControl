@@ -287,6 +287,7 @@ classdef mcInstrumentHandler < handle
             
             axes_ =     {};     % Initialize empty lists.
             names =     {};
+            configs =   {};
             states =    [];
             
             ii = 1;

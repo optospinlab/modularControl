@@ -9,7 +9,7 @@ function mcBrynn()
     mcgBrynn();
 
     % Additionally, open these instruments:
-    mcaManual(mcaManual.polarizationConfig());
+%     mcaManual(mcaManual.polarizationConfig());
 end
 
 

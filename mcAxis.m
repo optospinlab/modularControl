@@ -233,13 +233,13 @@ classdef mcAxis < mcSavableClass
                     % Should something be done?
                     tf = true;
                 else
-                    try
+%                     try
                         a.Open();
                         tf = true;     % Return true because axis has been opened.
-                    catch err
-                        disp(['mcAxis.open() - ' a.config.name ': ' err.message]);
-                        tf = false;
-                    end
+%                     catch err
+%                         disp(['mcAxis.open() - ' a.config.name ': ' err.message]);
+%                         tf = false;
+%                     end
                 end
             end
         end

@@ -16,7 +16,7 @@ classdef (Sealed) mcaMicro < mcAxis
         function config = microConfig()
             config.class =              'mcaMicro';
             
-            config.name =               'Default Micrometers';
+            config.name =               'Default Micrometer';
 
             config.kind.kind =          'Serial Micrometer';
             config.kind.name =          'Newport Micrometer';
@@ -32,7 +32,49 @@ classdef (Sealed) mcaMicro < mcAxis
             config.addr =               '1';                    % Micrometer Address.
             
             config.keyStep =            .5;
-            config.joyStep =            5;
+            config.joyStep =            30;
+        end
+        function config = microXBrynnConfig()
+            config.class =              'mcaMicro';
+            
+            config.name =               'Micro X';
+
+            config.kind.kind =          'Serial Micrometer';
+            config.kind.name =          'Newport Micrometer';
+            config.kind.intRange =      [0 12];                 % 0 -> 12 mm. (Software limited from 0 -> 25 to prevent collision).
+            config.kind.int2extConv =   @(x)(x.*1000);          % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(x./1000);          % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'mm';                   % 'Internal' units.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =          0;                      % The (internal) value that the axis seeks at startup.
+            config.kind.resetParam =    '';                     % Currently unused? Check this.
+
+            config.port =               'COM6';                 % Micrometer Port.
+            config.addr =               '1';                    % Micrometer Address.
+            
+            config.keyStep =            .5;
+            config.joyStep =            30;
+        end
+        function config = microYBrynnConfig()
+            config.class =              'mcaMicro';
+            
+            config.name =               'Micro Y';
+
+            config.kind.kind =          'Serial Micrometer';
+            config.kind.name =          'Newport Micrometer';
+            config.kind.intRange =      [0 16];                 % 0 -> 16 mm. (Software limited from 0 -> 25 to prevent collision).
+            config.kind.int2extConv =   @(x)((16 - x) .* 1000);   % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)(16 - (x ./ 1000));   % Conversion from 'external' units to 'internal'.
+            config.kind.intUnits =      'mm';                   % 'Internal' units.
+            config.kind.extUnits =      'um';                   % 'External' units.
+            config.kind.base =          0;                      % The (internal) value that the axis seeks at startup.
+            config.kind.resetParam =    '';                     % Currently unused? Check this.
+
+            config.port =               'COM5';                 % Micrometer Port.
+            config.addr =               '1';                    % Micrometer Address.
+            
+            config.keyStep =            .5;
+            config.joyStep =            30;
         end
     end
     
@@ -133,7 +175,7 @@ classdef (Sealed) mcaMicro < mcAxis
 %             a.t
             
             if abs(a.xt - a.x) > .02 && isempty(a.t)
-                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .1); % 10fps
+                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .5); % 2fps
                 start(a.t);
             end
         end

@@ -17,7 +17,7 @@ classdef (Sealed) mcaManual < mcAxis
         function config = polarizationConfig()
             config.class =              'mcaManual';
             
-            config.name =               'Half Wave Plate';
+            config.name =               ['Manual ' char(955) '/2 Plate'];
 
             config.kind.kind =          'manual';
             config.kind.name =          'Polarization';

@@ -6,7 +6,7 @@ classdef (Sealed) mcaHwpRotator < mcAxis
 %
 % There are five (relevant) properties that are pre-defined in mcAxis that the user should be aware of:
 %       a.config    % The config structure that should only be used to define the axis identity. *No* runtime information should be stored in config (e.g. serial session).
-%       a.s         % This should be used for the persistant axis session, whether serial, NIDAQ, or etc.
+%       a.s         % This should be used for the persistant runtime axis session, whether serial, NIDAQ, or etc.
 %       a.t         % An additional 'timer' session for unusual axes (see mcaMicro for use to poll the micros about the current position).
 %       a.extra     % A (currently unused) cell array which should contain the names of the essential custom variables for the config (why isn't this in a.config?).
 %       a.x         % Current position of the axis in the internal units of the 1D parameterspace.
@@ -55,7 +55,7 @@ classdef (Sealed) mcaHwpRotator < mcAxis
         function config = customConfig()                            % ** Use a descriptive name for this particular 'identity' of mca<MyNewAxis>.
             config.class =              'mcaHwpRotator';
             
-            config.name =               'Half Wave Plate Rotator';  % UI name for this identity of mca<MyNewAxis>.
+            config.name =               [char(955) '/2 Plate'];     % UI name for this identity of mca<MyNewAxis>.
 
             config.kind.kind =          'hwpRotator';               % Programatic name that the program should use for this identity of mca<MyNewAxis>.
             config.kind.name =          'Adafruit Motor Shield';    % Technical name (e.g. name of device) for this identity of mca<MyNewAxis>.
@@ -67,7 +67,7 @@ classdef (Sealed) mcaHwpRotator < mcAxis
             config.kind.base =          0;                          % The point (in external units) that the axis should seek at startup.
             
             config.keyStep =            1.8;                        % Speed or step-every-tick (in external units) that this axis should move with...     ...the keyboard and
-            config.joyStep =            1.8;                        %                                                                                     ...the joystick  (these can be modified in the mcUserInput UI).
+            config.joyStep =            3.6;                        %                                                                                     ...the joystick  (these can be modified in the mcUserInput UI).
             
             config.port =               'COM7';
         end
