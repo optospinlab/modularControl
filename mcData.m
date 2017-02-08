@@ -844,7 +844,7 @@ classdef mcData < mcSavableClass
                     end
                 end
 
-                if ~isvalid(d)
+                if isvalid(d)
                     if ~d.d.flags.shouldOptimize
                         d.save();
                     end
@@ -926,7 +926,10 @@ classdef mcData < mcSavableClass
 %             'saving'
             data = d.d;
 %             tic
-            save([d.d.info.fname ' ' d.d.name], 'data');
+            
+            fname = replace(d.d.name, {'/', '\', ':', '"', '?', '<', '>', '|'}, '_');
+%             [d.d.info.fname ' ' fname]
+            save([d.d.info.fname ' ' fname], 'data');
 %             toc
         end
         

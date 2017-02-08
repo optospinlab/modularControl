@@ -233,13 +233,13 @@ classdef mcAxis < mcSavableClass
                     % Should something be done?
                     tf = true;
                 else
-%                     try
+                    try
                         a.Open();
                         tf = true;     % Return true because axis has been opened.
-%                     catch err
+                    catch err
 %                         disp(['mcAxis.open() - ' a.config.name ': ' err.message]);
-%                         tf = false;
-%                     end
+                        tf = false;
+                    end
                 end
             end
         end
@@ -280,20 +280,20 @@ classdef mcAxis < mcSavableClass
         
         function tf = read(a)       % Reads the value of a.x internally; Returns success.
             tf = true;
-%             display('reading.');
             
-            if a.open()
-                if a.inEmulation
-%                     display('inEmulation');
-                    a.ReadEmulation();
+%             if ~a.inUse
+                if a.open()
+                    if a.inEmulation
+                        a.ReadEmulation();
+                    else
+                        a.Read();
+                    end
                 else
-%                     display('not inEmulation');
-                    a.Read();
+                    tf = false;
                 end
-            else
-%                 display('not open!?');
-                tf = false;
-            end
+%             else
+%                 tf = false;
+%             end
         end
         
         function tf = inRange(a, x)
