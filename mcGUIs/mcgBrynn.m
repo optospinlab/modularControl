@@ -12,6 +12,7 @@ classdef mcgBrynn < mcGUI
         function config = diamondConfig()
             galvoConfig =   mcaDAQ.galvoXBrynnConfig();
             zConfig =       mcaEO.brynnObjConfig();
+            hwpConfig =     mcaHwpRotator.defaultConfig();
             
             %                     Style     String              Variable    TooltipString                                                                       Optional: Limit [min max round] (only for edit)
             config.controls = { { 'title',  'Galvos:  ',        NaN,        'Confocal scanning for the galvo mirrors.' },...
@@ -26,6 +27,8 @@ classdef mcgBrynn < mcGUI
                                 { 'push',   'Optimize X',      'optX',      'Push to active an optimization in the X direction with the above parameters.' },...
                                 { 'push',   'Optimize Y',      'optY',      'Push to active an optimization in the Y direction with the above parameters.' },...
                                 { 'push',   'Optimize Z',      'optZ',      'Push to active an optimization in the Z direction with the above parameters.' },...
+                                { 'edit',   'Range HWP (deg): ', 30,        'The range of the scan (in HWP deg), centered on the current position. If this scan goes out of bounds, it is shifted to be in bounds.',   [0 abs(diff(hwpConfig.kind.int2extConv(hwpConfig.kind.intRange)))]},...                                                              
+                                { 'push',   'Optimize HWP',    'opthwp',    'Push to active an optimization over the HWP.' },...
                               };
         end
     end
@@ -67,6 +70,13 @@ classdef mcgBrynn < mcGUI
                                                                 gui.controls{6}.Value,...
                                                                 gui.controls{7}.Value));
                     mcDataViewer(data, false);  % Open mcDataViewer to view this data, but do not open the control figure
+                case 'opthwp'
+                    data = mcData(mcData.optimizeConfiguration( gui.objects.hwp,...
+                                                                gui.objects.counter,...
+                                                                gui.controls{8}.Value,...                      % range
+                                                                gui.controls{6}.Value,...
+                                                                gui.controls{7}.Value));
+                    mcDataViewer(data, false);  % Open mcDataViewer to view this data, but do not open the control figure
                 case 'spec'
                     data = mcData(mcData.singleSpectrumConfiguration());
                     mcDataViewer(data, false);  % Open mcDataViewer to view this data, but do not open the control figure
@@ -93,6 +103,8 @@ classdef mcgBrynn < mcGUI
             
             gui.objects.galvos(1) = mcaDAQ(configGalvoX);
             gui.objects.galvos(2) = mcaDAQ(configGalvoY);
+            
+            gui.objects.hwp       = mcaHwpRotator;
             
             gui.objects.counter   = mciDAQ(configCounter);
         end
