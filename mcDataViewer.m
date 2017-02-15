@@ -66,6 +66,40 @@ classdef mcDataViewer < mcSavableClass
         isPersistant = false;   % Whether the mcDataViewer should stick around when it is closed with closefigure.
     end
     
+    methods (Static)
+        function loadGUI_Callback(~, ~, ~)
+            [FileName, PathName] = uigetfile({'*.mat','MAT-files (*.mat)'; '*.*',  'All Files (*.*)'}, 'Pick a saved mcData .mat to load in a new window...', mcInstrumentHandler.getSaveFolder(0));
+            
+            if isequal(FileName,0)
+                disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
+            else
+                c = load([PathName FileName]);
+                
+                if isfield(c, 'data')
+                    answer = 'yes';
+                
+                    if any(c.data.info.version ~= mcInstrumentHandler.version())
+                        str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
+                                ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
+                                '. This could potentially lead to version-conflict errors. Proceed anyway?'];
+                            
+                        answer = questdlg(str, 'Warning, Version Mismatch!', 'Yes', 'No', 'Yes');
+                    end
+                    
+                    switch lower(answer)
+                        case 'yes'
+                            c.data.other.axes = [];                 % Temp fix for big error.
+                            mcDataViewer(mcData(c.data), false)    % And don't show the control window when opening...
+                        case 'no'
+                            disp('mcDataViewer.loadGUI_Callback(): File was not loaded due to version conflict...');
+                    end
+                else
+                    disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
+                end
+            end
+        end
+    end
+    
     methods
         function gui = mcDataViewer(varargin)
             shouldAquire = true;        % Change?
@@ -553,8 +587,6 @@ classdef mcDataViewer < mcSavableClass
                                 lim = gui.a.CLim;
                             end
 
-    %                         d(isnan(d)) = min(lim);
-
                             if diff(lim) ~= 0
                                 d = (d - min(lim))/diff(lim);
                             end
@@ -567,48 +599,19 @@ classdef mcDataViewer < mcSavableClass
                         saveas(gui.df, [PathName FileName]);
                 end
                 
-                pause(.05);                                         % Pause to give time for the file to save.
+                pause(.05);                                         % Pause to give time for the (possible) first file to save.
                 
                 data = gui.data.d;                                  %#ok % Always save the .mat file, even if the user doesn't specify... (change?)
                 
-%                 data
-                
-                save([PathName FileName(1:end-4) ' (full).mat'], '-v6', 'data');   % Make sure that the extension is three characters?
+                if FilterIndex == 1                                 % If the full file was selected, then just save it with the provided name.
+                    save([PathName FileName], '-v6', 'data');
+                else                                                % If something else was saved, then save the full file in addition.
+                    save([PathName FileName(1:end-4) ' (full).mat'], '-v6', 'data');   % Make sure that the extension is three characters?
+                end
                 
                 pause(.05);                                         % Pause again
             else
                 disp('No file given...');
-            end
-        end
-        function loadGUI_Callback(~, ~, ~)
-            [FileName, PathName] = uigetfile({'*.mat','MAT-files (*.mat)'; '*.*',  'All Files (*.*)'}, 'Pick a saved mcData .mat to load in a new window...', mcInstrumentHandler.getSaveFolder(0));
-            
-            if isequal(FileName,0)
-                disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
-            else
-                c = load([PathName FileName]);
-                
-                if isfield(c, 'data')
-                    answer = 'yes';
-                
-                    if any(c.data.info.version ~= mcInstrumentHandler.version())
-                        str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
-                                ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
-                                '. This could potentially lead to version-conflict errors. Proceed anyway?'];
-                            
-                        answer = questdlg(str, 'Warning, Version Mismatch!', 'Yes', 'No', 'Yes');
-                    end
-                    
-                    switch lower(answer)
-                        case 'yes'
-                            c.data.other.axes = [];                 % Temp fix for big error.
-                            mcDataViewer(mcData(c.data), false)    % And don't show the control window when opening...
-                        case 'no'
-                            disp('mcDataViewer.loadGUI_Callback(): File was not loaded due to version conflict...');
-                    end
-                else
-                    disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
-                end
             end
         end
 %         function save(gui)                      % Overwrites the mcSavableClass file...
