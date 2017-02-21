@@ -1,5 +1,6 @@
-classdef mciDataWrapper < mcInput              % ** Insert mci<MyNewInput> name here...
-% mciDataWrapper allows 
+classdef mciDataWrapper < mcInput
+% mciDataWrapper allows the user to use mcData structure as an input. Using the config.makeDV flag, one can also make a GUI pop
+% up when data is being aqcuired.
 % Also see mcInput.
 
     properties
@@ -50,7 +51,7 @@ classdef mciDataWrapper < mcInput              % ** Insert mci<MyNewInput> name 
     
     methods             % Initialization method (this is what is called to make an input object).
         function I = mciDataWrapper(varin)
-            I.extra = {};
+            I.extra = {'data', 'makeDV'};
             
             if nargin == 0          % If no arguments are provided, use the default config
                 c = I.defaultConfig();

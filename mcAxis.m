@@ -92,7 +92,7 @@ classdef mcAxis < mcSavableClass
     end
         
     methods
-        function a = mcAxis(varin)
+        function a = mcAxis(~)
             if strcmpi(class(a), 'mcAxis')          % If this is the time axis...
                 a.construct(a.defaultConfig());
                 

@@ -258,13 +258,6 @@ classdef mcInput < mcSavableClass
 %                     end
 
                     I.isMeasuring = false;
-                    
-%                     'begin'
-%                     size(data)
-%                     length(size(data))
-%                     I.config.kind.sizeInput
-%                     length(I.config.kind.sizeInput)
-%                     'end'
 
                     if length(size(data)) ~= length(I.config.kind.sizeInput)
                         warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);

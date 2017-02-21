@@ -50,7 +50,7 @@ classdef mcePLE < mcExperiment
 %             ghwpOpt =   ghwp.getX();
 
             ghwpC = mcaAPT.rotatorConfig();
-            ghwp = mcaAPT(ghwpC);
+%             ghwp = mcaAPT(ghwpC);
 %             
 %             msgbox('Please rotate the green half-wave plate to the PLE position.');
 % %             ghwpPLE =   213.1726;   % 80uW

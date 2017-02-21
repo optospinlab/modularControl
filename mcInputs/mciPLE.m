@@ -122,9 +122,9 @@ classdef mciPLE < mcInput
             I = mcInstrumentHandler.register(I);
         end
         
-        function axes_ = getInputAxes(I)
-            axes_ = {I.config.xaxis};
-        end
+%         function axes_ = getInputAxes(I)
+%             axes_ = {I.config.xaxis};
+%         end
     end
     
     % These methods overwrite the empty methods defined in mcInput. mcInput will use these. The capitalized methods are used in
