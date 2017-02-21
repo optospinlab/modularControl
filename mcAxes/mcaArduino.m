@@ -28,7 +28,7 @@ classdef (Sealed) mcaArduino < mcAxis
             config.keyStep =            1;
             config.joyStep =            1;
             
-            config.port = 'COM7';
+            config.port = 'COM8';
         end
     end
     
@@ -77,7 +77,7 @@ classdef (Sealed) mcaArduino < mcAxis
         function Goto(a, x)
             a.xt = a.config.kind.ext2intConv(x);
             a.x = a.xt;
-            fprintf(a.s, num2str(a.x));  % Send '0' or '1' to the pump...
+            fprintf(a.s, num2str(a.x));  % Send '0' or '1' to the arduino...
         end
     end
 end

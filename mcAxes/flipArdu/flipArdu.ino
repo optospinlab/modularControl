@@ -1,7 +1,7 @@
 #include <Servo.h>
 
 #define SERVOPIN    10
-#define DUTYUP      950     // (µs)
+#define DUTYUP      1025     // (µs)
 #define DUTYDOWN    1750     // (µs)
 
 //#define VERBOSE

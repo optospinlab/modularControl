@@ -53,9 +53,14 @@ classdef mcePLE < mcExperiment
             ghwp = mcaAPT(ghwpC);
 %             
 %             msgbox('Please rotate the green half-wave plate to the PLE position.');
-            ghwpPLE =   213.1726;   % 80uW
+% %             ghwpPLE =   213.1726;   % 80uW
+%             ghwpPLE =   ghwp.getX();   % 80uW
 %             msgbox('Please rotate the green half-wave plate to the optimization position.');
-            ghwpOpt =   207.2705;   % 1.4mW
+% %             ghwpOpt =   207.2705;   % 1.4mW
+%             ghwpOpt =   ghwp.getX();   % 1.4mW
+
+            ghwpPLE =   139.9923;   % 80uW
+            ghwpOpt =   135.2904;   % 1.4mW
             
             % Spectrometer
 %             spectrometer =  mciSpectrum.pyWinSpecConfig();
@@ -68,7 +73,7 @@ classdef mcePLE < mcExperiment
             counter =       mciDAQ.counterConfig();         counter.chn = 'ctr1';
             
             % Mirror for switching between SPCM and spectrometer.
-            mirror =        mcaArduino.flipMirrorConfig();  mirror.port = 'COM7';
+            mirror =        mcaArduino.flipMirrorConfig();
             
             % Serial red NFLaser controls
             redSerial =        mcaNFLaser.defaultConfig();
