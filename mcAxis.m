@@ -5,10 +5,10 @@ classdef mcAxis < mcSavableClass
 %   a = mcAxis()                                % Open with default configuration.
 %   a = mcAxis(config)                          % Open with configuration given by config.
 %   a = mcAxis('config_file.mat')               % Open with config file in 'MATLAB_PATH\configs\axisconfigs\'
-%   a = mcAxis(config, emulate)                 % Same as above, except with the option (tf) to start axis in emulation mode.
+%   a = mcAxis(config, emulate)                 % Same as above, except with the option (boolean) to start axis in emulation mode.
 %   a = mcAxis('config_file.mat', emulate)     
 %
-%   config = mcAxis.[INSERT_TYPE]Config         % Returns a static config struture for that type
+%   config = mcAxis.<configName>Config()        % Returns a static config struture for that type
 %   
 %   str =   a.name()                            % Returns the default name. This is currently nameShort().
 %   str =   a.nameUnits()                       % Returns info about this axis in 'name (units)' form.
@@ -21,6 +21,8 @@ classdef mcAxis < mcSavableClass
 %   tf =    a.inRange(x)                        % Returns true if x is in the external range of a.
 %
 %   tf =    a.goto(x)                           % If x is in range, makes sure axis is open, moves axis to x, and returns success.
+%
+%   tf =    a.read(x)                           % Sets a.x to the physical position of the instrument (e.g. poll slow micrometers for current position), and returns success.
 %
 %   x =     a.getX(x)                           % Returns the position of the axis (a.x) in external units.
 %   x =     a.getXt(x)                          % Returns the target position of the axis (a.xt) in external units.
@@ -37,6 +39,7 @@ classdef mcAxis < mcSavableClass
         inUse = false;          % Boolean.
         inEmulation = false;    % Boolean.
         isObservable = true;    % Boolean. Should update ox and oxt to allow listeners to see the changes.
+        scan = []               % Empty struct for scan variables (see startScan, etc).
         
         reservedBy = [];        % Object (unfinished...)
     end
@@ -46,8 +49,8 @@ classdef mcAxis < mcSavableClass
     end
     
     properties (SetObservable)
-        x = 0;                  % Current position.
-        xt = 0;                 % Target position.
+        x = 0;                  % Current position (external units).
+        xt = 0;                 % Target position (external units).
     end
     
 %     properties (SetObservable)
@@ -90,15 +93,20 @@ classdef mcAxis < mcSavableClass
         
     methods
         function a = mcAxis(varin)
-            if nargin == 0
+            if strcmpi(class(a), 'mcAxis')          % If this is the time axis...
                 a.construct(a.defaultConfig());
-            elseif nargin == 1
-                if isstruct(varin)
-                    a.construct(varin);
-                else
-                    error('mcAxis(): Configs must be of type struct.');
-                end
+                
+                a = mcInstrumentHandler.register(a);
             end
+%             if nargin == 0
+%                 a.construct(a.defaultConfig());
+%             elseif nargin == 1
+%                 if isstruct(varin)
+%                     a.construct(varin);
+%                 else
+%                     error('mcAxis(): Configs must be of type struct.');
+%                 end
+%             end
         end
         
         function construct(a, varin)
@@ -118,20 +126,28 @@ classdef mcAxis < mcSavableClass
             end
                     
             if ischar(config)
-                if exist(config, 'file') && strcmpi(config(end-3:end), '.mat')
-                    vars = load(config);
-                    if isfield(vars, 'config')
-                        a.config = vars.config;
+                if strcmpi(config(end-3:end), '.mat')
+                    if isempty(strfind(config, filesep))
+                        config = [mcInstrumentHandler.getConfigFolder() class(obj) filesep config];
+                    end
+                    
+                    if exist(config, 'file')
+                        vars = load(config);
+                        if isfield(vars, 'config')
+                            a.config = vars.config;
+                        else
+                            error('mcAxis.construct(): .mat file given for config has no field config...');
+                        end
                     else
-                        error('.mat file given for config has no field config...');
+                    error(['mcAxis.construct(' config '): File given for config does not exist...']);
                     end
                 else
-                    error('File given for config does not exist or is not .mat...');
+                    error(['mcAxis.construct(' config '): File given for config is not .mat...']);
                 end
             elseif isstruct(config)
                 a.config = config;
             else
-                error('Not sure how to interpret config in mcAxis(config)...');
+                error('mcAxis(): Not sure how to interpret config in mcAxis(config)...');
             end
             
             if iscell(a.config.kind.intRange)
@@ -139,14 +155,6 @@ classdef mcAxis < mcSavableClass
             else
                 a.config.kind.extRange = a.config.kind.int2extConv(a.config.kind.intRange);
             end
-%             x = a.config.kind.extRange;
-            
-%             global ih
-%             if isempty(ih)
-%                 ih = mcInstrumentHandler();
-%             end
-%             
-%             a = ih.register(a);
 
             params = mcInstrumentHandler.getParams();
             if ismac || params.shouldEmulate
@@ -155,15 +163,6 @@ classdef mcAxis < mcSavableClass
             
             a.x = a.config.kind.base;
             a.xt = a.x;
-%             a.goto(a.x);
-            
-%             if ~strcmpi(a.config.name, 'time')      % This prevents infinite recursion...
-%                 a = mcInstrumentHandler.register(a);
-%             else
-%                 if mcInstrumentHandler.open();
-%                     warning('Time is automatically added and does not need to be added again...');
-%                 end
-%             end
         end
         
         function tf = eq(a, b)      % Check if a foreign object (b) has the same properties as this axis object (a).
@@ -281,7 +280,7 @@ classdef mcAxis < mcSavableClass
         function tf = read(a)       % Reads the value of a.x internally; Returns success.
             tf = true;
             
-%             if ~a.inUse
+            if ~a.inUse || (a.isOpen && a.inUse)    % If the axis is not in use by another process (i.e. a process other than itself)
                 if a.open()
                     if a.inEmulation
                         a.ReadEmulation();
@@ -291,9 +290,9 @@ classdef mcAxis < mcSavableClass
                 else
                     tf = false;
                 end
-%             else
-%                 tf = false;
-%             end
+            else
+                tf = false;
+            end
         end
         
         function tf = inRange(a, x)
@@ -344,7 +343,7 @@ classdef mcAxis < mcSavableClass
             end
         end
         function tf = isReserved(a) % Returns whether the axis is currently reserved by a valid object.
-            tf = isValid(a.reservedBy);
+            tf = isvalid(a.reservedBy);
             
             if ~tf
                 a.reservedBy = [];
@@ -405,6 +404,73 @@ classdef mcAxis < mcSavableClass
                     ii = ii + 1;
                 end
             end
+        end
+        
+        function startScan(a, amp, type)
+            % Makes the axis scan in a wave (`type` = 'sine', 'sawtooth') with amplitude `amp` (external units) about the
+            %   current position. This amplitude is truncated if it would go out of range. Returns whether the scan started. If
+            %   a linear scan is currently running, then the parameters (e.g. `amp`, `type`) are changed accordingly.
+            
+            error('mcAxis.startScan(): Unfinished');
+            
+            if ~isnumeric(amp)
+                error('mcAxis.startScan(): Amplitude `amp` must be numeric.')
+            end
+            
+            if amp == 0
+                if ~isempty(a.scan)
+                    a.stopScan();
+                end
+
+                return;
+            elseif amp < 0
+                amp = -amp;
+                warning('mcAxis.startScan(): Negative amplitude was given; taking the absolute value.');
+            end
+
+            if ~a.inRange(a.x - amp)
+                amp = abs(a.x - min(a.config.kind.extRange));
+                warning('mcAxis.startScan(): Lower bound of scan was out of range.');
+            end
+            if ~a.inRange(a.x + amp)
+                amp = abs(a.x - max(a.config.kind.extRange));
+                warning('mcAxis.startScan(): Upper bound of scan was out of range.');
+            end
+
+            if amp == 0
+                warning('mcAxis.startScan(): Cannot start at scan at the edge of range (such a scan would be no fun).');
+            end
+            
+            
+            if a.close()            % Make sure the axis is closed before we start messing with it.
+                a.inUse
+
+                makeNew = isempty(a.scan);
+
+                if makeNew
+
+                end
+            end
+        end
+        function sineFill_Callback(a, ~, ~)                 % This should *never* be called by the user.
+            
+            error('mcAxis.sineFill_Callback(): Unfinished');
+            
+            if a.scan.isScanning
+                
+            else
+                a.scan.s.wait();
+                delete(a.scan.s);
+                
+                a.scan =    [];
+                a.inUse =   false;
+            end
+        end
+        function stopScan(a)
+            
+            error('mcAxis.stopScan(): Unfinished');
+            
+            a.scan.isScanning = false;
         end
     end
     

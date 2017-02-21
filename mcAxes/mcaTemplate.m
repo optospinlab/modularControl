@@ -104,7 +104,7 @@ classdef (Sealed) mcaTemplate < mcAxis          % ** Insert mca<MyNewAxis> name 
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use a.extra for this?)
         function tf = Eq(a, b)          % Compares two mcaTemplates
-            tf = strcmpi(a.config.customVar1,  b.config.customVar1) && strcmpi(a.config.customVar2,  b.config.customVar2);                  % ** Change these to your custom vars.
+            tf = strcmpi(a.config.customVar1,  b.config.customVar1) && strcmpi(a.config.customVar2,  b.config.customVar2);                  % ** Change these to your custom vars, or do whatever neccessary to decide whether two identities are identical.
         end
         
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).

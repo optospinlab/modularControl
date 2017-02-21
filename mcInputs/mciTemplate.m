@@ -85,7 +85,7 @@ classdef mciTemplate < mcInput              % ** Insert mci<MyNewInput> name her
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
         function tf = Eq(I, b)          % Compares two mciTemplates
-            tf = strcmpi(I.config.customVar1,  b.config.customVar1) && strcmpi(I.config.customVar2,  b.config.customVar2);                  % ** Change these to your custom vars.
+            tf = strcmpi(I.config.customVar1,  b.config.customVar1) && strcmpi(I.config.customVar2,  b.config.customVar2);                  % ** Change these to your custom vars, or do whatever neccessary to decide whether two identities are identical.
         end
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).

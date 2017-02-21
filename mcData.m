@@ -2,19 +2,17 @@ classdef mcData < mcSavableClass
 % mcData is an object that encapsulates our generic data structure. This allows the same data structure to be used by multiple
 %   classes. For instance, the same mcData can be used by multiple mcProcessedDatas.
 %
-% Syntax:
+% Syntax (needs finalizing):
 %   d = mcData()
-%   d = mcData(params)                                                  % Load old data (or just the d structure if uninitialized) into this class
-%   d = mcData('params.mat')                                            % Load old data (from a .mat) into this class
+%   d = mcData(d)                                                       % Load old data (just the d structure) into this class
+%   d = mcData('insert/file/path/d.mat')                                % Load old data (from a .mat) into this class
 %   d = mcData(axes_, scans, inputs, integrationTime)                   % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
 %   d = mcData(axes_, scans, inputs, integrationTime, shouldOptimize)   % In addition to the previous, shouldOptimize tells the mcData to optimize after finishing or not (only works for 1D and 2D scans with singular data) 
 %
-% Status: Mosly finished and commented. Loading needs to be finished.
-% Update: Going through process to make it work for input of any sizeInput. Parts are not functional.]
-% Future: Organize .mat file. Remember positions of other axes. Fix loading.
+% Status: Mosly finished and commented.
 
     properties (SetObservable)
-        d = [];     % Our generic data structure. d for data. It is this structure that is saved in the .mat file.
+        d = [];     % Our generic data structure. d for data. This acts like the 'config' of other classes and is the structure that is saved in the .mat file.
         
         % d contains:
         %
@@ -26,7 +24,6 @@ classdef mcData < mcSavableClass
         % - d.inputs                cell array          % The configs for the inputs. For m inputs, this is 1xm.
         % - d.scans                 cell array          % The points that each axis scans across. The ith entry in the cell array corresponds to the ith axis. Note that these are in external units.
         % - d.intTimes              numeric array       % Contains the integration time for each input. Thus this is 1xm. For NIDAQ devices which 'can scan fast' by scanning altogether, the maximum intTime is used.
-        % - d.flags.shouldOptimize  boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
         %
         % - d.data                  cell array          % This is the 'meat' of this structure. Data is a 1xm cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
         %
@@ -34,53 +31,54 @@ classdef mcData < mcSavableClass
         % - d.info.fname            string              % Where the data should be saved (in the background). This is generated every time the data is reset.
         % - d.info.version          numeric array       % The version of modularControl that this data was taken with. This is generated every time the data is reset.
         % - d.info.other.axes       cell array          % configs for all the axes when the scan is started.
-        % - d.info.other.status     numeric array       % status (e.g. x) of all of the above axes.
+        % - d.info.other.status     numeric array       % status (i.e. a.x) of all of the above axes.
         %
         % - d.index                 numeric array       % Current 'position' of the axes in the scan.
         %
         % - d.flags.circTime        boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
-        
-        % Also note that config (due to inheretence from mcSavableClass) is also a member. (change this?)
+        % - d.flags.shouldOptimize  boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes with 0D inputs. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
+        % 
+        % - d.config                unused              % (due to inheritence from mcSavableClass) (change this?)
     end
 
     properties (SetObservable)
         dataViewer = [];        % 'Pointer' to the current data viewer.
-        r = [];                 % Struct for runtime-generated info. r for runtime.
+        r = [];                 % Struct for runtime-generated info, generated from d. r for runtime.
         
-        % - r.isInitialized = false;      % Whether or not the computer-generated fields have been calculated.
+        % - r.isInitialized = false;                        % Whether or not the computer-generated fields have been calculated.
         % 
         % RUNTIME-GENERATED INPUT INFO:
         % 
-        % - r.i.num                 integer
+        % - r.i.num                 integer                 % The number of inputs.
         % 
         % The following are (1xd.i.num) arrays. The ith value in each array contains the info relevant to the ith input.
         % 
         % - r.i.i                   mcInput array           % Contains the objects that point to the appropriate inputs.
         % - r.i.dimension           numeric array           % The dimension of the input (0 for number, 1 for vector, 2 for image).
         % - r.i.length              numeric array           % Lengths of the inputs (prod of the dimensions) e.g. length of 16x16 input is 256
-        % - r.i.name                cell array (strings)
-        % - r.i.nameUnit            cell array (strings)    %
-        % - r.i.unit                cell array (strings)
-        % - r.i.isNIDAQ             boolean array           
-        % - r.i.inEmulation         boolean array
-        % - r.i.numInputAxes        numeric
+        % - r.i.name                cell array (strings)    % Contains the name (just the name) of each input.
+        % - r.i.nameUnit            cell array (strings)    % Contains the name and units of the inputs in "name (unit)" form.
+        % - r.i.unit                cell array (strings)    % Just contains the units of the inputs.
+        % - r.i.isNIDAQ             boolean array           % Whether or not each input is an NIDAQ input and can use 'faster' scanning procedures. 
+        % - r.i.inEmulation         boolean array           % Whether or not each input is in emulation mode.
+        % - r.i.numInputAxes        numeric                 % = sum(d.r.i.dimension); the total number of dimensions.
         % - r.i.scans               cell array              % Contains the vectors corresponding to the edges of theinputs.
         % 
         % RUNTIME-GENERATED AXIS INFO:
         % 
-        % - r.a.num                 integer
+        % - r.a.num                 integer                 % The number of axes.
         % 
         % The following are (1xd.i.num) arrays. The ith value in each array contains the info relevant to the ith input.
         % 
         % - r.a.a                   mcAxis array            % Contains the objects that point to the appropriate axes.
-        % - r.a.name                cell array (strings)
-        % - r.a.nameUnit            cell array (strings)    %
-        % - r.a.unit                cell array (strings)
-        % - r.a.isNIDAQ             boolean array           
-        % - r.a.inEmulation         boolean array
+        % - r.a.name                cell array (strings)    % Contains the name (just the name) of each axis.
+        % - r.a.nameUnit            cell array (strings)    % Contains the name and units of the axes in "name (unit)" form.
+        % - r.a.unit                cell array (strings)    % Just contains the units of the axes.
+        % - r.a.isNIDAQ             boolean array           % Whether or not each axis is an NIDAQ input and can use 'faster' scanning procedures.        
+        % - r.a.inEmulation         boolean array           % Whether or not each axis is in emulation mode.
         % - r.a.scansInternalUnits  cell array              % Contains the info in data.scans, except in internal units.
         % - r.a.prev                numeric array           % Contains the positions of all of the loaded axes before the scan begins. This allows for returning to the same place.
-        % - r.a.timeIsAxis          boolean
+        % - r.a.timeIsAxis          boolean                 % Whether or not time is one of the axes (Future: Remove?)
         % 
         % RUNTIME-GENERATED LAYER INFO:
         % 
@@ -90,10 +88,10 @@ classdef mcData < mcSavableClass
         % - r.l.type                numeric array           % 0 ==> mcAxis, positive nums imply the num'th input.
         % - r.l.weight              numeric array           % First d.a.num indices are the weights of each axis. (Weight needs better explaination!)
         % - r.l.scans               cell arrray             % Contains all the scans (for both axes and inputs). If no scans are given for the inputs, then 1:size(dim) pixels is used.
-        % - r.l.lengths             numeric arrray          % 
-        % - r.l.name                cell array (strings)    %
-        % - r.l.nameUnit            cell array (strings)    %
-        % - r.l.unit                cell array (strings)    %
+        % - r.l.lengths             numeric arrray          % The length (how many points) in each layer.
+        % - r.l.name                cell array (strings)    % The name of each layer.
+        % - r.l.nameUnit            cell array (strings)    % The name of each layer in "name (units)" form.
+        % - r.l.unit                cell array (strings)    % The unit of each layer.
         % 
         % OTHER RUNTIME-GENERATED INFO:
         % 
@@ -108,14 +106,14 @@ classdef mcData < mcSavableClass
     
     % Configs
     methods (Static)
-        function data = defaultConfiguration()  % The configuration that is used if no vars are given to mcData.
-            data = mcData.testConfiguration();
-%             data = mcData.singleSpectrumConfiguration();
-%             data = mcData.counterConfiguration(mciSpectrum(), 10, 1);
-%             data = mcData.xyzConfiguration2();
-%             data = mcData.testConfiguration();
+        function data = defaultConfig()  % The Config that is used if no vars are given to mcData.
+%             data = mcData.testConfig();
+%             data = mcData.singleSpectrumConfig();
+%             data = mcData.counterConfig(mciSpectrum(), 10, 1);
+            data = mcData.xyzConfig2();
+%             data = mcData.testConfig();
         end
-        function data = xyzConfiguration()      % Just a test configuration.
+        function data = xyzConfig()      % Just a test Config.
             data.class = 'mcData';
             
             configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
@@ -129,7 +127,7 @@ classdef mcData < mcSavableClass
             data.inputs =   {configCounter};                                                    %               ...inputs.
             data.intTimes = .05;
         end
-        function data = xyzConfiguration2()      % Just a test configuration.
+        function data = xyzConfig2()      % Just a test Config.
             data.class = 'mcData';
             
             configPiezoX = mcaDAQ.piezoConfig(); configPiezoX.name = 'Piezo X'; configPiezoX.chn = 'ao0';       % Customize all of the default configs...
@@ -143,59 +141,59 @@ classdef mcData < mcSavableClass
             data.inputs =   {configTest};                                                       %               ...inputs.
             data.intTimes = .05;
         end
-        function data = squareScanConfiguration(axisX, axisY, input, range, speedX, pixels)                 % Square version of the below.
-            data = mcData.scanConfiguration(axisX, axisY, input, range, range, speedX, pixels, pixels); 
+        function data = squareScanConfig(axisX, axisY, input, range, speedX, pixels)                 % Square version of the below.
+            data = mcData.scanConfig(axisX, axisY, input, range, range, speedX, pixels, pixels); 
         end
-        function data = scanConfiguration(axisX, axisY, input, rangeX, rangeY, speedX, pixelsX, pixelsY)    % Rectangular 2D scan with arbitrary axes and input.
+        function data = scanConfig(axisX, axisY, input, rangeX, rangeY, speedX, pixelsX, pixelsY)    % Rectangular 2D scan with arbitrary axes and input.
             data.class = 'mcData';
             
             if length(rangeX) == 1
                 center = axisX.getX();
                 rangeX = [center - rangeX/2 center + rangeX/2];
             elseif length(rangeX) ~= 2
-                error('mcData.scanConfiguration(): Not sure how to use rangeX');
+                error('mcData.scanConfig(): Not sure how to use rangeX');
             end
             if length(rangeY) == 1
                 center = axisY.getX();
                 rangeY = [center - rangeY/2 center + rangeY/2];
             elseif length(rangeY) ~= 2
-                error('mcData.scanConfiguration(): Not sure how to use rangeY');
+                error('mcData.scanConfig(): Not sure how to use rangeY');
             end
             
             if diff(rangeX) == 0
-                error('mcData.scanConfiguration(): rangeX(1) should not equal rangeX(2)');
+                error('mcData.scanConfig(): rangeX(1) should not equal rangeX(2)');
             end
             if diff(rangeY) == 0
-                error('mcData.scanConfiguration(): rangeY(1) should not equal rangeY(2)');
+                error('mcData.scanConfig(): rangeY(1) should not equal rangeY(2)');
             end
             
             if abs(diff(rangeX)) > abs(diff(axisX.config.kind.extRange))
-                warning('mcData.scanConfiguration(): rangeX is too wide, setting to maximum');
+                warning('mcData.scanConfig(): rangeX is too wide, setting to maximum');
                 rangeX = axisX.config.kind.extRange;
             end
             if abs(diff(rangeY)) > abs(diff(axisY.config.kind.extRange))
-                warning('mcData.scanConfiguration(): rangeY is too wide, setting to maximum');
+                warning('mcData.scanConfig(): rangeY is too wide, setting to maximum');
                 rangeY = axisY.config.kind.extRange;
             end
             
             if min(rangeX) < min(axisX.config.kind.extRange)
-                warning('mcData.scanConfiguration(): rangeX is below range, shifting up');
+                warning('mcData.scanConfig(): rangeX is below range, shifting up');
 %                 rangeX
                 rangeX = rangeX + (min(axisX.config.kind.extRange) - min(rangeX));
             end
             if min(rangeY) < min(axisY.config.kind.extRange)
-                warning('mcData.scanConfiguration(): rangeY is below range, shifting up');
+                warning('mcData.scanConfig(): rangeY is below range, shifting up');
 %                 rangeY
                 rangeY = rangeY + (min(axisY.config.kind.extRange) - min(rangeY));
             end
             
             if max(rangeX) > max(axisX.config.kind.extRange)
-                warning('mcData.scanConfiguration(): rangeX is above range, shifting down');
+                warning('mcData.scanConfig(): rangeX is above range, shifting down');
 %                 rangeX
                 rangeX = rangeX + (max(axisX.config.kind.extRange) - max(rangeX));
             end
             if max(rangeY) > max(axisY.config.kind.extRange)
-                warning('mcData.scanConfiguration(): rangeY is above range, shifting down');
+                warning('mcData.scanConfig(): rangeY is above range, shifting down');
 %                 rangeY
                 rangeY = rangeY + (max(axisY.config.kind.extRange) - max(rangeY));
             end
@@ -204,28 +202,28 @@ classdef mcData < mcSavableClass
             if speedX < 0
                 speedX = -speedX;
             elseif speedX == 0
-                error('mcData.scanConfiguration(): It will take quite a long time to finish the scan if speedX == 0...');
+                error('mcData.scanConfig(): It will take quite a long time to finish the scan if speedX == 0...');
             end
             
             
             if pixelsX ~= round(pixelsX)
-                warning(['mcData.scanConfiguration(): pixelsX (' num2str(pixelsX) ') was not an integer, rounding to ' num2str(round(pixelsX)) '...']);
+                warning(['mcData.scanConfig(): pixelsX (' num2str(pixelsX) ') was not an integer, rounding to ' num2str(round(pixelsX)) '...']);
                 pixelsX = round(pixelsX);
             end
             if pixelsX < 0
                 pixelsX = -pixelsX;
             elseif pixelsX == 0
-                error('mcData.scanConfiguration(): pixelsX should not equal zero...');
+                error('mcData.scanConfig(): pixelsX should not equal zero...');
             end
             
             if pixelsY ~= round(pixelsY)
-                warning(['mcData.scanConfiguration(): pixelsY (' num2str(pixelsY) ') was not an integer, rounding to ' num2str(round(pixelsY)) '...']);
+                warning(['mcData.scanConfig(): pixelsY (' num2str(pixelsY) ') was not an integer, rounding to ' num2str(round(pixelsY)) '...']);
                 pixelsY = round(pixelsY);
             end
             if pixelsY < 0
                 pixelsY = -pixelsY;
             elseif pixelsY == 0
-                error('mcData.scanConfiguration(): pixelsY should not equal zero...');
+                error('mcData.scanConfig(): pixelsY should not equal zero...');
             end
             
             
@@ -234,7 +232,7 @@ classdef mcData < mcSavableClass
             data.inputs =   {input};                                                                            %               ...inputs.
             data.intTimes = (diff(rangeX)/speedX)/pixelsX;
         end
-        function data = optimizeConfiguration(axis_, input, range, pixels, seconds)                         % Optimizes 'input' over 'range' of 'axis_'
+        function data = optimizeConfig(axis_, input, range, pixels, seconds)                         % Optimizes 'input' over 'range' of 'axis_'
             data.class = 'mcData';
             
 %             axis_
@@ -253,7 +251,7 @@ classdef mcData < mcSavableClass
             data.intTimes = seconds/pixels;
             data.flags.shouldOptimize = true;
         end
-        function data = counterConfiguration(input, length, integrationTime)    
+        function data = counterConfig(input, length, integrationTime)    
             data.class = 'mcData';
             
             data.axes =     {mcAxis()};                 % This is the time axis.
@@ -262,7 +260,7 @@ classdef mcData < mcSavableClass
             data.intTimes = integrationTime;
             data.flags.circTime = true;
         end
-        function data = sineConfiguration(axis_, range, pixels, period)    
+        function data = sineConfig(axis_, range, pixels, period)    
             data.class = 'mcData';
             
             data.axes =     {axis_, mcAxis()};
@@ -279,7 +277,7 @@ classdef mcData < mcSavableClass
             data.inputs =   {input};                    % input.
             data.intTimes = integrationTime;
         end
-        function data = singleConfiguration(input, integrationTime)    
+        function data = singleConfig(input, integrationTime)    
             data.class = 'mcData';
             
             data.axes =     {};
@@ -287,7 +285,7 @@ classdef mcData < mcSavableClass
             data.inputs =   {input};                    % input.
             data.intTimes = integrationTime;
         end
-        function data = testConfiguration()
+        function data = testConfig()
             data.class = 'mcData';
             
             data.axes =     {mcAxis()};
@@ -314,7 +312,7 @@ classdef mcData < mcSavableClass
             
             data.intTimes = [1 1 1];
         end
-        function data = singleSpectrumConfiguration()
+        function data = singleSpectrumConfig()
             data.class = 'mcData';
             
             data.axes =     {};
@@ -324,8 +322,8 @@ classdef mcData < mcSavableClass
         end
         function data = PLEConfig()
 %             data = mcData.inputConfig(mciPLE(), 20, 1);
-            data = mcData.counterConfiguration(mciPLE(), 20, 1);
-%             data = mcData.singleConfiguration(mciPLE(), 1);
+            data = mcData.counterConfig(mciPLE(), 20, 1);
+%             data = mcData.singleConfig(mciPLE(), 1);
         end
     end
     
@@ -337,10 +335,31 @@ classdef mcData < mcSavableClass
             switch nargin
                 case 0
 %                     error('We shouldnt be here')
-                    d.d = mcData.defaultConfiguration();    % If no vars are given, assume a 10x10um piezo scan centered at zero (outdated).
+                    d.d = mcData.defaultConfig();    % If no vars are given, assume a 10x10um piezo scan centered at zero (outdated).
                 case 1
                     if ischar(varin)
-                        error('Unfinished loading protocol');
+                        c = load(varin);
+                
+                        if isfield(c, 'data')
+                            answer = 'yes';
+
+                            if any(c.data.info.version ~= mcInstrumentHandler.version())
+                                str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
+                                        ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
+                                        '. This could potentially lead to version-conflict errors. Proceed anyway?'];
+
+                                answer = questdlg(str, 'Warning, Version Mismatch!', 'Yes', 'No', 'Yes');
+                            end
+
+                            switch lower(answer)
+                                case 'yes'
+                                    d = c.data;
+                                case 'no'
+                                    disp(['mcData(' varin '): File was not loaded due to version conflict...']);
+                            end
+                        else
+                            disp(['mcData(' varin '): No file given to load...']);
+                        end
                     else
                         d.d = varin;
                     end
@@ -357,6 +376,8 @@ classdef mcData < mcSavableClass
                     d.d.intTimes =          varin{4};
                     d.d.flags.shouldOptimize =    varin{5};
             end
+            
+            d.d.class = 'mcData';
             
             if ~isfield(d.d, 'flags')
                 d.d.flags = [];
@@ -726,13 +747,18 @@ classdef mcData < mcSavableClass
                 if all(isnan(d.r.a.prev))       % If the previous positions of the axes have not already been set...
                     for ii = nums               % For every axis,
                         d.r.a.prev(ii) = d.r.a.a{ii}.getX();                % Remember the pre-scan positions of the axes.
-                        d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));     % And goto the starting position.
-                    end
-
-                    for ii = nums               % Then, again for every axis,
-                        d.r.a.a{ii}.wait();     % Wait for the axis to reach the starting position (only relevant for micros/etc).
                     end
                 end
+
+%                 if all(isnan(d.r.a.prev))       % Then goto the starting position...
+                for ii = nums               % For every axis,
+                    d.r.a.a{ii}.goto(d.d.scans{ii}(d.d.index(ii)));     % And goto the starting position.
+                end
+
+                for ii = nums               % Then, again for every axis,
+                    d.r.a.a{ii}.wait();     % Wait for the axis to reach the starting position (only relevant for micros/etc).
+                end
+%                 end
 
                 if d.r.aquiring
                     % Make a NIDAQ session if it is neccessary and has not already been created.
@@ -924,10 +950,18 @@ classdef mcData < mcSavableClass
     methods
         function save(d)                % Background-saves the .mat file. Note that manual saving is done in mcDataViewer. (make a console command for manual saving, eventually?).
 %             'saving'
-            data = d.d;
+            data = d.d;     %#ok
 %             tic
             
-            fname = replace(d.d.name, {'/', '\', ':', '"', '?', '<', '>', '|'}, '_');
+%             fname = replace(d.d.name, {'/', '\', ':', '"', '?', '<', '>', '|'}, '_');
+            characters = {'/', '\', ':', '"', '?', '<', '>', '|'};
+
+            fname = d.d.name;
+            
+            for ii = 1:length(characters)
+                fname = strrep(fname, characters{ii}, '_');
+            end
+
 %             [d.d.info.fname ' ' fname]
             save([d.d.info.fname ' ' fname], 'data');
 %             toc

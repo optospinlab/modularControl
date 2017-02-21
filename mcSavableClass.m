@@ -17,7 +17,18 @@ classdef mcSavableClass < handle
             end
         end
         
-        function save(varin)            % Saves the config which defines the idenity of any mcSavableClass subclass.
+        function load(obj)
+            fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat'];
+            
+            if exist(fname, 'file')
+                load(fname);
+                c = load(fname);
+                obj.config = c.config;
+            end
+        end
+        
+        function save(varin)            % Saves the config which defines an idenity of a mcSavableClass subclass.
+%             'saving!'
             switch nargin   % Figure out where to save.
                 case 1
                     obj = varin;
@@ -37,13 +48,17 @@ classdef mcSavableClass < handle
                     fname = [mcInstrumentHandler.getConfigFolder() class(obj) filesep varin{2}];
             end
             
-            if isfield(obj, 'f') && isfield(obj.config, 'Position') % If this savable class has a figure and cares about position,
-                obj.config.Position = obj.f.Position;
+%             obj
+%             isprop(obj, 'f')
+            
+            if isprop(obj, 'f')     % If this savable class has a figure....   %&& isfield(obj.config, 'Position') % If this savable class has a figure and cares about position,
+                obj.config.Position = obj.f.Position;   % Then save the position in the config.
             end
             
             obj.makeClassFolder();
 
-            config = obj.config;
+            config = obj.config;        %#ok
+%             config
 
             save(fname, 'config');
         end
@@ -52,7 +67,7 @@ classdef mcSavableClass < handle
             obj.makeClassFolder();
             [FileName, PathName] = uiputfile('*.mat', 'Save Config As', [mcInstrumentHandler.getConfigFolder() class(obj) filesep 'config.mat']);
             if FileName ~= 0
-                config = obj.config;
+                config = obj.config;    %#ok
                 save([PathName FileName], 'config');
             end
         end
@@ -99,6 +114,10 @@ classdef mcSavableClass < handle
 
             config2 = load([PathName FileName]);    % Load the new config.
             c = config2.config;                     %#ok
+            
+%             c
+%             
+%             [class(obj) '(c)']
 
             eval([class(obj) '(c)']);               % Make new object
 %             end

@@ -60,86 +60,85 @@ classdef mcInput < mcSavableClass
             end
                     
             if ischar(config)               % If we are given a string, assume that it is the path to the config (in .mat form)
-                if exist(config, 'file') && strcmpi(config(end-3:end), '.mat')
-                    vars = load(config);
-                    if isfield(vars, 'config')
-                        I.config = vars.config;
+                if strcmpi(config(end-3:end), '.mat')
+                    if isempty(strfind(config, filesep))
+                        config = [mcInstrumentHandler.getConfigFolder() class(obj) filesep config];
+                    end
+                    
+                    if exist(config, 'file')
+                        vars = load(config);
+                        if isfield(vars, 'config')
+                            I.config = vars.config;
+                        else
+                            error('mcInput.construct(): .mat file given for config has no field config...');
+                        end
                     else
-                        error('.mat file given for config has no field config...');
+                    error(['mcInput.construct(' config '): File given for config does not exist...']);
                     end
                 else
-                    error('File given for config does not exist or is not .mat...');
+                    error(['mcInput.construct(' config '): File given for config is not .mat...']);
                 end
             elseif isstruct(config)
                 I.config = config;
             else
-                error('Not sure how to interpret config in mcInput(config)...');
+                error('mcInput.construct(): Not sure how to interpret config in mcInput(config)...');
             end
-            
-%             c = I.config
-%             I.getInputScans()
-%             
-%             if iscell(I.getInputScans())
-%                 I.config.sizeInput = cellfun(@length, I.getInputScans(), 'UniformOutput', true);    % This is a slight issue! Think of a better way to do this!
-%             elseif isnumeric(I.getInputScans())
-%                 I.config.sizeInput = [length(I.getInputScans()) 1];
-%             end
-%             
-%             s2 = I.config.sizeInput
             
             params = mcInstrumentHandler.getParams();
             if ismac || params.shouldEmulate
                 I.inEmulation = true;
             end
-            
-%             I = mcInstrumentHandler.register(I);
         end
         
-        function I = mcInput(varin)
-            % Constructor 
-            switch nargin
-                case 0
-                    I.config = I.defaultConfig();
-                case {1, 2}
-                    if nargin == 1
-                        config = varin;
-                    else
-                        config = varin{1};
-                    end
-                    
-                    if ischar(config)
-                        if exist(config, 'file') && strcmp(config(end-3:end), '.mat')
-                            vars = load(config);
-                            if isfield(vars, 'config')
-                                I.config = vars.config;
-                            else
-                                error('.mat file given for config has no field config...');
-                            end
-                        else
-                        	error('File given for config does not exist or is not .mat...');
-                        end
-                    elseif isstruct(config)
-                        I.config = config;
-                    else
-                        error('Not sure how to interpret config in mcInput(config)...');
-                    end
-                    
-                    if nargin == 2
-                        if islogical(varin{2}) || isnumeric(varin{2})
-                            I.inEmulation = varin{2};
-                        else
-                            warning('Second argument not understood; it needs to be logical or numeric');
-                        end
-                    end
-            end
-            
-            params = mcInstrumentHandler.getParams();
-            if ismac || params.shouldEmulate
-                I.inEmulation = true;
-            end
-            
-            I = mcInstrumentHandler.register(I);
-        end
+%         function I = mcInput(varin)
+% %             if strcmpi(class(I), 'mcInput')
+% %                 I = mcInstrumentHandler.register(I);
+% %             end
+%             
+%             % Constructor 
+% %             switch nargin
+% %                 case 0
+% %                     I.config = I.defaultConfig();
+% %                 case {1, 2}
+% %                     if nargin == 1
+% %                         config = varin;
+% %                     else
+% %                         config = varin{1};
+% %                     end
+% %                     
+% %                     if ischar(config)
+% %                         if exist(config, 'file') && strcmp(config(end-3:end), '.mat')
+% %                             vars = load(config);
+% %                             if isfield(vars, 'config')
+% %                                 I.config = vars.config;
+% %                             else
+% %                                 error('.mat file given for config has no field config...');
+% %                             end
+% %                         else
+% %                         	error('File given for config does not exist or is not .mat...');
+% %                         end
+% %                     elseif isstruct(config)
+% %                         I.config = config;
+% %                     else
+% %                         error('Not sure how to interpret config in mcInput(config)...');
+% %                     end
+% %                     
+% %                     if nargin == 2
+% %                         if islogical(varin{2}) || isnumeric(varin{2})
+% %                             I.inEmulation = varin{2};
+% %                         else
+% %                             warning('Second argument not understood; it needs to be logical or numeric');
+% %                         end
+% %                     end
+% %             end
+% %             
+% %             params = mcInstrumentHandler.getParams();
+% %             if ismac || params.shouldEmulate
+% %                 I.inEmulation = true;
+% %             end
+% %             
+% %             I = mcInstrumentHandler.register(I);
+%         end
         
         function tf = eq(I, b)  % Check if a foriegn object (b) is equal to this input object (a).
             if ~isvalid(I) || ~isvalid(b)
@@ -198,13 +197,14 @@ classdef mcInput < mcSavableClass
                     % Do something?
                     tf = true;
                 else
-%                     try
+                    try
+%                         'here'
                         I.Open();
                         tf = true;     % Return true because axis has been opened.
-%                     catch err
-%                         disp(['mcInput.open() - ' I.config.name ': ' err.message]);
-%                         tf = false;
-%                     end
+                    catch err
+                        warning(['mcInput.open() - ' I.config.name ': ' err.message]);
+                        tf = false;
+                    end
                 end
                 
                 I.isOpen = true;
@@ -246,8 +246,6 @@ classdef mcInput < mcSavableClass
                     end
                     
                     I.isMeasuring = true;
-                    
-%                     data = NaN(I.config.kind.sizeInput);
 
 %                     try
                     if I.inEmulation
@@ -260,10 +258,17 @@ classdef mcInput < mcSavableClass
 %                     end
 
                     I.isMeasuring = false;
+                    
+%                     'begin'
+%                     size(data)
+%                     length(size(data))
+%                     I.config.kind.sizeInput
+%                     length(I.config.kind.sizeInput)
+%                     'end'
 
                     if length(size(data)) ~= length(I.config.kind.sizeInput)
-                        data = NaN(I.config.kind.sizeInput);
                         warning(['mcInput - ' I.config.name ': measured data has unexpected size of [' num2str(size(data)) '] vs [' num2str(I.config.kind.sizeInput) ']...']);
+                        data = NaN(I.config.kind.sizeInput);
                         return;
                     end
                     

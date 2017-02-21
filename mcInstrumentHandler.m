@@ -43,7 +43,7 @@ classdef mcInstrumentHandler < handle
     % Public methods
     methods (Static)
         function ver = version()    % Gives the version of modularControl. Will set to [1 0] upon first stable release.
-            ver = [0 62];           % Commit number.
+            ver = [0 99];           % Commit number.
         end
         function tf = open()
             tf = true;
@@ -68,6 +68,7 @@ classdef mcInstrumentHandler < handle
                             'Pain is a conserved quantity. Concentrate the pain now for a pain-free day!',...
                             'Never trust Ed.',...
                             'That doesn''t look like anything to me...',...
+                            'FACT: All Canadians carry a secret flask of authentic maple syrup for emergency situations.',...
                             'For health and happiness, join the Fu Lab Running Group!'  };
                         
                 rng('shuffle');
@@ -114,7 +115,7 @@ classdef mcInstrumentHandler < handle
                 params.hostname = strrep(params.hostname, ':', '_');
                 
                 if ismac
-                    disp(['Note: Finding a consistant computer name for a mac has proven difficult. Configs will be saved under the name of "macOS", instead of the probably-inconsistant ' params.hostname])
+                    disp(['Note: Finding a consistant computer name for a mac has proven difficult. Configs will be saved under the name of "macOS", instead of the probably-inconsistant "' params.hostname '", which is your current hostname.'])
                     params.hostname = 'macOS';
                 end
 

@@ -4,6 +4,7 @@ classdef mcGUI < mcSavableClass
     properties
 %         config = [];            % Defined in mcSavableClass. All static variables (e.g. valid range) go in config.
         controls = {};
+        
         f = [];
         
         updated = 0;
@@ -33,9 +34,13 @@ classdef mcGUI < mcSavableClass
         function gui = mcGUI(varin)
             switch nargin
                 case 0
-                    gui.config = gui.defaultConfig();
+                    gui.load();                             % Attempt to load a previous config from configs/computername/classname/config.mat
+                    
+                    if isempty(gui.config)                  % If the file did not exist or the loading failed...
+                        gui.config = gui.defaultConfig();   % ...then use the defaultConfig() as a backup.
+                    end
                 case 1
-                    gui.config = varin;
+                    gui.config = varin;                     % Otherwise use the input as the config.
             end
             
             gui.buildGUI();
@@ -44,7 +49,16 @@ classdef mcGUI < mcSavableClass
         function buildGUI(gui)
             gui.f = mcInstrumentHandler.createFigure(gui, 'saveopen');
             gui.f.Resize =      'off';
-            gui.f.Position = [100, 100, gui.pw, gui.ph];
+            gui.f.CloseRequestFcn = @gui.closeRequestFcn;
+            
+%             c = gui.config
+            
+            if isfield(gui.config, 'Position')                  % If the position was saved in the config,...
+                gui.f.Position = gui.config.Position;           % ...Then use these position settings.
+                gui.f.Position(3) = gui.pw;                     % But force the width to be the expected value (becuase it might mess up the margins and centering otherwise.
+            else
+                gui.f.Position = [100, 100, gui.pw, gui.ph];    % Otherwise, use the default settings.
+            end
             
             bh = 20;    % Button height
             ii = 1.5;   % Initial button
@@ -55,12 +69,14 @@ classdef mcGUI < mcSavableClass
             W = gui.pw*w;
             
             
-            prevControl = '';
+            prevControl = '';   % The kind of the previous control. This allows us to put in nice formatting (e.g. larger space before titles, etc)
             
             jj = 1;
             
-            for control_ = gui.config.controls
-                control = control_{1};
+%             for control_ = gui.config.controls
+%                 control = control_{1};
+            for kk = 1:length(gui.config.controls)
+                control = gui.config.controls{kk};
                 switch control{1}
                     case 'title'
                         if ~isempty(prevControl)
@@ -73,7 +89,7 @@ classdef mcGUI < mcSavableClass
                                     'TooltipString', control{4},... 
                                     'HorizontalAlignment', 'left',...
                                     'FontWeight', 'bold',...
-                                    'Position', [M, gui.ph - ii*bh, W, bh]);     
+                                    'Position', [M, -ii*bh, W, bh]);     
                         ii = ii + 1;
                     case 'text'
                         if strcmpi(prevControl, 'title')
@@ -91,13 +107,16 @@ classdef mcGUI < mcSavableClass
                                                         'String', control{2},... 
                                                         'TooltipString', control{4},... 
                                                         'HorizontalAlignment', 'left',...
-                                                        'Position', [M, gui.ph - ii*bh, W, bh]);
+                                                        'Position', [M, -ii*bh, W, bh]);
                                                     
                         gui.controls{jj} =   uicontrol( 'Parent', gui.f,...
                                                         'Style', 'edit',... 
                                                         'String', control{3},...
-                                                        'Position', [M, gui.ph - (ii+1)*bh, W, bh]);    
+                                                        'Position', [M, -(ii+1)*bh, W, bh],...
+                                                        'UserData', kk);    % also save the line that spawned it so the final value can be saved.
                                    
+                        gui.controls{jj}.Callback =         @gui.update;
+                            
                         jj = jj + 1;
                         ii = ii + 2;
                     case 'edit'
@@ -116,20 +135,21 @@ classdef mcGUI < mcSavableClass
                                                         'String', control{2},... 
                                                         'TooltipString', control{4},... 
                                                         'HorizontalAlignment', 'right',...
-                                                        'Position', [M, gui.ph - ii*bh, W/2, bh]);
+                                                        'Position', [M, -ii*bh, W/2, bh]);
                                                     
                         gui.controls{jj} =   uicontrol( 'Parent', gui.f,...
                                                         'Style', 'edit',... 
                                                         'String', control{3},...
                                                         'Value', control{3},...     % Also store number as value (used if string change is undesirable).
-                                                        'Position', [M + W/2, gui.ph - ii*bh, W/2, bh]);     
+                                                        'Position', [M + W/2, -ii*bh, W/2, bh],...
+                                                        'UserData', kk);    % also save the line that spawned it so the final value can be saved.
                                      
                         if length(control) > 4
                             gui.controls{jj}.TooltipString =    gui.getLimitString(control{5});
                             gui.controls{jj}.Callback =         {@gui.limit control{5}};
                         else
                             gui.controls{jj}.TooltipString =    gui.getLimitString([]);
-                            gui.controls{jj}.Callback =         @gui.update;
+                            gui.controls{jj}.Callback =         {@gui.limit [-Inf Inf]};
                         end  
                             
                         jj = jj + 1;
@@ -143,12 +163,23 @@ classdef mcGUI < mcSavableClass
                                     'Style', 'push',... 
                                     'String', control{2},... 
                                     'TooltipString', control{4},... 
-                                    'Position', [M, gui.ph - ii*bh, W, bh],... 
+                                    'Position', [M, -ii*bh, W, bh],... 
                                     'Callback', {@gui.Callbacks, control{3}});                      
                         ii = ii + 1;
                 end
                 
                 prevControl = control{1};
+            end
+            
+            gui.ph = ii*bh;
+            gui.f.Position(4) = gui.ph;
+            
+            for kk = 1:length(gui.f.Children)
+                child = gui.f.Children(kk);
+                
+                if isprop(child, 'Position')
+                    child.Position(2) = child.Position(2) + gui.ph;
+                end
             end
             
             gui.f.Visible = 'on';
@@ -187,7 +218,7 @@ classdef mcGUI < mcSavableClass
             src.String =    val;
             src.Value =     val;
             
-            gui.update();
+            gui.update(src, 0);
         end
         function str = getLimitString(~, lim)
             str = 'No requirements.';
@@ -204,12 +235,29 @@ classdef mcGUI < mcSavableClass
                 end
             end
         end
-        function update(gui)
+        function update(gui, src, ~)
+%             src.UserData
+            
+            if isempty(src.Value)
+                gui.config.controls{src.UserData}{3} =  src.String;
+            else
+                gui.config.controls{src.UserData}{3} =  src.Value;
+            end
+            
+%             gui.config.controls
+%             gui.config.controls{2}
+            
             gui.updated = gui.updated + 1;
         end
+        
+        function closeRequestFcn(gui, ~, ~)
+            delete(gui);
+        end
+        
         function delete(gui)
+            gui.save();     % Inherited from mcSavableClass...
+            
             delete(gui.f)
-            delete(gui.controls)
         end
 %         function val = getEditValue(gui, jj)  % Gets the value of the jj'th edit (change this eventually to look for the edit corresponding to a string? After all, this makes editing difficult)
 %             val = gui.controls{jj}.Value;

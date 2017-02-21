@@ -34,7 +34,6 @@ Class               | This Class Abstractifies...  | Subclass Prefix | Example S
 --------------------|--------------|-----------------|-----------------------|
 `mcAxis`			| ...1D parameter spaces | `mca` | `mcaDAQ`|
 `mcInput`			| ...measurement         | `mci` | `mciDAQ`|
-`mcExperiment`	| ...experimental procedure | `mce` | `mcePLE`|
 `mcGUI`			| ...MATLAB GUIs | `mcg` | `mcgDiamond`|
 
 Why was this done? Different code must be executed to interact with different devices. Attempting to contain the behavior of every axis inside a single `mcAxis` class became difficult as the number of necessary behaviors increased. The `switch` statement to deal with the different behaviors became unmanagably long. But, for compatability and *modularity* it was important to have all interactions be done through common classes and functions. Hence, `mcAxis`, `mcInput`, etc spawn a set of subclass `mca`s, `mci`s, etc that define the specific functionality. These subclasses, to reduce clutter, are stored in the subfolders of `modularControl` labeled by parent name.
@@ -140,27 +139,27 @@ viewer = mcDataViewer(data);
 
 ### High Priority:
 
-* Make sure loading and saving configs/data is functional.
-* Make sure that `mcData` works in all situations (e.g. different configurations of axes and inputs).
-* Polish `mcExperiment` stuff.
-* Commenting!
+- [x] Make sure loading and saving configs/data is functional.
+- [ ] Make sure that `mcData` works in all situations (e.g. different configurations of axes and inputs).
+- [ ] Polish `mcExperiment` stuff.
+- [ ] Commenting!
 
 ### Low Priority:
 
-* 3D and Scatter modes for `mcDataViewer`.
-* Sine scan on all `mcAxes` (useful for alignment).
-* Fix current position updating in mcWaypoints (currently disabled for performance).
-* Streamline the grid-creation process.
-* Fix cross-platform UI issues, especially in `mcScan` and `mcData` (`uitabgroup` issues).
-* Make tabbing in `mcUserInput` go to the next textbox, instead of button.
-* Make sure the `mcAxis` and `mcInput` error-check properly.
-* Make `mcAxis` recognize `NaN` as the 'don't do anything' base.
-* Finish `uicontrol` registration to turn off controls when the assigned axis is in use.
-* Add exposure adjustment(/etc) controls to `mcVideo`.
-* Properly debug (e.g. PID loop settings) image feedback in `mcVideo`.
-* Make a GUI for loaded instruments (`uitable`?).
-* Add ungrouped axis controls to `mcUserInput`.
-* Fix mcData return to position when unpausing scan.
+- [ ] 3D and Scatter modes for `mcDataViewer`.
+- [ ] Sine scan on all `mcAxes` (useful for alignment).
+- [x] Fix current_position updating in mcWaypoints (currently disabled for performance).
+- [ ] Streamline the grid-creation process.
+- [ ] Fix cross-platform UI issues, especially in `mcScan` and `mcData` (`uitabgroup` issues).
+- [ ] Make tabbing in `mcUserInput` go to the next textbox, instead of button.
+- [ ] Make sure the `mcAxis` and `mcInput` error-check properly.
+- [x] Make `mcAxis` recognize `NaN` as the 'don't do anything' base.
+- [ ] Finish `uicontrol` registration to turn off controls when the assigned axis is in use.
+- [ ] Add exposure adjustment(/etc) controls to `mcVideo`.
+- [ ] Properly debug (e.g. PID loop settings) image feedback in `mcVideo`.
+- [ ] Make a GUI for loaded instruments (`uitable`?).
+- [ ] Add ungrouped axis controls to `mcUserInput`.
+- [ ] Fix mcData return to position when unpausing scan.
 
 
 

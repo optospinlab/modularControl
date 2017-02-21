@@ -1,11 +1,15 @@
 classdef mcDataViewer < mcSavableClass
-% mcDataViewer provides a gui for mcData.
+% mcDataViewer provides a GUI for mcData.
 %
 % Syntax:
-%   - mcDataViewer(data)        % data is an mcData config/object.
-%   - mcDataViewer('data.mat')  % 'data.mat' points to an mcData config.
+%   - mcDataViewer()                                                            % Views the default mcData object.
+%   - mcDataViewer(data)                                                        % Views the mcData object corresponding to data. Data can be an mcData object, or anything that is valid in the line mcData(data) (e.g. d config, fname string). (Future: check to make sure this behaves nicely if an irregular type is given)
+%   - mcDataViewer(data, shouldMakeManager)                                     % Same as the above, except with an additional boolean flag denoting whether the control figure should be initially visible.
+%   - mcDataViewer(data, shouldMakeManager, shouldMakeVisible)                  % Same as the above, except with an additional boolean flag denoting whether the data figure should be initially visible.
+%   - mcDataViewer(data, shouldMakeManager, shouldMakeVisible, shouldAquire)    % Same as the above, except with an additional boolean flag denoting whether the scan should start upon initialization.
 %
-% Status: Mostly finished, somewhat commented. Future: definitely RGB, maybe 3D?
+% Status: Mostly finished, somewhat commented. 
+% Future: definitely RGB, maybe 3D? Needs cleaning and oganization (e.g. color.R, color.G instead of colorR, colorG).
     
     properties  % Colors
         colorR = [1 0 0];
@@ -67,59 +71,39 @@ classdef mcDataViewer < mcSavableClass
     end
     
     methods (Static)
+        function load()
+            mcDataViewer.loadGUI_Callback(0,0)
+        end
         function loadGUI_Callback(~, ~, ~)
             [FileName, PathName] = uigetfile({'*.mat','MAT-files (*.mat)'; '*.*',  'All Files (*.*)'}, 'Pick a saved mcData .mat to load in a new window...', mcInstrumentHandler.getSaveFolder(0));
             
             if isequal(FileName,0)
                 disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
             else
-                c = load([PathName FileName]);
-                
-                if isfield(c, 'data')
-                    answer = 'yes';
-                
-                    if any(c.data.info.version ~= mcInstrumentHandler.version())
-                        str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
-                                ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
-                                '. This could potentially lead to version-conflict errors. Proceed anyway?'];
-                            
-                        answer = questdlg(str, 'Warning, Version Mismatch!', 'Yes', 'No', 'Yes');
-                    end
-                    
-                    switch lower(answer)
-                        case 'yes'
-                            c.data.other.axes = [];                 % Temp fix for big error.
-                            mcDataViewer(mcData(c.data), false)    % And don't show the control window when opening...
-                        case 'no'
-                            disp('mcDataViewer.loadGUI_Callback(): File was not loaded due to version conflict...');
-                    end
-                else
-                    disp('mcDataViewer.loadGUI_Callback(): No file given to load...');
-                end
+                mcDataViewer(mcData([PathName FileName]), false)    % Don't show the control window when opening...
             end
         end
     end
     
     methods
         function gui = mcDataViewer(varargin)
-            shouldAquire = true;        % Change?
+            shouldAquire = true;        % Change? This means that the scan will start automatically, by default.
             shouldMakeManager = true;
             shouldMakeVisible = true;
             
-            switch nargin       % Update this switch statement!
+            switch nargin
                 case 0
                     gui.data = mcData();
-%                 case 1
-%                     gui.data = varargin;
                 otherwise
                     gui.data = varargin{1};
             end
             
-%             gui.data
-%             isa(gui.data, 'mcData')
-            
             if ~isa(gui.data, 'mcData')         % If gui.data isn't an mcData object...
                 gui.data = mcData(gui.data);    % Then use gui.data as the input for the mcData constructor.
+            end
+            
+            if gui.data.r.scanMode == 2 || gui.data.r.scanMode == -1
+                shouldAquire = false;
             end
             
             if nargin >= 2
@@ -128,15 +112,14 @@ classdef mcDataViewer < mcSavableClass
             if nargin >= 3
                 shouldMakeVisible = varargin{3};
             end
+            if nargin >= 4
+                shouldAquire =      varargin{4};
+            end
             
             gui.data.dataViewer = gui;          % Make sure that the dataViewer has a pointer to this gui.
             gui.r = mcProcessedData(gui.data);  % And make the 3 channels of processed data that are displayed.
             gui.g = mcProcessedData(gui.data);
             gui.b = mcProcessedData(gui.data);
-            
-            if gui.data.r.scanMode == 2 || gui.data.r.scanMode == -1
-                shouldAquire = false;
-            end
             
             % Control Figure --------------------------------------------------------------------------------------------------------------
             gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
@@ -145,23 +128,6 @@ classdef mcDataViewer < mcSavableClass
             gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
             gui.cf.Resize = 'off';      % Change? What if there are too many axes?
             gui.cf.Name = [gui.data.d.name];
-            
-%             jj = 1;
-%             kk = 1;
-% 
-%             inputNames1D = {};
-%             inputNames2D = {};
-% 
-%             for ii = 1:gui.data.r.i.num
-%                 if gui.data.r.i.dimension(ii) == 1
-%                     inputNames1D{jj} = gui.data.r.i.name{ii};   %ok
-%                     jj = jj + 1;
-%                 end
-%                 if gui.data.r.i.dimension(ii) == 2
-%                     inputNames2D{kk} = gui.data.r.i.name{ii};   %ok
-%                     kk = kk + 1;
-%                 end
-%             end
             
             utg = uitabgroup('Parent', gui.cf, 'Position', [0, .525, 1, .475], 'SelectionChangedFcn', @gui.upperTabSwitch_Callback);
             gui.tabs.t0  = uitab('Parent', utg, 'Title', '0D');
@@ -200,15 +166,15 @@ classdef mcDataViewer < mcSavableClass
             bh = 22;
             ts = -5;
             if javaenable
-                os = -5;
+                os = -5;            %#ok
             else
                 os = -5 - 2*bh;     %#ok
             end
 
             uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
 
-            cp = .6;    % Choose position, the x value (normalized to [0 1]) where the choose box starts
-            cw = .4;    % Choose width, the width of the choose box. should be less than or equal to 1 - cp.
+            cp = .6;    % Choose position: the x value (normalized to [0 1]) of the position of the choose box.
+            cw = .4;    % Choose width: the width of the choose box. should be less than or equal to 1 - cp.
             
             gui.params1D.chooseList = cell(1, gui.data.r.a.num); % This will be longer, but we choose not to calculate.
             gui.params2D.chooseList = cell(1, gui.data.r.a.num);
@@ -374,10 +340,6 @@ classdef mcDataViewer < mcSavableClass
             gui.scanButton =    uicontrol('Parent', gui.cf, 'Style', 'push', 'Units', 'normalized', 'Position', [0, 0, .75, .05],   'Callback', @gui.scanButton_Callback);
             gui.resetButton =   uicontrol('Parent', gui.cf, 'String', 'Reset', 'Style', 'push', 'Units', 'normalized', 'Position', [.75, 0, .25, .05], 'Callback', @gui.resetButton_Callback);
 
-%             if shouldAquire     % Expand upon this in the future
-%                 gui.data.r.scanMode = 1;                      % Set as scanning
-%                 gui.scanButton.String = 'Pause';
-%             else
             if gui.data.r.scanMode == 0                   % If new
                 gui.scanButton.String = 'Start';
             elseif gui.data.r.scanMode == -1              % If paused
@@ -385,7 +347,6 @@ classdef mcDataViewer < mcSavableClass
             elseif gui.data.r.scanMode == 2               % If finished
                 gui.scanButton.String = 'Rescan';
             end
-%             end
             
             % Data Figure/etc --------------------------------------------------------------------------------------------------------------
             gui.df = mcInstrumentHandler.createFigure(gui, 'saveopen');
@@ -407,18 +368,16 @@ classdef mcDataViewer < mcSavableClass
             
             hold(gui.a, 'on');
             
-%             gui.r
-            
             gui.r.process();
             if gui.isRGB
                 gui.g.process();
                 gui.b.process();
             end
             
-            x = 1:50;           % Change this initialization?
+            % Some junk values for the initial plotting while we make all of the UI objects.
+            x = 1:50;
             y = 1:50;
-%             z = rand(1, 50);
-            c = mod(magic(50),2); %ones(50);
+            c = mod(magic(50),2);
             
             % Histogram Setup --------------------------------------------------------------------------------------------------------------
             gui.h = [histogram(x, 'Parent', gui.a), histogram(x, 'Parent', gui.a), histogram(x, 'Parent', gui.a)];
@@ -475,7 +434,7 @@ classdef mcDataViewer < mcSavableClass
                 end
             end
             
-            gui.a.YDir = 'normal';
+            gui.a.YDir = 'normal';      % When imagesc(a) is called, a.YDir is set to Reverse. This reverts that change.
             
             % Menu Setup --------------------------------------------------------------------------------------------------------------
             gui.menus.ctsMenu = uimenu(menu, 'Label', 'Value: ~~.~~ --',                    'Callback', @copyLabelToClipboard); %, 'Enable', 'off');
@@ -504,13 +463,13 @@ classdef mcDataViewer < mcSavableClass
                     mcoaPosL= uimenu(mcOpenAt, 'Label', 'Selected Position And Layer', 'Callback', {@gui.openCounterAtPoint_Callback, 1, 1});   %#ok
             
             % Finishing --------------------------------------------------------------------------------------------------------------
-            hold(gui.a, 'off');         % Why does hold need to be off?
+            hold(gui.a, 'off');                     % Why does hold need to be off?
             
-            gui.plotData_Callback(0,0);
+            gui.plotData_Callback(0,0);             % Do an initial plot of the data (usually empty) to get the axes to be proper.
 
-            gui.listeners.x = [];
+            gui.listeners.x = [];                   % Why is it neccessary to set these to empty?
             gui.listeners.y = [];
-            gui.resetAxisListeners();
+            gui.resetAxisListeners();               % Generate the listeners for the axes that are active. This updates the (cyan) marker denoting the position of the axes.
             
             prop = findprop(gui.r, 'data');
             gui.listeners.r = event.proplistener(gui.r, prop, 'PostSet', @gui.plotData_Callback);
@@ -521,10 +480,10 @@ classdef mcDataViewer < mcSavableClass
             gui.plotSetup();
             gui.makeProperVisibility();
             
-            if shouldMakeVisible
+            if shouldMakeVisible                    % Whether the data figure should be initially visible
                 gui.df.Visible = 'on';
                 
-                if shouldMakeManager
+                if shouldMakeManager                % Whether the control figure should be initially visible
                     gui.cf.Visible = 'on';
                 else
                     gui.cf.Visible = 'off';
@@ -533,13 +492,12 @@ classdef mcDataViewer < mcSavableClass
                 gui.df.Visible = 'off';
             end
             
-            pause(.05);
+            pause(.05);                             % Give everything time to draw/update.
             
-            gui.listenToAxes_Callback(0, 0);
+            gui.listenToAxes_Callback(0, 0);        % Then poll the axes for thier current positions (the callback is only called when the axes change, so we need the initial positions)
                     
             if shouldAquire
-                gui.scanButton_Callback(0, 0);
-%                 gui.data.aquire();
+                gui.scanButton_Callback(0, 0);      % Starts aquiring the data.
             end
         end
         
@@ -556,6 +514,10 @@ classdef mcDataViewer < mcSavableClass
                                                             'Save As', [mcInstrumentHandler.getSaveFolder(0) filesep gui.data.d.info.timestamp ' ' gui.data.d.name]);
             
             if all(FileName ~= 0)
+%                 if ~gui.data.d.flags.shouldOptimize
+%                     % Hide the position selection markers
+%                 end
+                
                 switch FilterIndex
                     case 1      % .mat
                         % This case is covered below (saves in all cases).
