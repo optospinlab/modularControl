@@ -233,6 +233,12 @@ classdef mcData < mcSavableClass
             data.intTimes = (diff(rangeX)/speedX)/pixelsX;
         end
         function data = optimizeConfig(axis_, input, range, pixels, seconds)                         % Optimizes 'input' over 'range' of 'axis_'
+            % axis_ = arb mcAxis
+            % input = arb mcInput
+            % range = (centered) distance to scan over
+            % pixels = # of points to aquire data at over range
+            % seconds = total scan time
+            
             data.class = 'mcData';
             
 %             axis_

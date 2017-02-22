@@ -17,13 +17,13 @@ There are two concepts that we first must introduce: behavior and identity.
 In analogy, behavior is like the profession of a person, while identity separates persons of the same profession. For instance, Dr. John behaves the same as Dr. Smith because they are both medical doctors, but does not have the same identity. Dr. John would not behave or be the same as Mr. Doe, a businessman.
 
 #### In `modularControl`
-The behavior of each `mc<Classname>` is defined by the logic in the functions of the class. The identity, however is defined by what is given to the constructor of the class:
+The behavior of each `mc<Classname>` is defined by the logic in the functions of the class. The identity, however is defined by what is given to the constructor of the class, which creates an object `obj` based on the provided identity:
 
-* `mc<Classname>()`,			no identity given, defaults to `mc<Classname>(mc<Classname>.defaultConfig())` where `defaultConfig()` is a `static` function that returns the default config struct (see below);
-* `mc<Classname>(config)`,		uses the identity of the struct `config`. Fields of `config` might include `config.name` (i.e. the name of the identity), etc;
-* `mc<Classname>('config.mat')`,	uses the identity contained in the MATLAB file `'config.mat'`
+* `obj = mc<Classname>()`,			no identity given, defaults to `obj = mc<Classname>(mc<Classname>.defaultConfig())` where `defaultConfig()` is a `static` function that returns the default config struct (see below);
+* `obj = mc<Classname>(config)`,		uses the identity of the struct `config`. Fields of `config` might include `config.name` (i.e. the name of the identity), etc;
+* `obj = mc<Classname>('config.mat')`,	uses the identity contained in the MATLAB file `'config.mat'` (may be buggy)
 
-Often there are other `static` functions such as `mc<Classname>.defaultConfig()` (e.g. `piezoConfig()`) which conveniently define identity (in the form of a returned `config` struct) so that the user does not have to correctly assemble a `config` struct every time. Differences between `config`s amount to simple differences in identity. For instance, `config.chn` for a `mcaDAQ` object, the DAQ channel that the object is connected to, could be `'ao0'`, `'ao1'`, and so on.
+Often there are other `static` functions such as `mc<Classname>.defaultConfig()` (e.g. `mcaDAQ.piezoConfig()`) which conveniently define identity (in the form of a returned `config` struct) so that the user does not have to correctly assemble a `config` struct every time. Differences between `config`s amount to simple differences in identity. For instance, `config.chn` for a `mcaDAQ` object, the DAQ channel that the object is connected to, could be `'ao0'`, `'ao1'`, and so on.
 
 This separation of behavior and identity means that this code is inherently modular. `mcAxis` is a class that generalizes the behavior of a 1D parameter space. The main function in `mcAxis` is `.goto(x)`, which tells the axis to goto that particular `x` value. This function can be used on a variety of real objects that behave like a 1D parameter space: linear motion for piezos, wavelength for a tunable frequency laser, etc.
 
