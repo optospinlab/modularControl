@@ -24,7 +24,7 @@ classdef mciDataWrapper < mcInput
             config.kind.kind =          'wrapper';
             config.kind.name =          'mcData wrapper';
             
-            if isfield(d.inputs{1}, 'config')
+            if isprop(d.inputs{1}, 'config')
                 I = d.inputs{1}.config; 
             else
                 I = d.inputs{1};

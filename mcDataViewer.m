@@ -124,7 +124,7 @@ classdef mcDataViewer < mcSavableClass
             % Control Figure --------------------------------------------------------------------------------------------------------------
             gui.cf = mcInstrumentHandler.createFigure(gui, 'saveopen');
             gui.cf.Visible = 'off';
-            gui.cf.Position = [100,100,300,700];
+            gui.cf.Position = [100,100,300,600];
             gui.cf.CloseRequestFcn = @gui.closeRequestFcnCF;
             gui.cf.Resize = 'off';      % Change? What if there are too many axes?
             gui.cf.Name = [gui.data.d.name];
