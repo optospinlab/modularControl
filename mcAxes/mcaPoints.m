@@ -95,14 +95,16 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                                 { 'edit',   'Box Cutoff (um):  ',   .5,         'All spots with boxes under this width will be ignored.',   [0 Inf]},...
                                 { 'edit',   'Num Cutoff (#):  ',    100,        'Only sample this number of points.',                       [0 Inf 1]},...
                                 { 'edit',   'Opt Length (pix):  ',  100,        'Number of pixels in an optimization scan. Note that the physical distance (in um) is defined by the box size.',    [2 Inf 1]},...
-                                { 'edit',   'Opt Time (s):  ',      2,          'The amount of time to spend .',   [0 Inf]},...
+                                { 'edit',   'Opt Time (s):  ',      2,          'The amount of time to spend during the optimization of each dimension.',   [0 Inf]},...
                                 { 'edit',   'Num Rolling Mean (#):  ', 10,      'Number of points to use in the rolling mean calculation.', [0 Inf 1]},...
-                                { 'push',   'Finalize',             'finish',   'Push this to finalize and continue.' } };
+                                { 'push',   'Finalize',             'finish',   'Push this to finalize and continue (this may be slightly buggy; closing the window is also buggy).' } };
             
             gui = mcGUI(c2);
             
             f = figure;
             ax = axes(f);
+            f.Name =        'mcaPoints Customization Window';
+            f.NumberTitle = 'off';
             
             while isvalid(gui) && isvalid(f) && ~gui.finished
                 c = mcaPoints.brightSpotConfigFull( d.data,...
@@ -134,9 +136,10 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             
             delete(a);
             delete(gui)
-            delete(f);
+%             delete(f);
+            f.Name =    ['mcaPoints: ' c.name];
             
-            config = c;
+            config =    c;
         end
         function config = brightSpotConfig(d)
             config = mcaPoints.brightSpotConfigFull(d, 1, .85, 3, .5, 1.5, .25, Inf);
@@ -335,11 +338,11 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                     for ii = 1:n
                         a.prevOpt(x, ii, 1) = y(ii);
 
-                        d = mcData(mcData.optimizeConfiguration(a.axes_{ii},...
-                                                                a.shouldOptimize,...
-                                                                2*Y(length(a.axes_) + ii),...
-                                                                a.config.optPix,...
-                                                                a.config.optTime));
+                        d = mcData(mcData.optimizeConfig(   a.axes_{ii},...
+                                                            a.shouldOptimize,...
+                                                            2*Y(length(a.axes_) + ii),...
+                                                            a.config.optPix,...
+                                                            a.config.optTime));
 %                         disp(['Beginning Optimization of ' a.axes_{ii}.name '...']);
     %                     d.aquire();
 
@@ -360,11 +363,11 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
 
                         a.prevOpt(x, ii, 1) = a.additionalAxes{jj}.getX();
 
-                        d = mcData(mcData.optimizeConfiguration(a.additionalAxes{jj},...
-                                                                a.shouldOptimize,...
-                                                                4,...                   % Should not be hardcoded!
-                                                                a.config.optPix,...
-                                                                a.config.optTime));
+                        d = mcData(mcData.optimizeConfig(   a.additionalAxes{jj},...
+                                                            a.shouldOptimize,...
+                                                            4,...                   % Should not be hardcoded!
+                                                            a.config.optPix,...
+                                                            a.config.optTime));
 
 %                         disp(['Beginning Optimization of ' a.additionalAxes{jj}.name '...']);
     %                     d.aquire();
@@ -401,6 +404,8 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                 disp('No axes given...');
                 f = figure;
                 ax = axes(f);
+                f.Name =        a.nameShort();
+                f.NumberTitle = 'off';
             end
             
             xlabel(ax, a.axes_{1}.nameUnits());

@@ -125,9 +125,9 @@ classdef mcVideo < mcInput
 
                 vid.config.kind.sizeInput = vidRes;
 
-                vid.config.fbAxes{1}.name()
-                vid.config.fbAxes{2}.name()
-                vid.config.fbAxes{3}.name()
+%                 vid.config.fbAxes{1}.name()
+%                 vid.config.fbAxes{2}.name()
+%                 vid.config.fbAxes{3}.name()
 
                 vid.pidArray = {mcPID(vid.config.fbAxes{1}), mcPID(vid.config.fbAxes{2}), mcPID(vid.config.fbAxes{3})};
             end

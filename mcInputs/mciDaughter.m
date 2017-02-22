@@ -81,15 +81,11 @@ classdef mciDaughter < mcInput
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
         function Open(I)                % Do whatever neccessary to initialize the input.
-%             I.s = I.config.parent;  % Temporary Fix...
-            
             c = I.config.parent;
             
-            if isprop(c, 'config')
+            if isprop(c, 'config')      % ...in case the given parent was an mcInstrument object instead of an mcInstrument config...
                 c = c.config;
             end
-            
-%             c
             
             if isfield(c, 'class')
                 I.s = eval([c.class '(c)']);    % Make the parent...
@@ -98,8 +94,6 @@ classdef mciDaughter < mcInput
             else
                 error('mciDaugter(): Config given without class.');
             end
-            
-%             in = I.s
         end
         function Close(~)               % Do whatever neccessary to deinitialize the input.
             % Do nothing. The parent should not be closed because it might be doing something elsewhere.
@@ -111,32 +105,14 @@ classdef mciDaughter < mcInput
         end
         function data = Measure(I, ~)
             % How to incorporate integrationTime? Have a prevTime property in mcInput to compare with?
-%             I.isOpen
-%             
-%             I.config.parent
-%             
-%             in = I.s
-%             I.s.name
-%             I.s.prevOpt
-%             ['I.s.' I.config.var]
-%             eval(['I.s.' I.config.var])
-%             I.config.var
 
             I.close();
             I.open();
-            
-%             ['I.s.' I.config.var]
-% 
-% % 
-%             I.s
-%             str = ['I.s.' I.config.var]
             try
                 data = eval(['I.s.' I.config.var]);     % We use eval here instead of I.s.(var) because var might be a subfield (e.g. I.s.c.c) instead of just a field (e.g. I.s.c).
             catch
                 data = NaN(I.config.kind.sizeInput);
             end
-                %             data
-%             expected = I.config.kind.sizeInput
         end
     end
 end

@@ -176,7 +176,7 @@ classdef mciPLE < mcInput
                 I.config.scansPerBin = 1;
             end
             
-            r = I.config.scansPerBin*I.config.upPixels/I.config.upTime;
+%             r = I.config.scansPerBin*I.config.upPixels/I.config.upTime;
             I.s.Rate = I.config.scansPerBin*I.config.upPixels/I.config.upTime;
         end
         function Close(I)
@@ -195,7 +195,6 @@ classdef mciPLE < mcInput
             pause(I.config.upTime + I.config.downTime);
         end
         function data = Measure(I, ~)
-%             I.s
             I.s.queueOutputData(I.config.output);
 %             I.config.axes.red.scanOnce(I.config.xMin, I.config.xMax, I.config.upTime, I.config.downTime)
             [d, t] = startForeground(I.s);  % Fix timing?
@@ -212,7 +211,7 @@ classdef mciPLE < mcInput
             
             data(I.config.upPixels + 1) = NaN;
             
-            I.close();  % Inefficient, but otherwise mciPLE never gives the couter up...
+            I.close();  % Inefficient, but otherwise mciPLE never gives the counter up...
         end
     end
 end

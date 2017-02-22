@@ -29,15 +29,15 @@ classdef mciGotoWrapper < mcInput
                 error('mciGotoWrapper.dataConfig([], []): There must be at least one axis to wrap...');
             end
             
-            config.kind.sizeInput = ones(1, length(configs));
+            config.kind.sizeInput = [1, length(configs)];
             
             config.axesnames = '';
             
             for ii = 1:(length(configs) -1)
-                config.axesnames = [config.axesnames configs{ii}.nameShort() ', '];
+                config.axesnames = [config.axesnames configs{ii}.name ', '];
             end
             
-            config.axesnames = [config.axesnames configs{end}.nameShort()];
+            config.axesnames = [config.axesnames configs{end}.name];
             
             config.configs =    configs;      
             config.positions =  positions;
@@ -53,9 +53,9 @@ classdef mciGotoWrapper < mcInput
             c = {mcaDAQ.redDigitalConfig(),     mcaArduino.flipMirrorConfig(),      mcaAPT.rotatorConfig()};
             p = [1,                             1,                                  apt.getX()];
             
-            config = dataConfig(c, p);
+            config = mciGotoWrapper.dataConfig(c, p);
             
-            config.kind.name = 'PLE Mode';
+            config.name = 'PLE Mode';
         end
         function config = optModeConfig()
 %             ghwpPLE =   213.1726;   % 80uW
@@ -66,16 +66,24 @@ classdef mciGotoWrapper < mcInput
             questdlg('Please rotate the green half-wave plate to the *optimization* position.', 'Please Rotate...', 'I Have Finished Rotating', 'I Have Finished Rotating');
             
             c = {mcaDAQ.redDigitalConfig(),     mcaArduino.flipMirrorConfig(),      mcaAPT.rotatorConfig()};
-            p = [1,                             1,                                  apt.getX()];
+            p = [0,                             1,                                  apt.getX()];
             
-            config = dataConfig(c, p);
+            config = mciGotoWrapper.dataConfig(c, p);
             
-            config.kind.name = 'Optimization Mode';
+            config.name = 'Optimization Mode';
+        end
+        function config = specModeConfig()
+            c = {mcaDAQ.redDigitalConfig(),     mcaArduino.flipMirrorConfig()};
+            p = [0,                             0];
+            
+            config = mciGotoWrapper.dataConfig(c, p);
+            
+            config.name = 'Spectrometer Mode';
         end
     end
     
     methods             % Initialization method (this is what is called to make an input object).
-        function I = mciGoto(varin)
+        function I = mciGotoWrapper(varin)
             I.extra = {'configs', 'positions'};
             if nargin == 0
                 I.construct(I.defaultConfig());
@@ -100,7 +108,9 @@ classdef mciGotoWrapper < mcInput
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
         function tf = Eq(I, b)          % Compares two mciDataWrappers
-            tf = strcmpi(I.config.data.name,  b.config.data.name);  % Change?
+            tf =    strcmpi(I.config.axesnames,  b.config.axesnames) &&...
+                    length(I.config.positions) == length(b.config.positions) &&...
+                    all(I.config.positions == b.config.positions);  % Change?
         end
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
@@ -136,8 +146,10 @@ classdef mciGotoWrapper < mcInput
             data = zeros(1, l);
             
             for ii = 1:length(I.config.configs)
-                data(ii) = I.s{ii}.goto(I.config.positions{ii});
+                data(ii) = I.s{ii}.goto(I.config.positions(ii));
             end
+            
+            pause(1);   % Quick fix. Change this!
         end
     end
     

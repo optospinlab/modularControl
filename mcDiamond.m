@@ -18,7 +18,7 @@ function mcDiamond
 %     disp('  Opened mcgDiamond...')
 
     % Additionally, open these instruments:
-    mcaManual(mcaManual.polarizationConfig());
+%     mcaManual(mcaManual.polarizationConfig());
 
     configCounter = mciDAQ.counterConfig(); configCounter.name = 'Counter'; configCounter.chn = 'ctr2';
     mciDAQ(configCounter);

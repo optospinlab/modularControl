@@ -325,6 +325,58 @@ classdef mcData < mcSavableClass
             data = mcData.counterConfig(mciPLE(), 20, 1);
 %             data = mcData.singleConfig(mciPLE(), 1);
         end
+        function data = autoPLEConfig()
+            pts = mcaPoints.modifyAndPromptBrightSpotConfig();
+            
+            px = mciDaughter.daughterConfig(pts, 'prevOpt(end,1,3) + 25', [1 1], 'um'); px.name = 'X Offset From Expected';
+            py = mciDaughter.daughterConfig(pts, 'prevOpt(end,2,3) + 25', [1 1], 'um'); py.name = 'Y Offset From Expected';
+            pz = mciDaughter.daughterConfig(pts, 'prevOpt(end,3,2) + 25', [1 1], 'um'); pz.name = 'Absolute Z';
+
+            sx = mciDaughter.daughterConfig(pts, 'prev{1}', [pts.optPix 1], 'cts');     sx.name = 'X Scan';
+            sy = mciDaughter.daughterConfig(pts, 'prev{2}', [pts.optPix 1], 'cts');     sy.name = 'Y Scan';
+            sz = mciDaughter.daughterConfig(pts, 'prev{3}', [pts.optPix 1], 'cts');     sz.name = 'Z Scan';
+            
+            count = mciDAQ.counterConfig;
+            spec =  mciDataWrapper.dataConfig(mcData.inputConfig(mciSpectrum.pyWinSpecConfig(), 2, 60));   % (60 sec exposures; eventually unlock this...)
+            spec.name = 'Spectrometer';
+            
+            gple = mciGotoWrapper.pleModeConfig();
+            gopt = mciGotoWrapper.optModeConfig();
+            gspec = mciGotoWrapper.specModeConfig();
+            
+            usegui = false;
+            f = findobj('Tag', 'mcgDiamond');
+            
+            if isempty(f)
+                usegui = strcmpi(questdlg('Do you want to use the PLE parameters from mcgDiamond?', 'Please Rotate...', 'Yes', 'No', 'Yes'), 'yes');
+                gui = f.UserData;
+            end
+            
+            if ~usegui
+                PLE =   mciPLE.PLEConfig(0, 3, 240, 10, 1);
+                numScans = 10;
+            else
+                        % mciPLE.PLEConfig(xMin, xMax, upPixels, upTime (s), downTime (s))
+                PLE =   mciPLE.PLEConfig(   gui.controls{15}.Value,...  % Warning: Changes to mcgDiamond will break this!
+                                            gui.controls{16}.Value,...
+                                            gui.controls{11}.Value,...
+                                            gui.controls{12}.Value,...
+                                            gui.controls{13}.Value);
+                numScans = gui.controls{14}.Value;
+            end
+                
+            ple =   mciDataWrapper.dataConfig(mcData.inputConfig(PLE, numScans, 1));        % (Fake integrationTime)
+            ple.name = 'PLE';
+            
+            data.axes =         {pts, mcAxis};                                              % bright points, time
+            data.scans =        {pts.nums, 1:2};                                            % all points, 2x scan
+            data.inputs =       {count, px, py, pz, sx, sy, sz, gspec, spec, gple, ple, gopt};
+            data.intTimes =     NaN(size(data.inputs));
+            data.intTimes(1) =  4;
+            
+            I = mciGotoWrapper(gopt);
+            I.measure();    % Make sure we are in the opt configuration at the start.
+        end
     end
     
     % Core Functionality
@@ -549,6 +601,7 @@ classdef mcData < mcSavableClass
                     inUnits = d.r.i.i{ii}.getInputScanUnits();
                     
                     for jj = 1:d.r.i.dimension(ii)
+%                         jj
                         d.r.l.name =        [d.r.l.name     {[d.d.inputs{ii}.name ' ' inputLetters(jj)]}];
                         d.r.l.nameUnit =    [d.r.l.nameUnit {[d.d.inputs{ii}.name ' ' inputLetters(jj) ' (' inUnits{jj} ')']}];
                         d.r.l.unit =        [d.r.l.unit     inUnits(jj)];

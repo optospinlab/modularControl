@@ -517,6 +517,8 @@ classdef mcDataViewer < mcSavableClass
 %                 if ~gui.data.d.flags.shouldOptimize
 %                     % Hide the position selection markers
 %                 end
+
+                gui.turnMarkersOff();       % Turn the markers (e.g. position, selection) off when we (possibly) capture an image.
                 
                 switch FilterIndex
                     case 1      % .mat
@@ -571,16 +573,17 @@ classdef mcDataViewer < mcSavableClass
                     save([PathName FileName(1:end-4) ' (full).mat'], '-v6', 'data');   % Make sure that the extension is three characters?
                 end
                 
+                mcInstrumentHandler.setSaveFolder(isBackground, PathName);  % The next time one tries to save, it will start in this folder (Remove?).
+                
+                gui.makeProperVisibility(); % Turn the markers back on.
+                
                 pause(.05);                                         % Pause again
             else
                 disp('No file given...');
             end
         end
-%         function save(gui)                      % Overwrites the mcSavableClass file...
-%             
-%         end
+        
         function closeRequestFcnDF(gui, ~, ~)   % Close function for the data figure (the one with the graph)
-%             gui.data.save();
             if gui.isPersistant
                 gui.cf.Visible = 'off';
                 gui.cfToggle.State = 'off';
@@ -589,12 +592,6 @@ classdef mcDataViewer < mcSavableClass
                 gui.data.r.aquiring = false;
 
                 gui.data.r.scanMode = -2;   % quit
-
-    %             while gui.data.r.scanMode == 1
-    %                 display(gui.data.r.scanMode)
-    %                 drawnow
-    %                 pause(.5);
-    %             end
 
                 if ~isempty(gui.listeners)
                     delete(gui.listeners.x);
@@ -606,15 +603,6 @@ classdef mcDataViewer < mcSavableClass
 
                 delete(gui.cf);
                 delete(gui.df);
-
-%                 pause(10);                       % Remove this eventually.
-
-    %             delete(gui.data);               % This should be done gracefully.
-%                 gui.data = '';
-% 
-%                 delete(gui);
-
-                % Should we delete it direcly? or is leaving it to garbage collection fine?
             end
         end
         function closeRequestFcnCF(gui, ~, ~)   % Close function for the control figure (the one with the buttons)
@@ -631,7 +619,6 @@ classdef mcDataViewer < mcSavableClass
         end
         
         function scanButton_Callback(gui, ~, ~)
-%             mode4 = gui.data.r.scanMode
             switch gui.data.r.scanMode   % -1 = paused, 0 = new, 1 = scanning, 2 = finished
                 case {0, -1}                                % If new or paused
                     gui.scanButton.String = 'Pause';
@@ -647,7 +634,6 @@ classdef mcDataViewer < mcSavableClass
                     gui.data.r.scanMode = 1;
                     gui.data.aquire();
             end
-%             mode5 = gui.data.r.scanMode
         end
         function resetButton_Callback(gui, ~, ~)
             gui.data.r.scanMode = 0;
@@ -787,6 +773,32 @@ classdef mcDataViewer < mcSavableClass
             gui.pos.prv.Visible =   ivis;
             
             gui.h(1).Visible =         hvis;
+        end
+        
+        function turnMarkersOff(gui)
+            gui.posL.sel.Visible =   'off';
+            gui.posL.pix.Visible =   'off';
+            gui.posL.act.Visible =   'off';
+            gui.posL.prv.Visible =   'off';
+            
+            if gui.isRGB
+                gui.p(2).Visible =  'off';
+                gui.p(3).Visible =  'off';
+                
+                gui.h(2).Visible =  'off';
+                gui.h(3).Visible =  'off';
+            else
+                gui.p(2).Visible =  'off';
+                gui.p(3).Visible =  'off';
+                
+                gui.h(2).Visible =  'off';
+                gui.h(3).Visible =  'off';
+            end
+            
+            gui.pos.sel.Visible =   'off';
+            gui.pos.pix.Visible =   'off';
+            gui.pos.act.Visible =   'off';
+            gui.pos.prv.Visible =   'off';
         end
         
         function plotSetup(gui)

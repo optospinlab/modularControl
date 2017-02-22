@@ -23,7 +23,7 @@ classdef mcInstrumentHandler < handle
 %
 %   obj2 = mcInstrumentHandler.register(obj)        % If obj already exists in params.instruments as obj2 (perhaps in another form or under a different name), then return obj2. Otherwise, add obj to params.instruments and return obj.
 %
-% Status: Mostly finished, but needs commenting.
+% Status: Mostly finished, but needs commenting and reorganization.
 
     properties
         % No properties.
@@ -94,8 +94,8 @@ classdef mcInstrumentHandler < handle
                 params.instruments =                {};         % Stores the mcAxes and mcInputs (separate these for simplicity?)
                 params.shouldEmulate =              false;      % Whether or not the axes and inputs should initialize in emulation. Makes this more accessable in the future?
                 
-                params.saveDirManual =              '';         % Empty string, to be loaded from .mat or chosen by GUI. Described in detail below.
-                params.saveDirBackground =          '';
+                params.saveFolderManual =              '';         % Empty string, to be loaded from .mat or chosen by GUI. Described in detail below.
+                params.saveFolderBackground =          '';
                 
                 params.globalWindowKeyPressFcn =    [];
                 params.figures =                    {};
@@ -122,12 +122,17 @@ classdef mcInstrumentHandler < handle
                 % Find the modularControl folder (neccessary for saving configs).
                 params.mcFolder = pwd;      % First, guess that our current directory is the modularControl folder
                 
-                while isempty(params.mcFolder) || ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
+                if ~strcmp(params.mcFolder(end-13:end), 'modularControl')   % Next, guess that it is a subfolder...
+                    if exist([params.mcFolder filesep 'modularControl'], 'dir')
+                        params.mcFolder = [params.mcFolder filesep 'modularControl'];
+                    end
+                end
+                
+                while ~ischar(params.mcFolder) || ~strcmp(params.mcFolder(end-13:end), 'modularControl')        % Get the current directory
                     mcDialog('For everything to function properly, mcInstrumentHandler must know where the modularControl folder is. Press OK to select that folder.', 'Need modularControl folder');
                     
                     params.mcFolder = uigetdir(params.mcFolder, 'Please choose the modularControl folder.');
                 end
-                
                 
                 mcInstrumentHandler.params(params);                 % Load persistant params with this so that we don't risk infinite recursion when we try to add the time axis (see below).
                 
@@ -142,11 +147,11 @@ classdef mcInstrumentHandler < handle
                 
                 mcInstrumentHandler.loadParams();
                 
-                if isempty(params.saveDirManual)
-                    mcInstrumentHandler.setSaveDir(false);
+                if isempty(params.saveFolderManual)
+                    mcInstrumentHandler.promptSaveFolder(false);
                 end
-                if isempty(params.saveDirBackground)
-                    mcInstrumentHandler.setSaveDir(true);
+                if isempty(params.saveFolderBackground)
+                    mcInstrumentHandler.promptSaveFolder(true);
                 end
             end
         end
@@ -166,8 +171,8 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.open();
             params2 = mcInstrumentHandler.params();
             
-            params.saveDirManual = params2.saveDirManual;           % only save saveDirManual and saveDirBackground...
-            params.saveDirBackground = params2.saveDirBackground;
+            params.saveFolderManual =      params2.saveFolderManual;           % only save saveFolderManual and saveFolderBackground...
+            params.saveFolderBackground =  params2.saveFolderBackground;
             
             save([mcInstrumentHandler.getConfigFolder() 'params.mat'], 'params');
         end
@@ -179,35 +184,42 @@ classdef mcInstrumentHandler < handle
             
             if exist(fname, 'file')
                 p = load(fname);
-                params.saveDirManual = p.params.saveDirManual;       % only load saveDirManual and saveDirBackground...
-                params.saveDirBackground = p.params.saveDirBackground;
+                
+                if isfield(p, 'params')
+                    if isfield(p.params, 'saveFolderManual')
+                        params.saveFolderManual =      p.params.saveFolderManual;       % only load saveFolderManual and saveFolderBackground...
+                    end
+                    if isfield(p.params, 'saveFolderBackground')
+                        params.saveFolderBackground =  p.params.saveFolderBackground;
+                    end
+                end
             end
             
             mcInstrumentHandler.params(params);
         end
-        function setSaveDir(isBackground)
+        function promptSaveFolder(isBackground)
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
             if isBackground
-                while all(params.saveDirBackground == 0)
+                while all(params.saveFolderBackground == 0)
                     mcDialog('Every mcData scan saves its data in the background once the scan has finished. Press OK to select which folder this background data should be saved in.', 'Need background saving folder');
 
-                    params.saveDirBackground =  uigetdir(params.mcFolder, 'Please choose the background saving folder.');
+                    params.saveFolderBackground =  uigetdir(params.mcFolder, 'Please choose the background saving folder.');
                 end
             else
-                while all(params.saveDirManual == 0)
+                while all(params.saveFolderManual == 0)
                     mcDialog('When the user manually chooses to save data, they are prompted with a folder selection UI. Press OK to select the folder that the folder selection UI should start in.', 'Need manual saving folder');
 
-                    params.saveDirManual =  uigetdir(params.mcFolder, 'Please choose the manual saving folder.');
+                    params.saveFolderManual =  uigetdir(params.mcFolder, 'Please choose the manual saving folder.');
                 end
             end
             
-%             if ~isempty(params.saveDirManual) && ~exist(params.saveDirManual, 'dir')
-%                 mkdir(params.saveDirManual);
+%             if ~isempty(params.saveFolderManual) && ~exist(params.saveFolderManual, 'dir')
+%                 mkdir(params.saveFolderManual);
 %             end
-%             if ~isempty(params.saveDirBackground) && ~exist(params.saveDirBackground, 'dir')
-%                 mkdir(params.saveDirBackground);
+%             if ~isempty(params.saveFolderBackground) && ~exist(params.saveFolderBackground, 'dir')
+%                 mkdir(params.saveFolderBackground);
 %             end
             
             mcInstrumentHandler.params(params);
@@ -222,9 +234,9 @@ classdef mcInstrumentHandler < handle
             mkdir(str);
             
             if isBackground
-                params.saveDirBackground = str;
+                params.saveFolderBackground = str;
             else
-                params.saveDirManual = str;
+                params.saveFolderManual = str;
             end
             
             mcInstrumentHandler.params(params);
@@ -235,21 +247,15 @@ classdef mcInstrumentHandler < handle
             params = mcInstrumentHandler.params();
             
             if isBackground
-                str = params.saveDirBackground;
+                str = params.saveFolderBackground;
             else
-                str = params.saveDirManual;
+                str = params.saveFolderManual;
             end
         end
         function [str, stamp] = timestamp(varin)
-%             name = '';
-%             if iscell(varin)
-%                 name = [' ' varin{2}];
-%                 varin = varin{1};
-%             end
-            
-            if ischar(varin)                                % If varin is a string, folder = '<manualsavedir>\<string>\<yyyy_mm_dd>'
+            if ischar(varin)                                % If varin is a string, folder = '<manualsaveFolder>\<string>\<yyyy_mm_dd>'
                 folder = [mcInstrumentHandler.getSaveFolder(0) filesep varin filesep datestr(now,'yyyy_mm_dd')];
-            elseif isnumeric(varin) || islogical(varin)     % If varin is a number or t/f, folder = '<manualsavedir>\<yyyy_mm_dd>' or '<backgroundsavedir>\<yyyy_mm_dd>' depending upon whether varin evaluates as true or false
+            elseif isnumeric(varin) || islogical(varin)     % If varin is a number or t/f, folder = '<manualsaveFolder>\<yyyy_mm_dd>' or '<backgroundsaveFolder>\<yyyy_mm_dd>' depending upon whether varin evaluates as true or false
                 folder = [mcInstrumentHandler.getSaveFolder(varin) filesep datestr(now,'yyyy_mm_dd')];
             else
                 error('mcInstrumentHandler: timestamp varin not understood');
@@ -263,14 +269,6 @@ classdef mcInstrumentHandler < handle
             
             str = [folder filesep stamp];   % Then return the string '<folder>\HH_MM_SS_FFF' (i.e. the file is saved as the time inside the date folder)
         end
-        
-        
-%         function tf = save(data)
-%             mcInstrumentHandler.open();
-%         end
-%         function tf = saveBackground(data)
-%             mcInstrumentHandler.open();
-%         end
         
         % GETTING FUNCTIONS
         function params = getParams()

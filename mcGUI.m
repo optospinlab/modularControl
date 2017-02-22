@@ -43,15 +43,17 @@ classdef mcGUI < mcSavableClass
                     gui.config = varin;                     % Otherwise use the input as the config.
             end
             
-            gui.buildGUI();
+            if strcmpi(class(gui), 'mcGUI')
+                gui.buildGUI();
+            end
         end
         
         function buildGUI(gui)
             gui.f = mcInstrumentHandler.createFigure(gui, 'saveopen');
-            gui.f.Resize =      'off';
+            gui.f.Resize =          'off';
             gui.f.CloseRequestFcn = @gui.closeRequestFcn;
-            
-%             c = gui.config
+            gui.f.Tag =             class(gui);
+            gui.f.UserData =        gui;
             
             if isfield(gui.config, 'Position')                  % If the position was saved in the config,...
                 gui.f.Position = gui.config.Position;           % ...Then use these position settings.
@@ -68,13 +70,10 @@ classdef mcGUI < mcSavableClass
             M = gui.pw*m;
             W = gui.pw*w;
             
-            
             prevControl = '';   % The kind of the previous control. This allows us to put in nice formatting (e.g. larger space before titles, etc)
             
             jj = 1;
             
-%             for control_ = gui.config.controls
-%                 control = control_{1};
             for kk = 1:length(gui.config.controls)
                 control = gui.config.controls{kk};
                 switch control{1}
@@ -236,16 +235,13 @@ classdef mcGUI < mcSavableClass
             end
         end
         function update(gui, src, ~)
-%             src.UserData
-            
-            if isempty(src.Value)
-                gui.config.controls{src.UserData}{3} =  src.String;
-            else
-                gui.config.controls{src.UserData}{3} =  src.Value;
+            if ~isnumeric(src)              % This saves the value that the edit box was changed to in the static config. This will allow this value to be saved and recovered.
+                if isempty(src.Value)
+                    gui.config.controls{src.UserData}{3} =  src.String;
+                else
+                    gui.config.controls{src.UserData}{3} =  src.Value;
+                end
             end
-            
-%             gui.config.controls
-%             gui.config.controls{2}
             
             gui.updated = gui.updated + 1;
         end
@@ -259,6 +255,7 @@ classdef mcGUI < mcSavableClass
             
             delete(gui.f)
         end
+        
 %         function val = getEditValue(gui, jj)  % Gets the value of the jj'th edit (change this eventually to look for the edit corresponding to a string? After all, this makes editing difficult)
 %             val = gui.controls{jj}.Value;
 %         end
@@ -270,9 +267,9 @@ classdef mcGUI < mcSavableClass
                 case 'quit'
                     delete(gui);
                 case 'update'
-                    gui.update();
+                    gui.update(0,0);
                 case 'finish'
-                    gui.update();
+                    gui.update(0,0);
                     gui.finished = true;
                 case 'hello'
                     disp('Hello World!');

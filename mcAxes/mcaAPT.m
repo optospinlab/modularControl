@@ -96,6 +96,10 @@ classdef (Sealed) mcaAPT < mcAxis
         % OPEN/CLOSE ---- The functions that define how the axis should init/deinitialize (these functions are not used in emulation mode).
         function Open(a)                    % Do whatever neccessary to initialize the axis.
             a.f = figure('Resize', 'off', 'Visible', 'on');                         % Don't show the controller...
+            a.f.Name =        'mcaAPT';
+            a.f.NumberTitle = 'off';
+            a.f.CloseRequestFcn = @(~,~)(a.close());
+            
             a.s = actxcontrol(a.config.control, [[0 0], a.f.Position(3:4)], a.f);   % Initialize the activeX object.
             
             a.s.HWSerialNum = a.config.SN;  % Set the serial number to be the device we are looking for

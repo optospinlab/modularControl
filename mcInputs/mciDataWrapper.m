@@ -25,10 +25,12 @@ classdef mciDataWrapper < mcInput
             config.kind.name =          'mcData wrapper';
             
             if isfield(d.inputs{1}, 'config')
-                config.kind.extUnits =      d.inputs{1}.config.kind.extUnits; 
+                I = d.inputs{1}.config; 
             else
-                config.kind.extUnits =      d.inputs{1}.kind.extUnits; 
+                I = d.inputs{1};
             end
+            
+            config.kind.extUnits = I.kind.extUnits;
             
             config.kind.shouldNormalize = false;        % (Not sure if this is functional.) If this variable is flagged, the measurement is subtracted from the previous and is divided by the time spent on a pixel. Not that this is done outside the measurement currently in mcData (individual calls to .measure() will not have this behavior currently)
             
@@ -37,6 +39,7 @@ classdef mciDataWrapper < mcInput
             for ii = 1:length(d.scans)
                 config.kind.sizeInput(ii) = length(d.scans{ii});
             end
+            config.kind.sizeInput = [config.kind.sizeInput  I.kind.sizeInput(I.kind.sizeInput > 1)];
             
             if isempty(config.kind.sizeInput)
                 config.kind.sizeInput =     [1 1];
@@ -104,7 +107,10 @@ classdef mciDataWrapper < mcInput
     % These methods overwrite the empty methods defined in mcInput. These methods are used in the uncapitalized parent methods defined in mcInput.
     methods
         function scans = getInputScans(I)
-            scans = I.config.data.scans;
+            c = I.config.data.inputs{1};    % This will throw an error if we are given an object instead of a config.
+            I2 = eval([c.class '(c)']);
+            
+            scans = [I.config.data.scans I2.getInputScans()];
         end
         
         function units = getInputScanUnits(I)
@@ -119,6 +125,11 @@ classdef mciDataWrapper < mcInput
                     units{ii} = a.config.kind.extUnits;
                 end
             end
+            
+            c = I.config.data.inputs{1};    % This will throw an error if we are given an object instead of a config.
+            I2 = eval([c.class '(c)']);
+            
+            units = [units I2.getInputScanUnits()];
         end
         
         % NAME ---------- The following functions define the names that the user should use for this input.
