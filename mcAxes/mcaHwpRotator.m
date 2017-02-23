@@ -104,7 +104,7 @@ classdef (Sealed) mcaHwpRotator < mcAxis
         function Open(a)
             ard = arduino(a.config.port, 'uno', 'Libraries', 'Adafruit\MotorShieldV2');
             shield = addon(ard, 'Adafruit\MotorShieldV2');
-            sm = stepper(shield, 2, 200, 'RPM', 5, 'stepType', 'double');
+            sm = stepper(shield, 2, 200, 'RPM', 10, 'stepType', 'double');
             zero = 0;                   % Number of steps to reach zero angle after contact with optical interrupter
             
             pause(.5);
@@ -120,11 +120,22 @@ classdef (Sealed) mcaHwpRotator < mcAxis
                 digiRead = readDigitalPin(ard, 'D11');
             end
             
-            % Moves the motor until the interrupter flag blocks the beam. 
-            while digiRead == 1
+            % Moves the motor until the interrupter flag blocks the beam.
+            i = 0;
+            cont = 1;
+            while digiRead && cont
                 move(sm, 1);
                 digiRead = readDigitalPin(ard, 'D11');
-                pause(.02);
+                i = i + 1;
+                if i > 415                   % Allows a way to exit program if motor can't find zero.
+                    display('Hwp rotator unable to find zero.');
+                    prompt = input('Continue without zeroing? (y/n) ','s');
+                    if prompt == 'y' || prompt == 'Y'
+                        cont = 0;
+                    else
+                        i = 0;
+                    end
+                end
             end
             
             % Moves motor to the 0 angle position.
@@ -152,7 +163,10 @@ classdef (Sealed) mcaHwpRotator < mcAxis
         end
         function Goto(a, x)
             a.xt = a.config.kind.ext2intConv(x);    % Set the target position a.xt (in internal units) to the user's desired x (in internal units).
-            move(a.s, a.xt - a.x)
+            dist = a.xt - a.x;
+            move(a.s, dist);
+            pause(dist/(200 * 3));                  % Waits until motor is finished rotating
+            
             a.x = a.xt;                             % If this axis is 'fast' and immediately advances to the target (e.g. peizos), then set a.x.
 %             move(a.sm, a.x)                          % ** Change this to be the code that actually moves the axis (also change the above if different behavior is desired).
                                                     % Also note that all 'isInRange' error checking is done in the parent mcAxis.

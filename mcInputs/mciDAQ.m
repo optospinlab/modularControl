@@ -153,7 +153,10 @@ classdef mciDAQ < mcInput
                 case {'nidaqcounter'}
                     I.s.resetCounters();
                     [d1,t1] = I.s.inputSingleScan();
+%                     integrationTime
+%                     tic
                     pause(integrationTime);             % Inexact way. Should make this asyncronous also...
+%                     toc
                     [d2,t2] = I.s.inputSingleScan();
 
                     data = (d2 - d1)/((t2 - t1)*24*60*60);
