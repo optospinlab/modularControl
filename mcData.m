@@ -4,8 +4,8 @@ classdef mcData < mcSavableClass
 %
 % Syntax (needs finalizing):
 %   d = mcData()
-%   d = mcData(d)                                                       % Load old data (just the d structure) into this class
-%   d = mcData('insert/file/path/d.mat')                                % Load old data (from a .mat) into this class
+%   d = mcData(d)                                                       % Load old or new data (just the d structure) into this class.
+%   d = mcData('insert/file/path/d.mat')                                % Load old data (from a .mat) into this class.
 %   d = mcData(axes_, scans, inputs, integrationTime)                   % Load with cell arrays axes_ (contains the mcAxes to be used), scans (contains the paths, in numeric arrays, for these axes to take... e.g. linspace(0, 10, 50) is one such path from 0 -> 10 with 50 steps), and inputs (contains the mcInputs to be measured at each point). Also load the numeric array integration time (in seconds) which denotes (when applicable) how much time is spent measuring each input.
 %   d = mcData(axes_, scans, inputs, integrationTime, shouldOptimize)   % In addition to the previous, shouldOptimize tells the mcData to optimize after finishing or not (only works for 1D and 2D scans with singular data) 
 %
@@ -387,7 +387,7 @@ classdef mcData < mcSavableClass
     
     % Core Functionality
     methods
-        function d = mcData(varin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
+        function d = mcData(varargin)  % Intilizes the mcData object d. Checks the d.d struct for errors.
 %             varin
             
             switch nargin
@@ -395,8 +395,8 @@ classdef mcData < mcSavableClass
 %                     error('We shouldnt be here')
                     d.d = mcData.defaultConfig();    % If no vars are given, assume a 10x10um piezo scan centered at zero (outdated).
                 case 1
-                    if ischar(varin)
-                        c = load(varin);
+                    if ischar(varargin{1})
+                        c = load(varargin{1});
                 
                         if isfield(c, 'data')
                             answer = 'yes';
@@ -413,26 +413,26 @@ classdef mcData < mcSavableClass
                                 case 'yes'
                                     d = c.data;
                                 case 'no'
-                                    disp(['mcData(' varin '): File was not loaded due to version conflict...']);
+                                    disp(['mcData(' varargin{1} '): File was not loaded due to version conflict...']);
                             end
                         else
-                            disp(['mcData(' varin '): No file given to load...']);
+                            disp(['mcData(' varargin{1} '): No file given to load...']);
                         end
                     else
-                        d.d = varin;
+                        d.d = varargin{1};
                     end
                 case 4
-                    d.d.axes =              varin{1};       % Otherwise, assume the four variables are axes, scans, inputs, integration time...
-                    d.d.scans =             varin{2};
-                    d.d.inputs =            varin{3};
-                    d.d.intTimes =          varin{4};
-                    d.d.flags.shouldOptimize =    false;
+                    d.d.axes =                  varargin{1};       % Otherwise, assume the four variables are axes, scans, inputs, integration time...
+                    d.d.scans =                 varargin{2};
+                    d.d.inputs =                varargin{3};
+                    d.d.intTimes =              varargin{4};
+                    d.d.flags.shouldOptimize =  false;
                 case 5          
-                    d.d.axes =              varin{1};       % And if a 5th var is given, assume it is shouldOptimize
-                    d.d.scans =             varin{2};
-                    d.d.inputs =            varin{3};
-                    d.d.intTimes =          varin{4};
-                    d.d.flags.shouldOptimize =    varin{5};
+                    d.d.axes =                  varargin{1};       % And if a 5th var is given, assume it is shouldOptimize
+                    d.d.scans =                 varargin{2};
+                    d.d.inputs =                varargin{3};
+                    d.d.intTimes =              varargin{4};
+                    d.d.flags.shouldOptimize =  varargin{5};
             end
             
             d.d.class = 'mcData';

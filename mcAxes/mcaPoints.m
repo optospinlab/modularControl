@@ -105,6 +105,7 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
             ax = axes(f);
             f.Name =        'mcaPoints Customization Window';
             f.NumberTitle = 'off';
+            f.CloseRequestFcn = []; % Don't allow closing the figure.
             
             while isvalid(gui) && isvalid(f) && ~gui.finished
                 c = mcaPoints.brightSpotConfigFull( d.data,...
@@ -115,15 +116,20 @@ classdef (Sealed) mcaPoints < mcAxis          % ** Insert mca<MyNewAxis> name he
                                                     gui.controls{6}.Value,...   % boxmax
                                                     gui.controls{7}.Value,...   % boxcut
                                                     gui.controls{8}.Value );    % numcut
-                
+
                 a = mcaPoints(c);
                 delete(a);
                 a = mcaPoints(c);
-                
+
                 a.makePlotWithAxes(ax);
-                
+
                 waitfor(gui, 'updated');
                 delete(a);
+                
+                if gui.finished
+                    % If the user answers 'No', the loop will continue.
+                    gui.finished = strcmpi(questdlg('Are you sure you want to finalize? Data acquisition may start immediately after this...', 'Finalize?', 'Yes', 'No', 'Yes'), 'Yes');
+                end
             end
             
             c.name =    gui.controls{1}.String;

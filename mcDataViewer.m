@@ -173,7 +173,7 @@ classdef mcDataViewer < mcSavableClass
 
             uicontrol('Parent', gui.tabs.t3d, 'Style', 'text', 'String', 'Sometime?', 'HorizontalAlignment', 'center', 'Units', 'normalized', 'Position', [0 0 1 .95]);
 
-            cp = .6;    % Choose position: the x value (normalized to [0 1]) of the position of the choose box.
+            cp = .5;    % Choose position: the x value (normalized to [0 1]) of the position of the choose box.
             cw = .4;    % Choose width: the width of the choose box. should be less than or equal to 1 - cp.
             
             gui.params1D.chooseList = cell(1, gui.data.r.a.num); % This will be longer, but we choose not to calculate.

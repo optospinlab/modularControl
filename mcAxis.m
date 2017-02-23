@@ -476,7 +476,7 @@ classdef mcAxis < mcSavableClass
     
     methods     % To be defined by the daughter mca<Name>.
         function tf = Eq(~, ~)
-            tf = false;     % or true?
+            tf = true;     % or true?
         end
         
         function str = NameShort(a)
