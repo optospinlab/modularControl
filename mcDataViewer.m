@@ -722,7 +722,7 @@ classdef mcDataViewer < mcSavableClass
         end
         function openCounter_Callback(gui, ~, ~)
             pixels = max(round(20/gui.data.d.intTimes(gui.r.input)), 10);   % Aim for 20 sec of data. At least 10 pixels
-            data2 = mcData(mcData.counterConfiguration(gui.data.d.inputs{gui.r.input}, pixels, gui.data.d.intTimes(gui.r.input)));
+            data2 = mcData(mcData.counterConfig(gui.data.d.inputs{gui.r.input}, pixels, gui.data.d.intTimes(gui.r.input)));
             mcDataViewer(data2, false)    % And don't show the control window when opening...
         end
         function openCounterAtPoint_Callback(gui, ~, ~, isSel, shouldGotoLayer)
