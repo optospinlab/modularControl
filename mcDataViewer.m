@@ -592,6 +592,8 @@ classdef mcDataViewer < mcSavableClass
                 gui.data.kill();
 
                 if ~isempty(gui.listeners)
+%                     'Killing listeners...'
+                    
                     delete(gui.listeners.x);
                     delete(gui.listeners.y);
                     delete(gui.listeners.r);

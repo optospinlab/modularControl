@@ -132,6 +132,25 @@ classdef mciDataWrapper < mcInput
             units = [units I2.getInputScanUnits()];
         end
         
+        function names = getInputScanNames(I)
+            names = cell(1, length(I.config.data.axes));
+            
+            for ii = 1:length(I.config.data.axes)
+                a = I.config.data.axes{ii};
+                
+                if isstruct(a)
+                    names{ii} = a.name;
+                elseif isa(a, 'mcAxis')
+                    names{ii} = a.config.name;
+                end
+            end
+            
+            c = I.config.data.inputs{1};    % This will throw an error if we are given an object instead of a config.
+            I2 = eval([c.class '(c)']);
+            
+            names = [names I2.getInputScanNames()];
+        end
+        
         % NAME ---------- The following functions define the names that the user should use for this input.
         function str = NameShort(I)     % 'short' name, suitable for UIs/etc.
             str = [I.config.name ' (' I.config.data.name ')'];

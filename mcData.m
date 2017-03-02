@@ -783,17 +783,25 @@ classdef mcData < mcSavableClass
         end
         
         function kill(d)
-            d.r.aquiring = false;
+            if isvalid(d)
+                d.r.aquiring = false;
 
-            d.r.scanMode = -2;   % quit
+                d.r.scanMode = -2;   % quit
 
-            if ~isempty(d.r.s) && isvalid(d.r.s)
-                d.r.s.stop();
+                if isfield(d.r, 's') && ~isempty(d.r.s) && isvalid(d.r.s)
+                    d.r.s.stop();
+                end
+
+                display('mcData.kill(): Waiting for last mcInput to finish .measure()ing...');
+
+                for ii = 1:d.r.i.num
+                    if strcmpi(d.r.i.i{ii}.config.class, 'mciDataWrapper')
+                        if isa(d.r.i.i{ii}.s, 'mcData')
+                            d.r.i.i{ii}.s.kill();
+                        end
+                    end
+                end
             end
-            
-            display('mcData.kill(): Waiting for last mcInput to finish .measure()ing...');
-            
-            waitfor(d);
         end
         
         function aquire(d)
@@ -906,6 +914,7 @@ classdef mcData < mcSavableClass
                         d.r.a.a{ii}.goto(d.r.a.prev(ii));  % Then goto the stored previous values.
                     end
                     
+%                     'deleting!'
                     delete(d);
                 elseif d.r.scanMode == 0                % If the data was reset mid-scan,
 %                     'reset!'
