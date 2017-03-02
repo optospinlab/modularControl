@@ -589,9 +589,7 @@ classdef mcDataViewer < mcSavableClass
                 gui.cfToggle.State = 'off';
                 gui.df.Visible = 'off';
             else
-                gui.data.r.aquiring = false;
-
-                gui.data.r.scanMode = -2;   % quit
+                gui.data.kill();
 
                 if ~isempty(gui.listeners)
                     delete(gui.listeners.x);
@@ -603,6 +601,8 @@ classdef mcDataViewer < mcSavableClass
 
                 delete(gui.cf);
                 delete(gui.df);
+                
+                disp('mcDataViewer.kill(): Killing complete.');
             end
         end
         function closeRequestFcnCF(gui, ~, ~)   % Close function for the control figure (the one with the buttons)

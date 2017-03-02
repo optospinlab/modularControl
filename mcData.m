@@ -782,6 +782,20 @@ classdef mcData < mcSavableClass
             [~, ~, ~, d.d.other.status] = mcInstrumentHandler.getAxes();    % Huge bug came from saving other.axes! Will fix soon.
         end
         
+        function kill(d)
+            d.r.aquiring = false;
+
+            d.r.scanMode = -2;   % quit
+
+            if ~isempty(d.r.s) && isvalid(d.r.s)
+                d.r.s.stop();
+            end
+            
+            display('mcData.kill(): Waiting for last mcInput to finish .measure()ing...');
+            
+            waitfor(d);
+        end
+        
         function aquire(d)
             d.r.aquiring = true;
             d.r.scanMode = 1;
