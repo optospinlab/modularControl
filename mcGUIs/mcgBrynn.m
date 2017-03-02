@@ -126,14 +126,16 @@ classdef mcgBrynn < mcGUI
                                                             gui.objects.counter,...
                                                             gui.controls{1}.Value,...
                                                             gui.controls{3}.Value,...
-                                                            gui.controls{2}.Value)
+                                                            gui.controls{2}.Value);
+                    configGalvo.axes = {gui.objects.hwp configGalvo.axes{1} configGalvo.axes{2}}; % Append hwp to galvo arrays
+                    configGalvo.scans = [hwpPos configGalvo.scans];
                     configWrapGalvo = mciDataWrapper.dataConfig(configGalvo);
                     galvo = mciDataWrapper(configWrapGalvo);
+%                     galvo.config.name = 'MyName';
                     
                     % Defines inputs for mcData
-                    d.axes = {gui.objects.hwp,gui.objects.micros(1),gui.objects.micros(2)};
-                    d.scans = {hwpPos,...
-                               (0:numScans - 1) * gui.controls{10}.Value + getX(gui.objects.micros(1)),...
+                    d.axes = {gui.objects.micros(1),gui.objects.micros(2)};
+                    d.scans = {(0:numScans - 1) * gui.controls{10}.Value + getX(gui.objects.micros(1)),...
                                (0:numScans - 1) * gui.controls{10}.Value + getX(gui.objects.micros(2))};
                     d.inputs = {optz, galvo};
                     d.intTimes = [NaN NaN];
