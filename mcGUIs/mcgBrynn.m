@@ -29,6 +29,11 @@ classdef mcgBrynn < mcGUI
                                 { 'push',   'Optimize Z',      'optZ',      'Push to active an optimization in the Z direction with the above parameters.' },...
                                 { 'edit',   'Range HWP (deg): ', 30,        'The range of the scan (in HWP deg), centered on the current position. If this scan goes out of bounds, it is shifted to be in bounds.',   [0 abs(diff(hwpConfig.kind.int2extConv(hwpConfig.kind.intRange)))]},...                                                              
                                 { 'push',   'Optimize HWP',    'opthwp',    'Push to active an optimization over the HWP.' },...
+                                { 'title',  'Large Micro Scan:', NaN,       'Take many galvo scans over a large area by moving the micrometers between scans.' },... % Added by Kelsey
+                                { 'edit',   'Scans (#): ',       2,         'Total number of scanned positions in X and Y directions.',                                                                                                                                 [0 Inf 1]},...
+                                { 'edit',   'Separation (um): ', 150,       'Separation between adjacent scans in um.',},...
+                                { 'edit',   'HWP scans (#): ',   2,         'Number of scans to run at each location for different HWP angles.',                                                                                                          [1 200 1]},...
+                                { 'push',   'Large MicroScan', 'lmscan',    'Push to run a series of galvo scans.' },...
                               };
         end
     end
@@ -95,6 +100,50 @@ classdef mcgBrynn < mcGUI
                 case 'spec'
                     data = mcData(mcData.singleSpectrumConfig());
                     mcDataViewer(data, false);  % Open mcDataViewer to view this data, but do not open the control figure
+                case 'lmscan' % Added by Kelsey
+                    range = (gui.controls{9}.Value - 1) * gui.controls{10}.Value;
+                    hwpPos = linspace(0,90,gui.controls{11}.Value+1);
+                    hwpPos = hwpPos(1:gui.controls{11}.Value)+gui.controls{8}.Value;
+                    if range + getX(gui.objects.micros(1)) > 12000 || range + getX(gui.objects.micros(2)) > 16000
+                        warning('Number of scans puts micrometers out of range. Removing problem scans.');
+                        numScans = floor(min([12000 - getX(gui.objects.micros(1)) 16000 - getX(gui.objects.micros(2))])/gui.controls{10}.Value) + 1;
+                    else
+                        numScans = gui.controls{9}.Value;
+                    end
+                    
+                    % Sets up optz input
+                    configOptz = mcData.optimizeConfig(     gui.objects.piezo,...
+                                                            gui.objects.counter,...
+                                                            gui.controls{5}.Value,...
+                                                            gui.controls{6}.Value,...
+                                                            gui.controls{7}.Value); % axis, input, range, pixels, seconds
+                    configWrapOptz = mciDataWrapper.dataConfig(configOptz);
+                    optz = mciDataWrapper(configWrapOptz);
+                    
+                    % Sets up galvo input
+                    configGalvo = mcData.squareScanConfig(  gui.objects.galvos(1),...
+                                                            gui.objects.galvos(2),...
+                                                            gui.objects.counter,...
+                                                            gui.controls{1}.Value,...
+                                                            gui.controls{3}.Value,...
+                                                            gui.controls{2}.Value)
+                    configWrapGalvo = mciDataWrapper.dataConfig(configGalvo);
+                    galvo = mciDataWrapper(configWrapGalvo);
+                    
+                    % Defines inputs for mcData
+                    d.axes = {gui.objects.hwp,gui.objects.micros(1),gui.objects.micros(2)};
+                    d.scans = {hwpPos,...
+                               (0:numScans - 1) * gui.controls{10}.Value + getX(gui.objects.micros(1)),...
+                               (0:numScans - 1) * gui.controls{10}.Value + getX(gui.objects.micros(2))};
+                    d.inputs = {optz, galvo};
+                    d.intTimes = [NaN NaN];
+
+                    % Creates data structure and takes data
+                    data = mcData(d);
+                    mcDataViewer(data);
+                    
+                    close(optz);
+                    close(galvo);
                 otherwise
                     if ischar(cbName)
                         disp([class(gui) '.Callbacks(s, e, cbName): No callback of name ' cbName '.']);
@@ -122,6 +171,14 @@ classdef mcgBrynn < mcGUI
             gui.objects.hwp       = mcaHwpRotator;
             
             gui.objects.counter   = mciDAQ(configCounter);
+        
+            % Added by Kelsey {
+            configMicroX = mcaMicro.microXBrynnConfig();
+            configMicroY = mcaMicro.microYBrynnConfig();
+            
+            gui.objects.micros(1) = mcaMicro(configMicroX);
+            gui.objects.micros(2) = mcaMicro(configMicroY);
+            % }
         end
     end
 end

@@ -139,8 +139,8 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % READ
         function ReadEmulation(a)
-            if abs(a.x - a.xt) > 1e-4           % Simple equation that attracts a.x to the target value of a.xt.
-                a.x = a.x + (a.xt - a.x)/100;
+            if abs(a.x - a.xt) > .1           % Simple equation that attracts a.x to the target value of a.xt.
+                a.x = a.x + .1*sign(a.xt - a.x);
             else
                 a.x = a.xt;
             end

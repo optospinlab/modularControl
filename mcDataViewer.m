@@ -1000,29 +1000,31 @@ classdef mcDataViewer < mcSavableClass
 %             gui.data.r.plotMode ~= 0
 %             all( gui.data.r.l.type(gui.data.r.l.layer == 1 | gui.data.r.l.layer == 2) == 0 )
 %             gui;
-            d = gui.data;   % Really odd bug makes gui.data.r... take more time to access.
-%             gui.data.r;
-%             gui.data.r.l;
-%             R = gui.data.r;
-            R = d.r;
-            if isvalid(gui) && R.plotMode ~= 0 && all( R.l.type(R.l.layer == 1 | R.l.layer == 2) == 0 )
-                axisX = R.a.a{R.l.layer == 1};
+            if isvalid(gui)
+                d = gui.data;   % Really odd bug makes gui.data.r... take more time to access.
+    %             gui.data.r;
+    %             gui.data.r.l;
+    %             R = gui.data.r;
+                R = d.r;
 
-                x = axisX.getX();
-                gui.posL.act.XData = [x x];
-                gui.pos.act.XData = x;
+                if R.plotMode ~= 0 && all( R.l.type(R.l.layer == 1 | R.l.layer == 2) == 0 )
+                    axisX = R.a.a{R.l.layer == 1};
 
-                x = gui.data.r.a.prev(gui.data.r.l.layer == 1);
-                gui.posL.prv.XData = [x x];
-                gui.pos.prv.XData = x;
+                    x = axisX.getX();
+                    gui.posL.act.XData = [x x];
+                    gui.pos.act.XData = x;
 
-                if gui.data.r.plotMode == 2
-                    axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
+                    x = gui.data.r.a.prev(gui.data.r.l.layer == 1);
+                    gui.posL.prv.XData = [x x];
+                    gui.pos.prv.XData = x;
 
-                    gui.pos.act.YData = axisY.getX();
-                    gui.pos.prv.YData = gui.data.r.a.prev(gui.data.r.l.layer == 2);
+                    if gui.data.r.plotMode == 2
+                        axisY = gui.data.r.a.a{gui.data.r.l.layer == 2};
+
+                        gui.pos.act.YData = axisY.getX();
+                        gui.pos.prv.YData = gui.data.r.a.prev(gui.data.r.l.layer == 2);
+                    end
                 end
-                
             end
         end
         
