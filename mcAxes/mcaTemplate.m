@@ -12,8 +12,8 @@ classdef (Sealed) mcaTemplate < mcAxis          % ** Insert mca<MyNewAxis> name 
 %       a.s         % This should be used for the persistant runtime axis session, whether serial, NIDAQ, or etc.
 %       a.t         % An additional 'timer' session for unusual axes (see mcaMicro for use to poll the micros about the current position).
 %       a.extra     % A (currently unused) cell array which should contain the names of the essential custom variables for the config (why isn't this in a.config?).
-%       a.x         % Current position of the axis in the internal units of the 1D parameterspace.
-%       a.xt        % Target position of the axis in the internal units of the 1D parameterspace. This is useful for 'slow' axes which do not immdiately reach the destination (e.g. micrometers) for 'fast' axes (e.g. piezos), a.x should always equal a.xt.
+%       a.x         % Current position of the axis in the *internal* units of the 1D parameterspace.
+%       a.xt        % Target position of the axis in the *internal* units of the 1D parameterspace. This is useful for 'slow' axes which do not immdiately reach the destination (e.g. micrometers) for 'fast' axes (e.g. piezos), a.x should always equal a.xt.
 %
 % Syntax:
 %

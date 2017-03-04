@@ -7,8 +7,8 @@ classdef (Sealed) mcaMicro < mcAxis
     
     methods (Static)
         % Neccessary extra vars:
-        %  - port
-        %  - addr
+        %  - port       % USB port that the axis is connected to (e.g. 'COM1')
+        %  - addr       % Not sure what this is used for (Srivatsa?) always is 1. Maybe this is used with a USB hub?
         
         function config = defaultConfig()
             config = mcaMicro.microConfig();
@@ -103,8 +103,7 @@ classdef (Sealed) mcaMicro < mcAxis
         
         % EQ
         function tf = Eq(a, b)
-%             a.config
-            tf = strcmpi(a.config.port,  b.config.port);
+            tf = strcmpi(a.config.port,  b.config.port);    % Is address ever used? Maybe for a USB hub?
         end
         
         % OPEN/CLOSE
@@ -133,7 +132,6 @@ classdef (Sealed) mcaMicro < mcAxis
         function Close(a)
             fprintf(a.s, [a.config.addr 'RS']);
             fclose(a.s);    % Not sure if all of these are neccessary; Srivatsa's old code...
-%            close(a.s);
             delete(a.s);
         end
         
@@ -146,10 +144,14 @@ classdef (Sealed) mcaMicro < mcAxis
             end
         end
         function Read(a)
-            fprintf(a.s, [a.config.addr 'TP']);	% Get device state
-            str = fscanf(a.s);
+            fprintf(a.s, [a.config.addr 'TP']);     % Ask for device state...
+            str = fscanf(a.s);                      % Receive device state.
 
-            a.x = str2double(str(4:end));
+            a.x = str2double(str(4:end));           % We do not care about the first three characters...
+            
+            if abs(a.x - a.xt) < .0001              % If the micrometers are within .1um, assume the position was reached.
+                a.x = a.xt;
+            end
         end
         
         % GOTO
@@ -158,25 +160,19 @@ classdef (Sealed) mcaMicro < mcAxis
             
             % The micrometers are not immediate, so...
             if isempty(a.t)         % ...if the timer to update the position of the micrometers is not currently running...
-                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .25); % 4fps
+                a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .5); % 2fps
                 start(a.t);         % ...then run it.
             end
         end
         function Goto(a, x)
-            fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);
+            fprintf(a.s, [a.config.addr 'SE' num2str(a.config.kind.ext2intConv(x))]);   % Tell the axes to goto the desired position.
             fprintf(a.s, 'SE');                                 % Not sure why this doesn't use config.addr... Srivatsa?
 
             a.xt = a.config.kind.ext2intConv(x);
             
-%             xt = a.xt
-%             x = a.x
-%             abs(a.xt - a.x)
-%             abs(a.xt - a.x) > 20
-%             a.t
-            
-            if abs(a.xt - a.x) > .02 && isempty(a.t)
+            if abs(a.xt - a.x) > .02 && isempty(a.t)    % If the goto distance is greater than 20 um,...
                 a.t = timer('ExecutionMode', 'fixedRate', 'TimerFcn', @a.timerUpdateFcn, 'Period', .5); % 2fps
-                start(a.t);
+                start(a.t);     % ...then start a timer to track the positions of the micrometers (at 2fps) as they reach the destination
             end
         end
     end
@@ -184,13 +180,8 @@ classdef (Sealed) mcaMicro < mcAxis
     methods
         % EXTRA
         function timerUpdateFcn(a, ~, ~)
-%             display('timerUpdate');
             a.read();
-%             x = a.x
-%             xt = a.xt
-%             drawnow
-            if abs(a.x - a.xt) < 1e-4
-%                 'deleting!'
+            if abs(a.x - a.xt) < .0001  % If the axes are within .1um, stop updating.
                 stop(a.t);
                 delete(a.t);
                 a.t = [];

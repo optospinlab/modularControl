@@ -52,7 +52,7 @@ For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`,
 #### In `mcAxis`, Specifically:
 * `config.kind.intUnits`, a string representing the units that the axis uses internally (e.g. for piezos, this is volts);
 * `config.kind.extUnits`, a string representing the units that the user should use (e.g. for piezos, this is microns);
-* `config.kind.int2extConv`, conversion from internal to external units (e.g. for piezos, 0V -> -25um, 10V -> 25um);
+* `config.kind.int2extConv`, conversion from internal to external units (e.g. for piezos, 0V maps to -25um, 10V maps to 25um);
 * `config.kind.ext2intConv`, conversion from external to internal units, this should be the inverse of `int2extConv`, but is currently not error checked (check randomly in the future?);
 * `config.kind.intRange`, the range of the axis in external units (this is generated using the conversions);
 * `config.kind.extRange`, the range of the axis in external units (this is generated from `intRange` using the conversions);
@@ -64,6 +64,14 @@ For instance, `mciDAQ` must define `.Measure()` which is called by `.measure()`,
 * `config.kind.sizeInput`, the expected size of the input (this allows other parts of the program to allocate space for the `mcInput` before the measurement has been taken; for numbers, this is set to `[1 1]`; for a vector like a spectrum, this could be [512 1]).
 
 It is meant to unify mcInstruments of similar, but not identical identity. For instance, all MadCity Labs piezos have the same `config.kind` because they all have the same range and convert between units with the same conversions. The only difference is the special variables (`dev` and `chn` in this case).
+
+#### A Note About Internal vs External Units...
+The physical hardware uses *internal* units whereas the user uses *external* units. For instance, a piezo uses Volts *internally* but microns *externally*. The *external* units are defined via the anonymous function `config.kind.int2extConv` and its inverse `config.kind.ext2intConv`. For instance, for the piezos that we use in the diamond room, we convert between a 0 to 10 V range and a -25 to 25 um range. Thus,
+
+	config.kind.int2extConv =   @(x)(5.*(5 - x));
+	config.kind.ext2intConv =   @(x)((25 - x)./5);
+
+It should be noted that the *internal* `mcAxis` variables `a.x` and `a.xt` --- the current and target positions --- use *internal* units. The *external* current and target positions can be found via `a.getX()` and `a.getXt()`.
 
 ## Example
 Suppose that we want to do an XY scan on the counter with the X piezo and the Y micrometer.

@@ -24,8 +24,8 @@ classdef mcAxis < mcSavableClass
 %
 %   tf =    a.read(x)                           % Sets a.x to the physical position of the instrument (e.g. poll slow micrometers for current position), and returns success.
 %
-%   x =     a.getX(x)                           % Returns the position of the axis (a.x) in external units.
-%   x =     a.getXt(x)                          % Returns the target position of the axis (a.xt) in external units.
+%   x =     a.getX(x)                           % Returns the position of the axis (internal a.x) in external units.
+%   x =     a.getXt(x)                          % Returns the target position of the axis (internal a.xt) in external units.
 %
 % Status: Finished and mostly commented.
 
@@ -476,7 +476,7 @@ classdef mcAxis < mcSavableClass
     
     methods     % To be defined by the daughter mca<Name>.
         function tf = Eq(~, ~)
-            tf = true;     % or true?
+            tf = true;     % or false?
         end
         
         function str = NameShort(a)
