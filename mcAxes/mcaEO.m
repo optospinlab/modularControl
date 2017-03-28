@@ -99,7 +99,17 @@ classdef (Sealed) mcaEO < mcAxis
             a.x = a.xt;
         end
         function Goto(a, x)
+            x0 = a.xt;
             a.xt = a.config.kind.ext2intConv(x);
+            n = ceil(abs(a.xt-x0)/2);
+            if n>2
+                x_n = linspace(x0,a.xt,n);
+                for i = 2:length(x_n)-1
+                    [errcode] = calllib('EO_Drive', 'EO_Move', a.s, x_n(i)); % Move smoothly to intermediate points
+                    pause(0.05);                
+                end
+            end
+            
             [errcode] = calllib('EO_Drive', 'EO_Move', a.s, a.xt);  % Move to commanded position (position in um)
         
             % Error check?

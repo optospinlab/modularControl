@@ -233,8 +233,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.name =          'Tholabs Galvometer';   % Check for better name.
             config.kind.intRange =      [-10 10];
             
-            config.kind.int2extConv =   @(x)((x + 2.6253).*108.94);        % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)((x ./ 108.94) - 2.6253);      % Conversion from 'external' units to 'internal'.
+            config.kind.int2extConv =   @(x)((x + 2.6253).*(108.94/1.5));        % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)((x ./ (108.94/1.5)) - 2.6253);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'um';                   % 'External' units.
             config.kind.base =          -2.6253;                 % The (internal) value that the axis seeks at startup.
@@ -259,8 +259,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.kind.name =          'Tholabs Galvometer';   % Check for better name.
             config.kind.intRange =      [-10 10];
             
-            config.kind.int2extConv =   @(x)((x + 0.5113).*108.94);        % Conversion from 'internal' units to 'external'.
-            config.kind.ext2intConv =   @(x)((x ./ 108.94) - 0.5113);      % Conversion from 'external' units to 'internal'.
+            config.kind.int2extConv =   @(x)((x + 0.5113).*(108.94/1.5));        % Conversion from 'internal' units to 'external'.
+            config.kind.ext2intConv =   @(x)((x ./ (108.94/1.5)) - 0.5113);      % Conversion from 'external' units to 'internal'.
             config.kind.intUnits =      'V';                    % 'Internal' units.
             config.kind.extUnits =      'um';                   % 'External' units.
             config.kind.base =          -0.5113;                 % The (internal) value that the axis seeks at startup.

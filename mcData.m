@@ -402,7 +402,7 @@ classdef mcData < mcSavableClass
                             answer = 'yes';
 
                             if any(c.data.info.version ~= mcInstrumentHandler.version())
-                                str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
+                                str = [ 'Warning: the file "' varargin{1} '" was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
                                         ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
                                         '. This could potentially lead to version-conflict errors. Proceed anyway?'];
 
@@ -411,7 +411,7 @@ classdef mcData < mcSavableClass
 
                             switch lower(answer)
                                 case 'yes'
-                                    d = c.data;
+                                    d.d = c.data;
                                 case 'no'
                                     disp(['mcData(' varargin{1} '): File was not loaded due to version conflict...']);
                             end
