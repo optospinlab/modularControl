@@ -37,7 +37,7 @@ classdef mcData < mcSavableClass
         %
         % - d.flags.circTime        boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
         % - d.flags.shouldOptimize  boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes with 0D inputs. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
-        % - d.flags.optimizeMove      numeric array       % After optimizing, move by this much (can be [x y] if we are in 2D; just [x] for 1D).
+        % - d.flags.optimizeMove    numeric array       % After optimizing, move by this much (can be [x y] if we are in 2D; just [x] for 1D).
         % 
         % - d.config                unused              % (due to inheritence from mcSavableClass) (change this?)
     end
@@ -258,6 +258,10 @@ classdef mcData < mcSavableClass
             data.intTimes = seconds/pixels;
             data.flags.shouldOptimize = true;
         end
+        function data = optimizeMoveConfig(axis_, input, range, pixels, seconds, move)                         % Optimizes 'input' over 'range' of 'axis_'
+            data = mcData.optimizeConfig(axis_, input, range, pixels, seconds);
+            data.flags.optimizeMove = move;
+        end
         function data = counterConfig(input, length, integrationTime)    
             data.class = 'mcData';
             
@@ -446,7 +450,7 @@ classdef mcData < mcSavableClass
                 d.d.flags.shouldOptimize = false;
             end
             
-            if ~isfield(d.d.flags, 'shouldMove')
+            if ~isfield(d.d.flags, 'optimizeMove')
                 d.d.flags.optimizeMove = zeros(1, length(d.d.axes));
             end
             
@@ -953,8 +957,8 @@ classdef mcData < mcSavableClass
                         case 1
                             [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);        % First find the peak.
                             
-                            x =     max(min(d.r.a.a{1}.extRange), min(max(d.r.a.a{1}.extRange), x + d.d.flags.optimizeMove));                 % Truncate x to the axis range...
-                            fx =    max(min(d.r.a.a{1}.extRange), min(max(d.r.a.a{1}.extRange), d.d.scans{1}(1) + d.d.flags.optimizeMove));   % Truncate fx (which is in the direction that one should approach from) to the axis range...
+                            x =     max(min(d.r.a.a{1}.config.kind.extRange), min(max(d.r.a.a{1}.config.kind.extRange), x + d.d.flags.optimizeMove));                 % Truncate x to the axis range...
+                            fx =    max(min(d.r.a.a{1}.config.kind.extRange), min(max(d.r.a.a{1}.config.kind.extRange), d.d.scans{1}(1) + d.d.flags.optimizeMove));   % Truncate fx (which is in the direction that one should approach from) to the axis range...
                           
                             d.r.a.a{1}.goto(fx);                                        % Trying to approach from the same direction...
                             d.r.a.a{1}.goto(x);                                         % ...goto the peak.
