@@ -37,6 +37,7 @@ classdef mcData < mcSavableClass
         %
         % - d.flags.circTime        boolean             % Flags whether the data should be circshifted for infinite data aquisistion. If this is not set, assumes false. If time is not an axis, assumes false.
         % - d.flags.shouldOptimize  boolean             % Whether or not the axes should be optimized on the brightest point of the 1st input. Only works for 1 or 2 axes with 0D inputs. Note that this is not general and should be replaced by an mcOptimizationRoutine struct for a general optimization.
+        % - d.flags.optimizeMove      numeric array       % After optimizing, move by this much (can be [x y] if we are in 2D; just [x] for 1D).
         % 
         % - d.config                unused              % (due to inheritence from mcSavableClass) (change this?)
     end
@@ -402,7 +403,7 @@ classdef mcData < mcSavableClass
                             answer = 'yes';
 
                             if any(c.data.info.version ~= mcInstrumentHandler.version())
-                                str = [ 'Warning: the file ' FileName ' was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
+                                str = [ 'Warning: this file was created with modularControl version v' strrep(num2str(c.data.info.version), '  ', '.')...
                                         ', whereas the current version is v' strrep(num2str(mcInstrumentHandler.version()), '  ', '.')...
                                         '. This could potentially lead to version-conflict errors. Proceed anyway?'];
 
@@ -411,7 +412,7 @@ classdef mcData < mcSavableClass
 
                             switch lower(answer)
                                 case 'yes'
-                                    d = c.data;
+                                    d.d = c.data;
                                 case 'no'
                                     disp(['mcData(' varargin{1} '): File was not loaded due to version conflict...']);
                             end
@@ -443,6 +444,10 @@ classdef mcData < mcSavableClass
             
             if ~isfield(d.d.flags, 'shouldOptimize')
                 d.d.flags.shouldOptimize = false;
+            end
+            
+            if ~isfield(d.d.flags, 'shouldMove')
+                d.d.flags.optimizeMove = zeros(1, length(d.d.axes));
             end
             
             if ~isfield(d.d.flags, 'circTime')
@@ -577,7 +582,11 @@ classdef mcData < mcSavableClass
                     c = d.d.inputs{ii};     % Get the config for the iith input.
                     
                     if isfield(c, 'class')
-                        d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config.
+                        try
+                            d.r.i.i{ii} = eval([c.class '(c)']);    % Make a mcInput (subclass) object based on that config.
+                        catch
+                            
+                        end
                     else
                         error('mcData(): Config given without class. ');
                     end
@@ -628,6 +637,22 @@ classdef mcData < mcSavableClass
                 
                 % Again, first figure out how many axes we have.
                 d.r.a.num =         length(d.d.axes);
+                
+                if d.d.flags.shouldOptimize
+                    if d.r.a.num > 2
+                        error(['mcData.initialize(): Optimization of 1D and 2D data sets enabled, not ' num2str(d.r.a.num) 'D'])
+                    end
+                    
+                    if length(d.d.flags.optimizeMove) ~= d.r.a.num
+                        warning(['mcData.initialize(): Expected to move ' num2str(d.r.a.num) ' axis after optimization, not ' num2str(length(d.d.flags.optimizeMove))]);
+                        
+                        if      d.r.a.num == 1
+                            d.d.flags.optimizeMove = 0;
+                        elseif  d.r.a.num == 2
+                            d.d.flags.optimizeMove(2) = 0;
+                        end
+                    end
+                end
                 
                 % Make some empty lists...
                 d.r.a.length =          zeros(1, d.r.a.num);
@@ -926,25 +951,29 @@ classdef mcData < mcSavableClass
                 elseif d.d.flags.shouldOptimize     % If there should be a post-scan optimization...
                     switch length(d.r.a.a)
                         case 1
-%                             tic
-                            [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);    % First find the peak.
-%                             toc
-%                             tic
-                            d.r.a.a{1}.goto(d.d.scans{1}(1));                       % Approaching from the same direction...
-%                             toc
-%                             tic
-                            d.r.a.a{1}.goto(x);                                     % ...goto the peak.
-%                             toc
+                            [x, ~] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, 0);        % First find the peak.
+                            
+                            x =     max(min(d.r.a.a{1}.extRange), min(max(d.r.a.a{1}.extRange), x + d.d.flags.optimizeMove));                 % Truncate x to the axis range...
+                            fx =    max(min(d.r.a.a{1}.extRange), min(max(d.r.a.a{1}.extRange), d.d.scans{1}(1) + d.d.flags.optimizeMove));   % Truncate fx (which is in the direction that one should approach from) to the axis range...
+                          
+                            d.r.a.a{1}.goto(fx);                                        % Trying to approach from the same direction...
+                            d.r.a.a{1}.goto(x);                                         % ...goto the peak.
                         case 2
                             [x, y] = mcPeakFinder(d.d.data{1}, d.d.scans{1}, d.d.scans{2});     % First find the peak.
-
-                            d.r.a.a{1}.goto(d.d.scans{1}(1));                                   % Approaching from the same direction...
-                            d.r.a.a{2}.goto(d.d.scans{2}(1));
+                            
+                            x =     max(min(d.r.a.a{1}.extRange), min(max(d.r.a.a{1}.extRange), x + d.d.flags.optimizeMove(1)));                 % Truncate x to the axis range...
+                            fx =    max(min(d.r.a.a{1}.extRange), min(max(d.r.a.a{1}.extRange), d.d.scans{1}(1) + d.d.flags.optimizeMove(1)));   % Truncate fx (which is in the direction that one should approach from) to the axis range...
+                          
+                            y =     max(min(d.r.a.a{2}.extRange), min(max(d.r.a.a{2}.extRange), y + d.d.flags.optimizeMove(2)));                 % Truncate y to the axis range...
+                            fy =    max(min(d.r.a.a{2}.extRange), min(max(d.r.a.a{2}.extRange), d.d.scans{2}(1) + d.d.flags.optimizeMove(2)));   % Truncate fy (which is in the direction that one should approach from) to the axis range...
+                            
+                            d.r.a.a{1}.goto(fx);                                                % Approaching from the same direction...
+                            d.r.a.a{2}.goto(fy);
 
                             d.r.a.a{1}.goto(x);                                                 % ...goto the peak.
                             d.r.a.a{2}.goto(y);
                         otherwise
-                            disp('mcData.aquire(): Optimization on more than 2 axes not currently supported...');
+                            disp('mcData.aquire(): Optimization on more than 2 axes is not currently supported...');
                     end 
                 elseif d.r.scanMode == 2            % Should the axes goto the original values after the scan finishes?
                     for ii = nums
