@@ -105,7 +105,7 @@ classdef mcgBrynn < mcGUI
                 case 'lmscan' % Added by Kelsey: large scan
                     range = (gui.controls{9}.Value - 1) * gui.controls{10}.Value;
                     hwpPos = linspace(0,90,gui.controls{11}.Value+1);
-                    hwpPos = hwpPos(1:gui.controls{11}.Value)+gui.controls{8}.Value;
+                    hwpPos = hwpPos(1:gui.controls{11}.Value)+gui.objects.hwp.getX();
                     if range + getX(gui.objects.micros(1)) > 12000 || range + getX(gui.objects.micros(2)) > 16000
                         warning('Number of scans puts micrometers out of range. Removing problem scans.');
                         numScans = floor(min([12000 - getX(gui.objects.micros(1)) 16000 - getX(gui.objects.micros(2))])/gui.controls{10}.Value) + 1;
@@ -145,7 +145,7 @@ classdef mcgBrynn < mcGUI
 
                     % Creates data structure and takes data
                     data = mcData(d);
-                    mcDataViewer(data);
+                    mcDataViewer(data,false);
                     
                     close(optz);
                     close(galvo);
