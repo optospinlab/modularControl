@@ -176,7 +176,7 @@ classdef mciDataWrapper < mcInput
         end
         function Close(I)               % Do whatever neccessary to deinitialize the input.
             delete(I.s);
-            delete(I.data);
+            delete(I.dv);
         end
         
         % MEASURE ------- The 'meat' of the input: the funtion that actually does the measurement and 'inputs' the data. Ignore integration time (with ~) if there should not be one.
