@@ -161,7 +161,8 @@ classdef mciDataWrapper < mcInput
         
         %EQ ------------- The function that should return true if the custom vars are the same (future: use i.extra for this?)
         function tf = Eq(I, b)          % Compares two mciDataWrappers
-            tf = strcmpi(I.config.data.name,  b.config.data.name);  % Change?
+            tf = isequal(I.config.data, b.config.data);  % Compares the two structures
+            %strcmpi(I.config.data.name,  b.config.data.name);
         end
 
         % OPEN/CLOSE ---- The functions that define how the input should init/deinitialize (these functions are not used in emulation mode).
