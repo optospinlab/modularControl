@@ -34,6 +34,7 @@ classdef mcDataViewer < mcSavableClass
         
         df = [];            % Data figure.
         a = [];             % Main axes in the data figure.
+        cbar = [];          % Colorbar (eventually sort somewhere nicer).
         
         p = [];             % plot() object (for 1D).
         i = [];             % image() object (for 2D).
@@ -379,6 +380,9 @@ classdef mcDataViewer < mcSavableClass
             y = 1:50;
             c = mod(magic(50),2);
             
+            gui.cbar = colorbar(gui.a);
+            gui.cbar.Label.String = 'Intensity (cts/sec)';
+            
             % Histogram Setup --------------------------------------------------------------------------------------------------------------
             gui.h = [histogram(x, 'Parent', gui.a), histogram(x, 'Parent', gui.a), histogram(x, 'Parent', gui.a)];
             
@@ -423,11 +427,19 @@ classdef mcDataViewer < mcSavableClass
                 gui.a.YColor = 'white';
                 gui.a.Title.Color = 'white';
                 gui.df.Color = 'black';
+                gui.cbar.Color = 'white';
             end
             
             if true % thickness
                 gui.a.LineWidth = 1;
                 gui.a.FontSize = 15;
+                
+                gui.cbar.LineWidth = 1;
+                gui.cbar.FontSize = 15;
+                
+                gui.cbar.Label.LineWidth = 1;
+                gui.cbar.Label.FontSize = 15;
+                
                 for ii = 1:3
                     gui.p(ii).LineWidth = 2;
                     gui.h(ii).LineWidth = 2;
@@ -573,7 +585,7 @@ classdef mcDataViewer < mcSavableClass
                     save([PathName FileName(1:end-4) ' (full).mat'], '-v6', 'data');   % Make sure that the extension is three characters?
                 end
                 
-                mcInstrumentHandler.setSaveFolder(isBackground, PathName);  % The next time one tries to save, it will start in this folder (Remove?).
+                mcInstrumentHandler.setSaveFolder(0, PathName);     % The next time one tries to save in the foreground, it will start in this folder (Remove?).
                 
                 gui.makeProperVisibility(); % Turn the markers back on.
                 
@@ -604,7 +616,7 @@ classdef mcDataViewer < mcSavableClass
                 delete(gui.cf);
                 delete(gui.df);
                 
-                disp('mcDataViewer.kill(): Killing complete.');
+                disp('mcDataViewer.kill(): Murder complete!');
             end
         end
         function closeRequestFcnCF(gui, ~, ~)   % Close function for the control figure (the one with the buttons)
@@ -755,17 +767,17 @@ classdef mcDataViewer < mcSavableClass
             gui.posL.prv.Visible =   pvis;
             
             if gui.isRGB
-                gui.p(2).Visible =       pvis;
-                gui.p(3).Visible =       pvis;
+                gui.p(2).Visible =   pvis;
+                gui.p(3).Visible =   pvis;
                 
-                gui.h(2).Visible =         hvis;
-                gui.h(3).Visible =         hvis;
+                gui.h(2).Visible =   hvis;
+                gui.h(3).Visible =   hvis;
             else
-                gui.p(2).Visible =       'off';
-                gui.p(3).Visible =       'off';
+                gui.p(2).Visible =  'off';
+                gui.p(3).Visible =  'off';
                 
-                gui.h(2).Visible =         'off';
-                gui.h(3).Visible =         'off';
+                gui.h(2).Visible =  'off';
+                gui.h(3).Visible =  'off';
             end
             
             gui.i.Visible =         ivis;
@@ -774,7 +786,9 @@ classdef mcDataViewer < mcSavableClass
             gui.pos.act.Visible =   ivis;
             gui.pos.prv.Visible =   ivis;
             
-            gui.h(1).Visible =         hvis;
+            gui.cbar.Visible =      ivis;
+            
+            gui.h(1).Visible =      hvis;
         end
         
         function turnMarkersOff(gui)
@@ -832,6 +846,8 @@ classdef mcDataViewer < mcSavableClass
                     
                     gui.a.XLabel.String = gui.data.r.l.nameUnit{gui.data.r.l.layer == 1};
                     gui.a.YLabel.String = gui.data.r.l.nameUnit{gui.data.r.l.layer == 2};
+                    
+                    gui.cbar.Label.String = gui.data.r.i.i{gui.r.input}.nameUnits();
             end
                         
             if gui.isRGB

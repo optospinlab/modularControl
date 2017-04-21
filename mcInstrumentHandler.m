@@ -233,7 +233,9 @@ classdef mcInstrumentHandler < handle
             mcInstrumentHandler.open();
             params = mcInstrumentHandler.params();
             
-            mkdir(str);
+            if ~exist(str, 'file')
+                mkdir(str);
+            end
             
             if isBackground
                 params.saveFolderBackground = str;
