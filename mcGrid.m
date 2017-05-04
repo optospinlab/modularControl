@@ -1,8 +1,12 @@
 classdef mcGrid < mcSavableClass
 % mcGrid 
 %
+% Note:
+%   This class is (horrendously) intermixed with mcWaypoints. Might need refactoring.
+%
 % Syntax:
-%    - mcGrid(wp, indices, gridCoords)      % wp is the parent waypoint class. indices is a numeric array containing 
+%    - mcGrid()     % Don't use this; use mcWaypoints instead.
+%    - (Decrepetated) mcGrid(wp, indices, gridCoords)      % wp is the parent waypoint class. indices is a numeric array containing 
 %
 %    - grid.goto()                          % Sends all of the real axis to the point corresponding to the virtual position.
 %    - grid.wait()                          % Waits for each of the real axes to reach their target positions.
@@ -12,21 +16,32 @@ classdef mcGrid < mcSavableClass
 
     properties
 %         config = [];                % Inherited from mcSavable class.
+        % config.name
 
         editArray = {};             % Cell array of uicontrols (edit) that will help construct the grid.
         textArray = {};             % Cell array of uicontrols (text) that will help construct the grid.
         rangeArray = {};            % Cell array of uicontrols (edit) that define the ranges that constrain the grid.
         rangeText = {};             % Cell array of uicontrols (text) that label the ranges that constrain the grid.
+        
+        previewButton = [];         % Preview button for displaying the current grid.
+        nameField = [];             % Text field for naming the grid. Defaults to "Best Grid"
+        finalizeButton = [];        % Finalizes the grid (intended feature currently disabled.
+        finalizeAxesButton = [];    % Finalizes the grid axes.
 
         realAxes = {};              % Cell array containing the mcAxes which make up the vectorspace that the virtual axes live in
         virtualAxes = {};           % Cell array containing the virtual mcAxes.
         virtualPosition = [];       % Numeric array containing the position of all of the virtual axes. This is neccessary 
                                     %   because each virtualmcAxis only has knowledge of its own location and needs the other 
                                     %   coordinates to actually move to the correct virtual (and corresponding real) place.
+                                    
+        wp = [];                    % Also store the parent mcWaypoints
     end
     
     methods
         function grid = mcGrid(varin)
+            grid.config.isFinal =   false;
+            grid.config.name =      'Grid';
+            
             switch nargin
                 case 0
                     return;
@@ -44,46 +59,70 @@ classdef mcGrid < mcSavableClass
                     gridCoords = varin{3};
             end
 
-            num = length(indices);
-            
-            X = zeros(num);
-            Y = zeros(wp.length(), num);
-            grid.virtualAxes = cell(1, num);
+%             num = length(indices);
+%             
+%             X = zeros(num);
+%             Y = zeros(wp.length(), num);
+% 
+%             for ii = 1:length(gridCoords)
+%                 if length(gridCoords{ii}) + 1 == num
+%                     X(:,ii) = [gridCoords{ii} 1];
+%                     Y(:,ii) = cellfun(@(x)(x(indices(ii))), wp.config.waypoints);
+%                 else
+%                     error('mcGrid: N waypoints expected definining a N-1 dimensional grid...');
+%                 end
+%             end
 
-            for ii = 1:length(gridCoords)
-                if length(gridCoords{ii}) + 1 == num
-                    X(:,ii) = [gridCoords{ii} 1];
-                    Y(:,ii) = cellfun(@(x)(x(indices(ii))), wp.config.waypoints);
-                else
-                    error('mcGrid: N waypoints expected definining a N-1 dimensional grid...');
-                end
-            end
-
-            grid.virtualPosition = ones(1, num);   % first num-1 are actual position of virtual axes, last is to account for the possible translation (non-linearity).
-                    
-            config = mcAxis.gridConfig(grid,1);
-
-            for ii = 1:(num-1)
-                config.index = ii;
-                grid.virtualAxes{ii} = mcAxis(config);
-            end
-
+%             grid.virtualAxes = cell(1, num);
+%             grid.virtualPosition = ones(1, num);   % first num-1 are actual position of virtual axes, last is to account for the possible translation (non-linearity).
+%                     
+%             config = mcAxis.gridConfig(grid,1);
+% 
+%             for ii = 1:(num-1)
+%                 config.index = ii;
+%                 grid.virtualAxes{ii} = mcAxis(config);
+%             end
             % Y = AX
             % Y*X^-1 = A
             
-            grid.config.A = Y/X;    % Where 1/X is the inverse of X.
+%             grid.config.A = Y/X;    % Where 1/X is the inverse of X.
+        end
+            
+        function finalize(grid)
+            grid.config.isFinal = true;
+            
+            
+            dims = size(grid.editArray);
+            num = dims(1);
+            
+            grid.virtualAxes = cell(1, num);
+            grid.virtualPosition = ones(1, num+1);      % first num-1 are actual position of virtual axes, last is to account for the possible translation (non-linearity).
+                    
+            for ii = 1:(num-1)
+                config = mcaGrid.gridConfig(grid,ii);
+                grid.virtualAxes{ii} = mcaGrid(config);
+            end
+        end
+        
+        function tf = eq(a, b)
+            tf = isequal(a.config.A, b.config.A);
         end
 
         function tf = goto(grid)
             gotoPos = grid.realPosition();
             tf = true;
-            for ii = 1:length(grid.realAxes)
-                if grid.realAxes{ii}.inRange(gotoPos(ii))
-                    if grid.realAxes{ii}.getX() ~= gotoPos(ii)
-                        grid.realAxes{ii}.goto(gotoPos(ii));            % Send each real axis to the point corresponding to the virtual position.
-                    end
-                else
+            
+            for ii = 1:length(grid.realAxes)                % First, check if all of the real axes are in range...
+                if ~grid.realAxes{ii}.inRange(gotoPos(ii))
                     tf = false;
+                    disp('mcGrid.goto(): Warning! Real axes position is out of range. We will not move (eventually make this move as close to the point as possible).')
+                    return;
+                end
+            end
+            
+            for ii = 1:length(grid.realAxes)
+                if grid.realAxes{ii}.getX() ~= gotoPos(ii)
+                    grid.realAxes{ii}.goto(gotoPos(ii));            % Send each real axis to the point corresponding to the virtual position.
                 end
             end
         end
@@ -116,6 +155,16 @@ classdef mcGrid < mcSavableClass
                 questdlg('The rows of grid coordinates must be (mostly) linearly independent.', 'Unable to Calculate Grid', 'Got it', 'Got it');
                 grid.config.A = [];
             end
+        end
+        
+        function figureClose_Callback(grid, src, ~)
+            if isvalid(grid) && ~isempty(grid.wp) && isvalid(grid.wp)
+                grid.wp.g.XData = [];
+                grid.wp.g.YData = [];
+                grid.wp.gridCoords = [];
+            end
+            
+            delete(src);
         end
 
 %         function y = mtimes(grid, x)

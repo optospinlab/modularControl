@@ -232,7 +232,6 @@ classdef mcWaypoints < mcSavableClass
              end
         end
         function gridAdd_Callback(wp, ~, ~)
-            
             bw = 100;
             bh = 20;
                 
@@ -243,6 +242,11 @@ classdef mcWaypoints < mcSavableClass
             if isempty(wp.gf) || ~isvalid(wp.gf)
                 wp.grid = mcGrid();
                 wp.gf = mcInstrumentHandler.createFigure(wp.grid, 'saveopen');
+                
+                grid2 = wp.grid;
+                wp.gf.CloseRequestFcn = @grid2.figureClose_Callback;
+                
+                wp.grid.wp = wp;        % Let the grid know who its parent is...
                 
                 wp.gf.Position = [100, 100, (num+1)*bw 2*bh+rh];
                 wp.gf.Resize =      'off';
@@ -278,12 +282,46 @@ classdef mcWaypoints < mcSavableClass
                                                         'Visible', 'off',...
                                                         'Callback', @makeNumber_Callback);
                                                     
-                previewButton = uicontrol(wp.gf, 'Style', 'push',...
+                wp.grid.nameField =    uicontrol(wp.gf, 'Style', 'text',...
                                                         'Units', 'pixels',...
-                                                        'Position', [(num-1)*bw bh/2 bw 2*bh],...
+                                                        'Position', [(num-2)*bw 3*bh/2 bw bh],...
+                                                        'String', 'Name of Grid:  ',...
+                                                        'HorizontalAlignment', 'right',...
+                                                        'Callback', @wp.nameGrid_Callback);
+                                                    
+                wp.grid.nameField =    uicontrol(wp.gf, 'Style', 'edit',...
+                                                        'Units', 'pixels',...
+                                                        'Position', [(num-1)*bw 3*bh/2 bw bh],...
+                                                        'String', 'Best Grid',...
+                                                        'HorizontalAlignment', 'center',...
+                                                        'Callback', @wp.nameGrid_Callback);
+                                                    
+                wp.grid.previewButton= uicontrol(wp.gf, 'Style', 'push',...
+                                                        'Units', 'pixels',...
+                                                        'Position', [(num-2)*bw bh/2 bw bh],...
                                                         'String', 'Preview',...
                                                         'HorizontalAlignment', 'right',...
-                                                        'Callback', @wp.previewGrid_Callback);
+                                                        'Callback', @wp.previewGrid_Callback,...
+                                                        'Enable', 'off');
+                                                    
+%                 wp.grid.finalizeButton=uicontrol(wp.gf, 'Style', 'push',...
+%                                                         'Units', 'pixels',...
+%                                                         'Position', [(num-2)*bw bh/2 bw bh],...
+%                                                         'String', 'Finalize Grid',...
+%                                                         'HorizontalAlignment', 'right',...
+%                                                         'Callback', @wp.finalizeGrid_Callback,...
+%                                                         'Enable', 'off');
+                                                    
+                wp.grid.finalizeAxesButton=uicontrol(wp.gf, 'Style', 'push',...
+                                                        'Units', 'pixels',...
+                                                        'Position', [(num-1)*bw bh/2 bw bh],...
+                                                        'String', 'Finalize Grid Axes',...
+                                                        'HorizontalAlignment', 'right',...
+                                                        'Callback', @wp.finalizeAxesGrid_Callback,...
+                                                        'Enable', 'off');
+                                                    
+                                                    
+                wp.gf.Visible = 'on';   % .createFigure() gives an invisible figure...
             else
                 alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -293,9 +331,17 @@ classdef mcWaypoints < mcSavableClass
                 
                 wp.grid.rangeText{1}.Visible = 'on';
                 wp.grid.rangeText{2}.Visible = 'on';
+                
+                if l > 1
+                    wp.grid.previewButton.Enable =          'on';
+                    wp.grid.finalizeAxesButton.Enable =     'on';   % Wait until after preview?
+                else
+                    wp.grid.previewButton.Enable =          'off';
+                    wp.grid.finalizeAxesButton.Enable =     'off';
+                end
 
-                if l > 26
-                    warning('mcGrid: You have hit the programatical limit for number of grid coords. You cannot be larger than an alphabet...');
+                if l > length(alphabet)
+                    warning('mcGrid: You have hit the programatic limit for number of grid coords. You cannot be larger than an alphabet...');
                     return;
                 end
 
@@ -379,6 +425,21 @@ classdef mcWaypoints < mcSavableClass
                 
                 wp.computeLimits();
             end
+        end
+        function nameGrid_Callback(wp, ~, ~)
+            wp.grid.config.name = wp.grid.nameField.String;
+        end
+        function finalizeGrid_Callback(wp, ~, ~)
+            error('NotImplemented');
+        end
+        function finalizeAxesGrid_Callback(wp, ~, ~)
+            wp.grid.realAxes = wp.config.axes;
+            wp.grid.finalize();
+            
+            wp.grid.finalizeAxesButton.Enable = 'off';
+            wp.grid.finalizeButton.Enable =     'off';
+            wp.grid.nameField.Enable =          'off';
+            cellfun(@(x)(set(x, 'Enable', 'off')), wp.grid.editArray);
         end
 
         function render(wp)
@@ -485,7 +546,7 @@ classdef mcWaypoints < mcSavableClass
                         for kk = 1:length(wp.config.axes)-1
                             posstr = [posstr num2str(wp.config.waypoints{kk}(wp.menus.currentWay), 4) ' ' wp.config.axes{kk}.config.kind.extUnits ', '];
                         end
-                        posstr = [posstr num2str(wp.config.waypoints{end}(wp.menus.currentWay), 4) ' ' wp.config.axes{end}.config.kind.extUnits ' ]'];
+                        posstr = [posstr num2str(wp.config.waypoints{length(wp.config.axes)}(wp.menus.currentWay), 4) ' ' wp.config.axes{length(wp.config.axes)}.config.kind.extUnits ' ]'];
                         wp.menus.way.pos.Label = posstr;
                         wp.menus.way.name.Label = ['Waypoint: ' num2str(ii)];
                         

@@ -5,6 +5,10 @@ classdef (Sealed) mcaGrid < mcAxis
 %
 % Also see mcaTemplate and mcAxis.
     
+%     properties
+%         grid = [];  % Runtime variable containing an mcGrid.
+%     end
+
     methods (Static)
         % Neccessary extra vars:
         %  - grid
@@ -56,15 +60,15 @@ classdef (Sealed) mcaGrid < mcAxis
     methods
         % NAME
         function str = NameShort(a)
-            str = [a.config.grid.name() ' ' a.config.letter];
+            str = [a.config.grid.config.name ' ' a.config.letter];
         end
         function str = NameVerb(a)
-            str = ['Grid Axis in the ' a.config.letter ' direction for ' a.config.grid.name()];
+            str = ['Grid Axis in the ' a.config.letter ' direction for ' a.config.grid.config.name];
         end
         
         % EQ
-        function tf = Eq(a, b)
-            tf = a.grid == b.grid && strcmpi(a.config.letter, b.config.letter);
+        function tf = eq(a, b)
+            tf = (a.config.grid == b.config.grid) && strcmpi(a.config.letter, b.config.letter);     % Faster to compare the index?
         end
         
         % OPEN/CLOSE
@@ -85,8 +89,8 @@ classdef (Sealed) mcaGrid < mcAxis
             a.Goto(x);
         end
         function Goto(a, x)
-            a.config.grid.virtualPosition(a.config.grid.index) = x;     % Set the grid to the appropriate virtual coordinates...
-            a.config.grid.goto();                                       % Then tell the grid to go to this position.
+            a.config.grid.virtualPosition(a.config.index) = x;       % Set the grid to the appropriate virtual coordinates...
+            a.config.grid.goto();                                  % Then tell the grid to go to this position.
         end
     end
 end
