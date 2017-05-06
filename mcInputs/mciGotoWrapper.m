@@ -50,8 +50,8 @@ classdef mciGotoWrapper < mcInput
             
             questdlg('Please rotate the green half-wave plate to the *PLE* position.', 'Please Rotate...', 'I Have Finished Rotating', 'I Have Finished Rotating');
             
-            c = {mcaDAQ.redDigitalConfig(),     mcaArduino.flipMirrorConfig(),      mcaAPT.rotatorConfig()};
-            p = [1,                             1,                                  apt.getX()];
+            c = {mcaDAQ.redDigitalConfig(),     mcaAPT.rotatorConfig(),     mcaArduino.flipMirrorConfig()};
+            p = [1,                             apt.getX(),                 1];
             
             config = mciGotoWrapper.dataConfig(c, p);
             
@@ -65,8 +65,8 @@ classdef mciGotoWrapper < mcInput
             
             questdlg('Please rotate the green half-wave plate to the *optimization* position.', 'Please Rotate...', 'I Have Finished Rotating', 'I Have Finished Rotating');
             
-            c = {mcaDAQ.redDigitalConfig(),     mcaArduino.flipMirrorConfig(),      mcaAPT.rotatorConfig()};
-            p = [0,                             1,                                  apt.getX()];
+            c = {mcaDAQ.redDigitalConfig(),     mcaAPT.rotatorConfig(),     mcaArduino.flipMirrorConfig()};
+            p = [0,                             apt.getX(),                 1];
             
             config = mciGotoWrapper.dataConfig(c, p);
             

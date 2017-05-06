@@ -69,6 +69,11 @@ classdef (Sealed) mcaArduino < mcAxis
             fclose(a.s);
         end
         
+%         function Read(a)
+%             fprintf(a.s, 'r');
+%             a.x = fscanf(a.s, '%i', 1);
+%         end
+        
         % GOTO ---------- The 'meat' of the axis: the funtion that translates the user's intended movements to reality.
         function GotoEmulation(a, x)
             a.xt = a.config.kind.ext2intConv(x);    % ** Usually, behavior should not deviate from this default a.GotoEmulation(x) function. Change this if more complex behavior is desired.
@@ -78,6 +83,9 @@ classdef (Sealed) mcaArduino < mcAxis
             a.xt = a.config.kind.ext2intConv(x);
             a.x = a.xt;
             fprintf(a.s, num2str(a.x));  % Send '0' or '1' to the arduino...
+            
+            response = fscanf(a.s, '%i', 1);
+            tf = a.x == response;
         end
     end
 end

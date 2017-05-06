@@ -1,7 +1,7 @@
 #include <Servo.h>
 
 #define SERVOPIN    10
-#define DUTYUP      1025     // (µs)
+#define DUTYUP      975     // (µs)
 #define DUTYDOWN    1750     // (µs)
 
 //#define VERBOSE
@@ -20,7 +20,9 @@ void loop() {
         
 //        Serial.write(typeByte);
         
-        servo.attach(SERVOPIN);                     // Turn on the servo.
+        if (typeByte == '0' || typeByte == '1'){
+          servo.attach(SERVOPIN);                     // Turn on the servo.
+        }
         
         if (typeByte == '1'){                       // If that something is a command to move the mirror up...
             servo.writeMicroseconds(DUTYUP);        // ...Set the duty cycle to the appropriate value.
@@ -34,8 +36,14 @@ void loop() {
 #ifdef VERBOSE
             Serial.write("Going down!\n");
 #endif
-        } 
-        else if (typeByte == 'r'){                // If MATLAB wants to read the current position...
+        }
+        
+        if (typeByte == '0' || typeByte == '1'){
+            delay(1000);                            // Then wait for a second for the servo to reach the desired position.
+            servo.detach();                         // And turn off the servo so that it can be moved manually.
+        }
+        
+        if (typeByte == 'r' || typeByte == '0' || typeByte == '1'){   // If MATLAB wants to read the current position...
 #ifdef VERBOSE
             Serial.write("We are currently:");
             if (up){
@@ -51,12 +59,6 @@ void loop() {
             }
 #endif
         }
-        
-        if (typeByte != 'r'){
-            delay(500);                             // Then wait for a second for the servo to reach the desired position.
-        }
-        
-        servo.detach();                             // And turn off the servo so that it can be moved manually.
     }
 }
 
