@@ -40,7 +40,7 @@ classdef mcGrid < mcSavableClass
     methods
         function grid = mcGrid(varin)
             grid.config.isFinal =   false;
-            grid.config.name =      'Grid';
+            grid.config.name =      'Best Grid';
             
             switch nargin
                 case 0
@@ -96,10 +96,10 @@ classdef mcGrid < mcSavableClass
             num = dims(1);
             
             grid.virtualAxes = cell(1, num);
-            grid.virtualPosition = ones(1, num+1);      % first num-1 are actual position of virtual axes, last is to account for the possible translation (non-linearity).
+            grid.virtualPosition = ones(1, num);      % first num-1 are actual position of virtual axes, last is to account for the possible translation (non-linearity).
                     
             for ii = 1:(num-1)
-                config = mcaGrid.gridConfig(grid,ii);
+                config = mcaGrid.gridConfig(grid, ii);
                 grid.virtualAxes{ii} = mcaGrid(config);
             end
         end
@@ -158,13 +158,19 @@ classdef mcGrid < mcSavableClass
         end
         
         function figureClose_Callback(grid, src, ~)
-            if isvalid(grid) && ~isempty(grid.wp) && isvalid(grid.wp)
-                grid.wp.g.XData = [];
-                grid.wp.g.YData = [];
-                grid.wp.gridCoords = [];
+            if strcmpi(questdlg('Are you sure you want to close the grid? All child grid axes will be deleted(!)', 'Close Grid?', 'Close', 'Nope', 'Close'), 'Close')
+                if isvalid(grid) && ~isempty(grid.wp) && isvalid(grid.wp)
+                    grid.wp.g.XData = [];
+                    grid.wp.g.YData = [];
+                    grid.wp.gridCoords = [];
+                    
+                    for ii = 1:length(grid.virtualAxes)
+                        delete(grid.virtualAxes{ii});
+                    end
+                end
+                
+                delete(src);
             end
-            
-            delete(src);
         end
 
 %         function y = mtimes(grid, x)

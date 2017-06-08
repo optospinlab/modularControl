@@ -30,6 +30,7 @@ classdef mcWaypoints < mcSavableClass
         listeners = [];     % These listen to x and xt.
         
         grid = [];
+        lastgrid = [];
         gf = [];
         gfl = {};
         gridCoords = [];
@@ -113,10 +114,10 @@ classdef mcWaypoints < mcSavableClass
             
             hold(wp.a, 'on');
             
-            wp.w = scatter(wp.a, [], [], 's');
             wp.p = scatter(wp.a, [], [], 'o');
             wp.t = scatter(wp.a, [], [], 'x');
             wp.g = scatter(wp.a, [], [], 'd');
+            wp.w = scatter(wp.a, [], [], 's');
             
             x = wp.config.axes{1}.config.kind.extRange;
             y = wp.config.axes{2}.config.kind.extRange;
@@ -292,7 +293,7 @@ classdef mcWaypoints < mcSavableClass
                 wp.grid.nameField =    uicontrol(wp.gf, 'Style', 'edit',...
                                                         'Units', 'pixels',...
                                                         'Position', [(num-1)*bw 3*bh/2 bw bh],...
-                                                        'String', 'Best Grid',...
+                                                        'String', wp.grid.config.name,...
                                                         'HorizontalAlignment', 'center',...
                                                         'Callback', @wp.nameGrid_Callback);
                                                     
@@ -320,6 +321,7 @@ classdef mcWaypoints < mcSavableClass
                                                         'Callback', @wp.finalizeAxesGrid_Callback,...
                                                         'Enable', 'off');
                                                     
+                wp.gf.UserData = wp.grid;
                                                     
                 wp.gf.Visible = 'on';   % .createFigure() gives an invisible figure...
             else
@@ -364,13 +366,13 @@ classdef mcWaypoints < mcSavableClass
                 % Add the range boxes for the new column of grid coordinates
                 wp.grid.rangeArray{1, (l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
                                                                     'Units', 'pixels',...
-                                                                    'Position', [(num+l/2)*bw bh/2 bw/2 bh],...
+                                                                    'Position', [(num+l/2)*bw 3*bh/2 bw/2 bh],...
                                                                     'String', 0,...
                                                                     'Callback', @makeNumber_Callback);
                 wp.grid.rangeArray{2, (l-1)} = uicontrol(wp.gf, 'Style', 'edit',...
                                                                     'Units', 'pixels',...
-                                                                    'Position', [(num+l/2)*bw 3*bh/2 bw/2 bh],...
-                                                                    'String', 0,...
+                                                                    'Position', [(num+l/2)*bw bh/2 bw/2 bh],...
+                                                                    'String', 1,...
                                                                     'Callback', @makeNumber_Callback);
 
                 % Add the text box for the new column of grid coordinates
@@ -390,40 +392,44 @@ classdef mcWaypoints < mcSavableClass
                 end
             end
         end
-        function previewGrid_Callback(wp, ~, ~)
-            wp.grid.makeGridFromEdit(wp.config.axes);
-            
-%             wp.grid.rangeArray
-            if ~isempty(wp.grid.config.A)
-                ranges = cellfun(@(x)(str2double(x.String)), wp.grid.rangeArray);
+        function previewGrid_Callback(wp, s, ~)
+            if ~isempty(wp) && isvalid(wp)
+                grid2 = s.Parent.UserData;
+                wp.lastgrid = grid2;
+                grid2.makeGridFromEdit(wp.config.axes);
 
-                ranges2(1, :) = ceil(min(ranges));
-                ranges2(2, :) = floor(max(ranges));
+    %             wp.grid.rangeArray
+                if ~isempty(grid2.config.A)
+                    ranges = cellfun(@(x)(str2double(x.String)), grid2.rangeArray);
 
-                lengths = diff(ranges2)+1;
+                    ranges2(1, :) = ceil(min(ranges));
+                    ranges2(2, :) = floor(max(ranges));
 
-                jj = 1;
+                    lengths = diff(ranges2)+1;
 
-                finlen = prod(lengths);
+                    jj = 1;
 
-                X = zeros(finlen, length(lengths)+1);
+                    finlen = prod(lengths);
 
-                for ii = 1:length(lengths)
-                    X(:, ii) = repmat( reshape( repmat((ranges2(1,ii):ranges2(2,ii))', [1, jj])', [], 1), [finlen/(jj*lengths(ii)), 1]);
+                    X = zeros(finlen, length(lengths)+1);
 
-                    jj = jj*lengths(ii);
+                    for ii = 1:length(lengths)
+                        X(:, ii) = repmat( reshape( repmat((ranges2(1,ii):ranges2(2,ii))', [1, jj])', [], 1), [finlen/(jj*lengths(ii)), 1]);
+
+                        jj = jj*lengths(ii);
+                    end
+
+                    X(:, length(lengths)+1) = 1;
+
+                    Y = grid2.config.A*(X');
+
+                    wp.gridCoords = X;
+
+                    wp.g.XData = Y(wp.config.xi, :);
+                    wp.g.YData = Y(wp.config.yi, :);
+
+                    wp.computeLimits();
                 end
-
-                X(:, length(lengths)+1) = 1;
-
-                Y = wp.grid.config.A*(X');
-
-                wp.gridCoords = X;
-
-                wp.g.XData = Y(wp.config.xi, :);
-                wp.g.YData = Y(wp.config.yi, :);
-                
-                wp.computeLimits();
             end
         end
         function nameGrid_Callback(wp, ~, ~)
@@ -433,13 +439,31 @@ classdef mcWaypoints < mcSavableClass
             error('NotImplemented');
         end
         function finalizeAxesGrid_Callback(wp, ~, ~)
-            wp.grid.realAxes = wp.config.axes;
-            wp.grid.finalize();
+            uniquename = true;
             
-            wp.grid.finalizeAxesButton.Enable = 'off';
-            wp.grid.finalizeButton.Enable =     'off';
-            wp.grid.nameField.Enable =          'off';
-            cellfun(@(x)(set(x, 'Enable', 'off')), wp.grid.editArray);
+            [axes_, ~, ~, ~] = mcInstrumentHandler.getAxes();
+            
+            for ii = 1:length(axes_)
+                axes_{ii}.config
+                if strcmpi(axes_{ii}.config.class, 'mcaGrid')
+                    uniquename = uniquename && ~strcmpi(axes_{ii}.config.grid.config.name, wp.grid.config.name);
+                end
+            end
+            
+            if uniquename
+                wp.grid.realAxes = wp.config.axes;
+                wp.grid.finalize();
+
+                wp.grid.finalizeAxesButton.Enable = 'off';
+                wp.grid.finalizeButton.Enable =     'off';
+                wp.grid.nameField.Enable =          'off';
+                cellfun(@(x)(set(x, 'Enable', 'off')), wp.grid.editArray);
+
+                wp.grid =   [];
+                wp.gf =     [];
+            else
+                questdlg(['The name "' wp.grid.config.name '" has already been taken'], 'Choose A Different Name?', 'Okay', 'Okay');
+            end
         end
 
         function render(wp)
@@ -558,8 +582,8 @@ classdef mcWaypoints < mcSavableClass
                         
                         wp.menus.currentGrid = jj;
                         
-                        if ~isempty(wp.gridCoords)
-                            y = wp.grid.config.A * wp.gridCoords(jj, :)';
+                        if ~isempty(wp.gridCoords) && ~isempty(wp.lastgrid) && isvalid(wp.lastgrid)
+                            y = wp.lastgrid.config.A * wp.gridCoords(jj, :)';
                             
                             posstr = 'Position: [ ';
                             for kk = 1:length(wp.config.axes)-1

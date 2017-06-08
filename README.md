@@ -28,7 +28,7 @@ Often there are other `static` functions such as `mc<Classname>.defaultConfig()`
 This separation of behavior and identity means that this code is inherently modular. `mcAxis` is a class that generalizes the behavior of a 1D parameter space. The main function in `mcAxis` is `.goto(x)`, which tells the axis to goto that particular `x` value. This function can be used on a variety of real objects that behave like a 1D parameter space: linear motion for piezos, wavelength for a tunable frequency laser, etc.
 
 ## What's Up With `mca`, `mci`, etc?:
-There are several parent classes that spawn a number of daughter subclasses in modular control. For clarity and organization, the daughter subclasses take the first three letters as the prefix of thier classnames. The following is a list of classes that spawn daughters:
+There are several parent classes that spawn a number of daughter subclasses in modular control. For clarity and organization, the daughter subclasses take the first three letters of the parent class as the prefix of thier classnames. The following is a list of classes that spawn daughters:
 
 Class               | This Class Abstractifies...  | Subclass Prefix | Example Subclass     |
 --------------------|--------------|-----------------|-----------------------|

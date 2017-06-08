@@ -208,6 +208,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            1;
         end
         function config = galvoConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Default Galvo';
 
             config.kind.kind =          'NIDAQanalog';
@@ -227,6 +229,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            5;
         end
         function config = galvoXConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Galvo X';
 
             config.kind.kind =          'NIDAQanalog';
@@ -246,6 +250,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            5;
         end
         function config = galvoYConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Galvo Y';
 
             config.kind.kind =          'NIDAQanalog';
@@ -265,6 +271,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            5;
         end
         function config = galvoXBrynnConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Galvo X';
 
             config.kind.kind =          'NIDAQanalog';
@@ -291,6 +299,8 @@ classdef (Sealed) mcaDAQ < mcAxis
             config.joyStep =            .5;
         end
         function config = galvoYBrynnConfig()
+            config.class =              'mcaDAQ';
+            
             config.name =               'Galvo Y';
 
             config.kind.kind =          'NIDAQanalog';

@@ -15,6 +15,7 @@ classdef mcgDiamond < mcGUI
             
             %                     Style     String              Variable    TooltipString                                                                       Optional: Limit [min max round] (only for edit)
             config.controls = { { 'push',   'Open mcData',      'open',     'Operates the same way as the open button on an mcDataViewer window...' },...
+                                { 'push',   'New mcScan',       'newscan',  'Make a scan over arbitrary inputs and axes...' },...
                                 { 'title',  'Galvos:  ',        NaN,        'Confocal scanning for the galvo mirrors.' },...
                                 { 'edit',   'Range (mV): ',     200,        'The range of the scan (in X and Y), centered on the current position. If this scan goes out of bounds, it is shifted to be in bounds.',                                        [0 abs(diff(galvoConfig.kind.int2extConv(galvoConfig.kind.intRange)))]},...
                                 { 'edit',   'Pixels (#): ',     50,         'The number of points (in each dimension) which should be sampled over the scan range.',                                                                                        [1 Inf 1]},...
@@ -130,6 +131,8 @@ classdef mcgDiamond < mcGUI
                     mcDataViewer(mcData.autoPLEConfig());
                 case 'open'
                     mcDataViewer.loadGUI_Callback(0,0);
+                case 'newscan'
+                    mcScan;
                 otherwise
                     if ischar(cbName)
                         disp([class(gui) '.Callbacks(s, e, cbName): No callback of name ' cbName '.']);

@@ -150,6 +150,10 @@ classdef mcAxis < mcSavableClass
                 error('mcAxis(): Not sure how to interpret config in mcAxis(config)...');
             end
             
+            if ~isfield(a.config, 'class')
+                error('mcAxis(): Class not specified in config. Please specify class.');
+            end
+            
             if iscell(a.config.kind.intRange)
                 a.config.kind.extRange = cellfun(a.config.kind.int2extConv, a.config.kind.intRange, 'UniformOutput', false);
             else

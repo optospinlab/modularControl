@@ -487,7 +487,7 @@ classdef mcData < mcSavableClass
                         error(['mcData(): Expected numeric array for the scan of the ' getSuffix(ii) ' axis. Got: ' class(d.d.scans{ii})]);
                     end
                     if min(size(d.d.scans{ii})) ~= 1 || max(size(d.d.scans{ii})) == 1 || length(size(d.d.scans{ii})) ~= 2   % If d.d.scans{ii} isn't a 1xn or nx1 vector...
-                        error(['mcData(): Expected a 1xn or nx1 vector for the scan of the ' getSuffix(ii) ' axis. Got a matrix of dimension [ ' num2str(size(d.d.scans{ii})) ' ].']);
+                        error(['mcData(): Expected a 1xn or nx1 vector (n > 1) for the scan of the ' getSuffix(ii) ' axis. Instead, got a matrix of dimension [ ' num2str(size(d.d.scans{ii})) ' ].']);
                     end
                 end
             else
@@ -1076,6 +1076,7 @@ classdef mcData < mcSavableClass
 %             tic
             
 %             fname = replace(d.d.name, {'/', '\', ':', '"', '?', '<', '>', '|'}, '_');
+
             characters = {'/', '\', ':', '"', '?', '<', '>', '|'};
 
             fname = d.d.name;
@@ -1093,7 +1094,7 @@ classdef mcData < mcSavableClass
             d.index
         end
         
-        function str = indexNameVerb()  % More elaborate version of the above.
+        function str = indexNameVerb()  % More elaborate (verbose) version of the above.
             
         end
     end

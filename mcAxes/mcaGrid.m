@@ -89,8 +89,8 @@ classdef (Sealed) mcaGrid < mcAxis
             a.Goto(x);
         end
         function Goto(a, x)
-            a.config.grid.virtualPosition(a.config.index) = x;       % Set the grid to the appropriate virtual coordinates...
-            a.config.grid.goto();                                  % Then tell the grid to go to this position.
+            a.config.grid.virtualPosition(a.config.index) = x;      % Set the grid to the appropriate virtual coordinates...
+            a.config.grid.goto();                                   % Then tell the grid to go to this position.
         end
     end
 end
