@@ -161,7 +161,7 @@ classdef mcAxis < mcSavableClass
             end
 
             params = mcInstrumentHandler.getParams();
-            if ismac || params.shouldEmulate
+            if params.shouldEmulate
                 a.inEmulation = true;
             end
             

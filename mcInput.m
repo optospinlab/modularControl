@@ -85,7 +85,7 @@ classdef mcInput < mcSavableClass
             end
             
             params = mcInstrumentHandler.getParams();
-            if ismac || params.shouldEmulate
+            if params.shouldEmulate
                 I.inEmulation = true;
             end
         end

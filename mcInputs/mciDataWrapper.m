@@ -184,7 +184,7 @@ classdef mciDataWrapper < mcInput
         function data = MeasureEmulation(I, integrationTime)
             data = I.Measure(integrationTime);
         end
-        function data = Measure(I, ~)
+        function data = Measure(I, ~)   % Integration time doesn't matter (in the future, scale based on a given integration time?)
             I.s.resetData();
             
             if I.config.makeDV

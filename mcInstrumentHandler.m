@@ -93,7 +93,11 @@ classdef mcInstrumentHandler < handle
                 params.open =                       true;
                 
                 params.instruments =                {};         % Stores the mcAxes and mcInputs (separate these for simplicity?)
-                params.shouldEmulate =              false;      % Whether or not the axes and inputs should initialize in emulation. Makes this more accessable in the future?
+                params.shouldEmulate =              ismac;      % Whether or not the axes and inputs should initialize in emulation. Makes this more accessable in the future?
+                
+                if ismac
+                    disp('mcInstrumentHandler.open(): Warning! Macs default to emulation mode. Change the code to remove this...')
+                end
                 
                 params.saveFolderManual =              '';         % Empty string, to be loaded from .mat or chosen by GUI. Described in detail below.
                 params.saveFolderBackground =          '';

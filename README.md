@@ -5,6 +5,9 @@
 * Run the desired function or initialize the desired class.
  * e.g. in the diamond room, run `mcDiamond`.
 
+## Pronunciation
+Most classes are prefixed with `mc` to avoid clashes with other functions. This `mc` is *obviously* pronounced `m`, `c` (`em-see`); not `Mc` (`mic`) as in `McDonalds`.
+
 ## Modularity
 `modularControl` is, as the name suggests, intended to be a modular and versitile solution to data acquisition in MATLAB.
 
