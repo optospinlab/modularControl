@@ -691,7 +691,7 @@ classdef mcData < mcSavableClass
                     d.r.a.nameUnit{ii} =    d.r.a.a{ii}.nameUnits();
                     d.r.a.unit{ii} =        d.d.axes{ii}.kind.extUnits;
                     
-                    d.r.a.isNIDAQ(ii) =     strcmpi('nidaq', c.kind.kind(1:min(5,end)));
+                    d.r.a.isNIDAQ(ii) =     strcmpi('nidaq', c.kind.kind(1:min(5,end))) && ~strcmpi('cDAQ1Mod1', c.dev);    % Find the nidaq devices (because we can make these go faster). cDAQ1Mod1 is a DAQ in the diamond room that controls galvos. Our counter is on Dev1. Because these cannot be used together for timed tasks, axes on cDAQ1Mod1 are not considered fask nidaq axes programatically.
                     d.r.a.inEmulation(ii) = d.r.a.a{ii}.inEmulation;
                     
 %                     d.r.a.prev =            d.r.a.a{ii}.getX();
@@ -875,10 +875,15 @@ classdef mcData < mcSavableClass
                     if d.r.canScanFast && (~isfield(d.r, 's') || isempty(d.r.s) || ~isvalid(d.r.s))
                         d.r.s = daq.createSession('ni');
 
+%                         d.r.a.a{1}.s;
                         d.r.a.a{1}.close();
+%                         d.r.a.a{1}.s;
                         d.r.a.a{1}.addToSession(d.r.s);         % First add the axis,
 
                         for ii = 1:d.r.i.num
+%                             d.r.i.i{ii}.s
+%                             d.r.i.i{ii}.close();
+%                             d.r.i.i{ii}.s
                             d.r.i.i{ii}.addToSession(d.r.s);    % Then add the inputs
                         end
                     end 
@@ -1021,6 +1026,8 @@ classdef mcData < mcSavableClass
                 
                 d.r.s.queueOutputData([d.r.a.scansInternalUnits{1}  d.r.a.scansInternalUnits{1}(1)]');   % The last point (a repeat of the final params.scan point) is to count for the last pixel (counts are differences).
 
+                d.r.s
+                
                 [data_, times] = d.r.s.startForeground();       % Should I startBackground() and use a listener? (Do this in the future!)
 
                 for ii = 1:d.r.i.num     % Fill all of the inputs with data...

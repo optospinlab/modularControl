@@ -31,8 +31,8 @@ classdef mcUserInput < mcSavableClass
             configPiezoY = mcaDAQ.piezoConfig();    configPiezoY.name = 'Piezo Y'; configPiezoY.chn = 'ao1';
             configPiezoZ = mcaDAQ.piezoZConfig();   configPiezoZ.name = 'Piezo Z'; configPiezoZ.chn = 'ao2';
             
-            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM6';
-            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM5';
+            configMicroX = mcaMicro.microConfig();  configMicroX.name = 'Micro X'; configMicroX.port = 'COM5';
+            configMicroY = mcaMicro.microConfig();  configMicroY.name = 'Micro Y'; configMicroY.port = 'COM6';
             
 %             configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
 %             configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
@@ -41,8 +41,8 @@ classdef mcUserInput < mcSavableClass
             configV2 = mcaDAQ.PIE616Config();       configV2.name = 'H Voltage 2';  configV2.chn = 'ao1';
             configV3 = mcaDAQ.PIE616Config();       configV3.name = 'H Voltage 3';  configV3.chn = 'ao2';
 
-            configGalvoX = mcaDAQ.galvoConfig();    configGalvoX.name = 'Galvo X'; configGalvoX.dev = 'cDAQ1Mod1'; configGalvoX.chn = 'ao0';
-            configGalvoY = mcaDAQ.galvoConfig();    configGalvoY.name = 'Galvo Y'; configGalvoY.dev = 'cDAQ1Mod1'; configGalvoY.chn = 'ao1';
+            configGalvoX = mcaDAQ.galvoXConfig();
+            configGalvoY = mcaDAQ.galvoYConfig();
             
 %             configDoor =   mcaDAQ.digitalConfig();   configDoor.name =  'Door LED'; configDoor.chn =  'Port0/Line7';
             configGreen =  mcaDAQ.greenConfig();
@@ -154,7 +154,7 @@ classdef mcUserInput < mcSavableClass
             fh = 500;               % Figure height
             
             pp = 5;                 % Panel padding
-            pw = fw - 30;           % Panel width
+            pw = fw - 25;           % Panel width
             ph = 200;               % Panel height
             
             bh = 20;                % Button Height
@@ -247,7 +247,9 @@ classdef mcUserInput < mcSavableClass
             %%%%%%%%%% USER INPUTS TAB %%%%%%%%%%
             tabHeight = obj.gui.tabInputs.Position(4) - 5*bh;
             
-            bbh = (pw+10)/7; % Big button height
+            bbh = (pw)/7; % Big button height
+            
+            obj.gui.keyUp =     uicontrol('Parent', obj.gui.tabInputs, 'Style', 'text', 'String', '(Shift for x10 and Alt for x1/10 speed)', 'Position', [0, tabHeight, pw, bh], 'Callback', {@obj.userAction_Callback, 2, 1});
             
             obj.gui.keyUp =     uicontrol('Parent', obj.gui.tabInputs, 'Style', 'push', 'String', 'A', 'Position', [2*bbh, tabHeight - 1*bbh, bbh, bbh], 'Callback', {@obj.userAction_Callback, 2, 1});
             obj.gui.keyLeft =   uicontrol('Parent', obj.gui.tabInputs, 'Style', 'push', 'String', '<', 'Position', [1*bbh, tabHeight - 2*bbh, bbh, bbh], 'Callback', {@obj.userAction_Callback, 1, -1});

@@ -119,16 +119,18 @@ classdef mciSpectrum < mcInput
             exposure = NaN;
 
             while ii < integrationTime + 60 && all(data == -1)   % Is 60 sec wiggle room enough?
-                try
+%                 try
 %                     disp(['Waiting ' num2str(i)]);
                     d = dir(I.config.datafile);
+                    
+%                     d.datenum > t - 4/(24*60*60)
 
                     if d.datenum > t - 4/(24*60*60)
                         [data, exposure] = readSPE(I.config.datafile);
                     end
-                catch
+%                 catch
                     
-                end
+%                 end
 
                 pause(1);
                 ii = ii + 1;

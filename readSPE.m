@@ -102,6 +102,7 @@ end
 
 % Open the file
 fd = fopen(filename,'r');
+filename
 if(fd < 0)
     error('Could not open file, bad filename')
 end

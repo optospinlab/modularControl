@@ -8,6 +8,7 @@ classdef mcVideo < mcInput
         v = [];         % videoinput object
         i = [];         % image object
         p = [];         % plot object (for border);
+        % s = [];         % scatterplot object (for adding points to the view) (already defined in mcInput)
         
         fb = [];        % Feedback vars
         
@@ -100,7 +101,12 @@ classdef mcVideo < mcInput
                 % Create a uipushtool in the toolbar
                 uitoggletool(hToolbar, 'TooltipString', 'Image Feedback', 'ClickedCallback', @vid.toggleFeedback_Callback, 'CData', iconRead(fullfile('icons','feedback.png')));
 
-                vid.a = axes('Position', [0 0 1 1], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
+                vid.a = axes(   'Position', [0 0 1 1],...
+                                'XTick', 0,...
+                                'YTick', 0,...
+                                'LineWidth', 4,...
+                                'Box', 'on');
+                
     %             vid.a = axes('Position', [.01 .01 .98 .98], 'XTick', 0, 'YTick', 0, 'LineWidth', 4, 'Box', 'on');
 
     %             hold(vid.a, 'on')
@@ -114,14 +120,22 @@ classdef mcVideo < mcInput
                 vid.v.FramesPerTrigger = 1;
                 vidRes = vid.v.VideoResolution;
                 nBands = vid.v.NumberOfBands;
-                vid.i = image(zeros(vidRes(2), vidRes(1), nBands), 'YData', [vidRes(2) 1]);
+                vid.i = image(zeros(vidRes(2), vidRes(1), nBands), 'YData', [vidRes(2) 1], 'ButtonDownFcn', @vid.windowButtonDownFcn);
                 preview(vid.v, vid.i);     % this appears on the axes we made.
-
+                
                 hold(vid.a, 'on')
 
                 vid.p = plot([1 1 vidRes(1) vidRes(1) 1], [1 vidRes(2) vidRes(2) 1 1]);
-                vid.p.Color = [0 1 0];      
+                vid.p.Color = [0 1 0];
                 vid.p.LineWidth = .01;
+                
+                vid.s = scatter(-1, -1, 200,...
+                    'PickableParts', 'none',...
+                    'Marker', 'o',...
+                    'MarkerEdgeColor', 'r',...
+                    'MarkerFaceColor', 'r',...
+                    'MarkerFaceAlpha', .25,...
+                    'LineWidth', 1.5);
 
                 vid.config.kind.sizeInput = vidRes;
 
@@ -235,6 +249,28 @@ classdef mcVideo < mcInput
 %             end
             
             drawnow limitrate
+        end
+        
+        function windowButtonDownFcn(vid, ~, e)
+            switch e.Button
+                case 1      % left click
+                    vid.addPoint(e);
+                case 3      % right click
+                    vid.deletePoint(e);
+            end
+        end
+        function addPoint(vid, e)
+            vid.s.XData(end+1) = e.IntersectionPoint(1);
+            vid.s.YData(end+1) = e.IntersectionPoint(2);
+        end
+        function deletePoint(vid, e)
+            X = vid.s.XData - e.IntersectionPoint(1);
+            Y = vid.s.YData - e.IntersectionPoint(2);
+            
+            D = X.^2 + Y.^2;
+            
+            vid.s.XData = vid.s.XData(D ~= min(D));
+            vid.s.YData = vid.s.YData(D ~= min(D));
         end
     end
 
