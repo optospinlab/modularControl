@@ -25,7 +25,7 @@ classdef mcData < mcSavableClass
         % - d.scans                 cell array          % The points that each axis scans across. The ith entry in the cell array corresponds to the ith axis. Note that these are in external units.
         % - d.intTimes              numeric array       % Contains the integration time for each input. Thus this is 1xm. For NIDAQ devices which 'can scan fast' by scanning altogether, the maximum intTime is used.
         %
-        % - d.data                  cell array          % This is the 'meat' of this structure. Data is a 1xm cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
+        % - d.data                  cell array          % This is the 'meat' of this structure. Data is a   cell array (each entry corresponding to each input). Each entry contains an (n+N)-dimensional matrix where N is the dimension of the input.
         %
         % - d.info.timestamp        string              % The file is, by default, named <d.info.timestamp d.name>.mat. This is generated every time the data is reset.
         % - d.info.fname            string              % Where the data should be saved (in the background). This is generated every time the data is reset.

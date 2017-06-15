@@ -23,7 +23,12 @@ classdef mcSavableClass < handle
             if exist(fname, 'file')
                 load(fname);
                 c = load(fname);
-                obj.config = c.config;
+                
+                if isfield(c.config, 'ver')     % If this .mat config was created after the check for version was implemented...
+                    if all(c.config.ver == mcInstrumentHandler.version())   % And if we are using the same version...
+                        obj.config = c.config;  % Then use the .mat config as our config.
+                    end
+                end
             end
         end
         
@@ -58,6 +63,7 @@ classdef mcSavableClass < handle
             obj.makeClassFolder();
 
             config = obj.config;        %#ok
+            config.ver = mcInstrumentHandler.version();
 %             config
 
             save(fname, 'config');

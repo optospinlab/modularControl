@@ -12,11 +12,15 @@ classdef mcGrid < mcSavableClass
 %    - grid.wait()                          % Waits for each of the real axes to reach their target positions.
 %    - pos = grid.realPosition()            % Returns the real position of each real axis (in external units) corresponding to virtualPosition.
 %    
-% Status: Still need UI to make selecting waypoints and choosing thier virtual coordinates easy...
+% Status: Still need UI to make selecting waypoints and choosing their virtual coordinates easy...
 
     properties
 %         config = [];                % Inherited from mcSavable class.
-        % config.name
+
+        % config.name               string          % Name of grid.
+        % config.isFinal            boolean         % Whether the grid has been finalized (whether 
+        % config.A                  double          % A (n+1) x n matrix that relates virtual positions with real positions.
+        % config.axesConfigs        struct array    % Array of the configs of the real axes.
 
         editArray = {};             % Cell array of uicontrols (edit) that will help construct the grid.
         textArray = {};             % Cell array of uicontrols (text) that will help construct the grid.
@@ -39,24 +43,27 @@ classdef mcGrid < mcSavableClass
     
     methods
         function grid = mcGrid(varin)
-            grid.config.isFinal =   false;
             grid.config.name =      'Best Grid';
+            grid.config.isFinal =   false;
+            grid.config.matrix =    [];
             
             switch nargin
                 case 0
                     return;
 %                 case 1
-%                     wp = varin;
-%                     indices = 1:length(varin);  % Use all waypoints for grid.
+%                     grid.config = varin;
+%                     
 %                 case 2
 %                     wp = varin{1};
 %                     indices = varin{2};         % Use only the waypoints denoted by indices.
 %                     gridCoords = cell(1, length(varin{2});
-                case 3
-                    wp = varin{1};
-                    grid.realAxes = wp.config.axes;
-                    indices = varin{2};         % Use only the waypoints denoted by indices.
-                    gridCoords = varin{3};
+%                 case 3
+%                     wp = varin{1};
+%                     grid.realAxes = wp.config.axes;
+%                     indices = varin{2};         % Use only the waypoints denoted by indices.
+%                     gridCoords = varin{3};
+            
+%                     grid.config.axesConfigs =   cellfun(@(x)(x.config), grid.realAxes);
             end
 
 %             num = length(indices);
@@ -115,20 +122,34 @@ classdef mcGrid < mcSavableClass
             for ii = 1:length(grid.realAxes)                % First, check if all of the real axes are in range...
                 if ~grid.realAxes{ii}.inRange(gotoPos(ii))
                     tf = false;
-                    disp('mcGrid.goto(): Warning! Real axes position is out of range. We will not move (eventually make this move as close to the point as possible).')
+                    disp('mcGrid.goto(): Warning! Real axes position is out of range. We will not move. (Eventually make this move as close to the target point as possible.)')
                     return;
                 end
             end
             
             for ii = 1:length(grid.realAxes)
                 if grid.realAxes{ii}.getX() ~= gotoPos(ii)
-                    grid.realAxes{ii}.goto(gotoPos(ii));            % Send each real axis to the point corresponding to the virtual position.
+                    grid.realAxes{ii}.goto(gotoPos(ii));    % Send each real axis to the point corresponding to the virtual position.
                 end
             end
         end
         function wait(grid)
             for ii = 1:length(grid.realAxes)
-                grid.realAxes{ii}.wait();                       % Wait for each axis to reach its programmed target position.
+                grid.realAxes{ii}.wait();                   % Wait for each axis to reach its programmed target position.
+            end
+        end
+        function tf = open(grid)
+            tf = true;
+            
+            for ii = 1:length(grid.realAxes)
+                tf = tf && grid.realAxes{ii}.open();        % Open each axis.
+            end
+        end
+        function tf = close(grid)
+            tf = true;
+            
+            for ii = 1:length(grid.realAxes)
+                tf = tf && grid.realAxes{ii}.close();       % Close each axis.
             end
         end
 
@@ -137,7 +158,7 @@ classdef mcGrid < mcSavableClass
         end
         
         function makeGridFromEdit(grid, realAxes)
-            matrix = cellfun(@(x)(str2double(x.String)), grid.editArray);   % Retrieve the numbers from the 
+            matrix = cellfun(@(x)(str2double(x.String)), grid.editArray);   % Retrieve the numbers from the uicontrol array.
             
             grid.realAxes = realAxes;
             
@@ -172,16 +193,6 @@ classdef mcGrid < mcSavableClass
                 delete(src);
             end
         end
-
-%         function y = mtimes(grid, x)
-%             dims = size(x);
-%             
-%             if dims(1) == 1
-%                 y = ( grid.config.A * ([x, 1]') )';
-%             else
-%                 y = grid.config.A * [x; 1];
-%             end
-%         end
     end
 end
 

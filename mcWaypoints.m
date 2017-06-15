@@ -452,6 +452,7 @@ classdef mcWaypoints < mcSavableClass
             
             if uniquename
                 wp.grid.realAxes = wp.config.axes;
+                wp.grid.config.axesConfigs =   cellfun(@(x)(x.config), wp.grid.realAxes);
                 wp.grid.finalize();
 
                 wp.grid.finalizeAxesButton.Enable = 'off';

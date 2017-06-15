@@ -43,7 +43,7 @@ classdef mcInstrumentHandler < handle
     % Public methods
     methods (Static)
         function ver = version()    % Gives the version of modularControl. Will set to [1 0] upon first stable release.
-            ver = [0 99];           % Commit number.
+            ver = [0 127];           % Commit number.
         end
         function tf = open()
             tf = true;
