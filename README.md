@@ -2,13 +2,7 @@
 
 ## To Run:
 * Download MATLAB2016b (we are unsure about compatability with other versions of MATLAB)
-* Add `modularControl` (and subfolders) to MATLAB path.
-* Run the desired function or initialize the desired class.
- * e.g. in the diamond room, run `mcDiamond`.
- 
-
-## Pronunciation
-Most classes are prefixed with `mc` to avoid clashes with other functions. This `mc` is *obviously* pronounced `m`, `c` (`em-see`); not `Mc` (`mic`) as in `McDonalds`.
+* Add `modularControl` (and subfolders) to MATLAB path. 
 
 ## Modularity
 `modularControl` is, as the name suggests, intended to be a modular and versitile solution to data acquisition in MATLAB.
